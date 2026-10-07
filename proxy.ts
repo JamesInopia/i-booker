@@ -1,0 +1,21 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+
+// Every page except /login requires a valid session cookie.
+export async function proxy(request: NextRequest) {
+  const { pathname, search } = request.nextUrl;
+  if (pathname === "/login") return NextResponse.next();
+
+  const session = await verifySessionToken(request.cookies.get(SESSION_COOKIE)?.value);
+  if (session) return NextResponse.next();
+
+  const url = request.nextUrl.clone();
+  url.pathname = "/login";
+  url.search = "";
+  url.searchParams.set("next", pathname + search); // come back here after logging in
+  return NextResponse.redirect(url);
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+};
