@@ -3,18 +3,33 @@
 import { useActionState } from "react";
 import { authenticate } from "./actions";
 
+const INPUT =
+  "mt-1 block h-10 w-full rounded-md border border-accent-4 bg-container px-3 font-normal outline-none focus:border-accent-1";
+
 export function LoginForm({ next }: { next: string }) {
   const [state, action, pending] = useActionState(authenticate, { message: "", email: "" });
 
   return (
-    <form action={action} className="mt-8 flex w-96 flex-col gap-4">
+    <form action={action} className="mt-10 flex w-72 flex-col gap-4">
       <input type="hidden" name="next" value={next} />
-      <input name="email" type="email" defaultValue={state.email} placeholder="Email" required
-        className="border px-4 py-2" />
-      <input name="password" type="password" placeholder="Password" required className="border px-4 py-2" />
-      {state.message && <p className="text-red-700">{state.message}</p>}
-      <button disabled={pending} className="bg-neutral-900 px-4 py-2 text-white disabled:opacity-50">
-        {pending ? "Please wait" : "Sign in"}
+
+      <label className="text-sm font-semibold">
+        Student Number or Email Address
+        <input name="email" type="text" autoComplete="username" defaultValue={state.email} required className={INPUT} />
+      </label>
+
+      <label className="text-sm font-semibold">
+        Password
+        <input name="password" type="password" autoComplete="current-password" required className={INPUT} />
+      </label>
+
+      {state.message && <p className="text-sm text-accent-2">{state.message}</p>}
+
+      <button
+        disabled={pending}
+        className="mt-4 w-3/5 self-center rounded-xl bg-accent-1 py-3 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {pending ? "Please wait" : "Log in"}
       </button>
     </form>
   );

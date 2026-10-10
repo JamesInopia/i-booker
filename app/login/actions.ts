@@ -26,7 +26,6 @@ export async function authenticate(_prev: LoginState, form: FormData): Promise<L
     maxAge: SESSION_MAX_AGE,
   });
 
-  // The page they were trying to reach wins; otherwise the role decides.
   redirect(safeNext(form.get("next")) ?? ROLE_HOME[account.role]);
 }
 

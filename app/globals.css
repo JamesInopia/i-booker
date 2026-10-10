@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@theme {
+  /* Background, Navbar, Container, and Accent Colors */
+  --color-background: #F0F4F8;
+  --color-nav: #D2D6DE;
+  --color-container: #FFFFFF;
+
+  --color-accent-1: #1A4BAA;
+  --color-accent-2: #D8463B;
+  --color-accent-3: #333333;
+  --color-accent-4: #ECECEC;
+  --color-accent-5: #F2EFEF;
+  --color-accent-6: #D9D9D9;
+  --color-accent-7: #FFAC4E;
+
+  /* Heading gradient */
+  --color-heading-from: #1C50B1;
+  --color-heading-to: #113182;
+
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background: var(--color-background);
+}
