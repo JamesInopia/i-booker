@@ -1,8 +1,7 @@
 "use server";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ACCOUNTS } from "@/lib/accounts";
-import { createSessionToken, ROLE_HOME, safeNext, SESSION_COOKIE, SESSION_MAX_AGE } from "@/lib/session";
+import { isRole, ROLE_HOME, safeNext } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
 
 export type LoginState = { message: string; email: string };
 
@@ -10,26 +9,26 @@ export async function authenticate(_prev: LoginState, form: FormData): Promise<L
   const email = String(form.get("email") ?? "").trim();
   const password = String(form.get("password") ?? "");
 
-  const account = ACCOUNTS.find((a) => a.email.toLowerCase() === email.toLowerCase());
-  if (account && !account.password) {
-    return { message: "This account has no password yet. Set it in lib/accounts.ts.", email };
-  }
-  if (!account || account.password !== password) {
-    return { message: "Invalid email or password.", email };
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error || !data.user) {
+    if (error?.code === "email_not_confirmed") return { message: "This account's email is not confirmed yet.", email };
+    if (!error || error.code === "invalid_credentials") return { message: "Invalid email or password.", email };
+    return { message: "Could not sign in. Please try again.", email };
   }
 
-  (await cookies()).set(SESSION_COOKIE, await createSessionToken({ email: account.email, role: account.role }), {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: SESSION_MAX_AGE,
-  });
+  const { data: profile } = await supabase.from("users").select("role").eq("user_id", data.user.id).maybeSingle();
+  if (!profile || !isRole(profile.role)) {
+    await supabase.auth.signOut();
+    return { message: "This account has no profile yet. Run the mock-account seed or ask an admin.", email };
+  }
 
-  redirect(safeNext(form.get("next")) ?? ROLE_HOME[account.role]);
+  redirect(safeNext(form.get("next")) ?? ROLE_HOME[profile.role]);
 }
 
 export async function signOut() {
-  (await cookies()).delete(SESSION_COOKIE);
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   redirect("/login");
 }

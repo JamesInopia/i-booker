@@ -1,4 +1,3 @@
-import { signOut } from "@/app/login/actions";
 import { NavLink } from "./nav-link";
 
 export function Sidebar({ items }: { items: { href: string; label: string }[] }) {
@@ -20,10 +19,6 @@ export function Sidebar({ items }: { items: { href: string; label: string }[] })
             </li>
           ))}
         </ul>
-
-        <form action={signOut} className="mt-auto pb-6 pl-8">
-          <button className="text-sm text-white/80 underline hover:text-white">Sign out</button>
-        </form>
       </nav>
     </aside>
   );
