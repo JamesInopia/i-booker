@@ -69,7 +69,7 @@ function ProfileMenu({ name }: { name: string }) {
         onClick={() => setOpen((v) => !v)}
         className="rounded-full focus:outline-2 focus:outline-offset-2 focus:outline-accent-1"
       >
-        <svg viewBox="0 0 24 24" className="h-11 w-11" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden="true">
           <circle cx="12" cy="12" r="12" fill="currentColor" />
           <circle cx="12" cy="9.5" r="3.6" fill="white" />
           <path d="M5.2 19.2c1.2-3.3 3.9-5 6.8-5s5.6 1.7 6.8 5A11.9 11.9 0 0 1 12 24a11.9 11.9 0 0 1-6.8-4.8Z" fill="white" />
@@ -91,7 +91,7 @@ function ProfileMenu({ name }: { name: string }) {
 
 export function Header({ tabGroups, name }: { tabGroups: PageTabGroup[]; name: string }) {
   return (
-    <header className="sticky top-0 z-10 flex h-24 shrink-0 items-center justify-between gap-8 bg-container px-10">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-8 bg-container px-10">
       <Suspense fallback={<div />}>
         <Tabs groups={tabGroups} />
       </Suspense>
