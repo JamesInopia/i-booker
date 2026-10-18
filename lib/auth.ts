@@ -1,8 +1,12 @@
 import "server-only";
+import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
-import { createClient } from "@/lib/supabase/server";
-import { isRole, ROLE_HOME, type Role } from "@/lib/session";
+import { db } from "@/db";
+import { roleAssignments } from "@/db/schema";
+import { auth } from "@/lib/better-auth";
+import { ROLE_HOME, type Role } from "@/lib/session";
 
 export type CurrentUser = {
   id: string;
@@ -11,22 +15,18 @@ export type CurrentUser = {
   role: Role;
 };
 
-export const getClaims = cache(async () => {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims().catch(() => ({ data: null }));
-  return data?.claims ?? null;
-});
-
-
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const claims = await getClaims();
-  if (!claims) return null;
+  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
+  if (!session) return null;
 
-  const supabase = await createClient();
-  const { data: row } = await supabase.from("users").select("name, role").eq("user_id", claims.sub).maybeSingle();
-  if (!row || !isRole(row.role)) return null;
+  const email = session.user.email.toLowerCase();
+  const [row] = await db
+    .select({ role: roleAssignments.role })
+    .from(roleAssignments)
+    .where(eq(roleAssignments.email, email))
+    .limit(1);
 
-  return { id: claims.sub, email: claims.email ?? "", name: row.name, role: row.role };
+  return { id: session.user.id, email, name: session.user.name, role: row?.role ?? "requestor" };
 });
 
 export async function requireUser(): Promise<CurrentUser> {

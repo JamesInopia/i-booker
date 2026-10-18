@@ -1,13 +1,15 @@
-import { getClaims } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { safeNext } from "@/lib/session";
 import { signOut } from "./actions";
 import { LoginForm } from "./login-form";
 
 const HEXAGON = "[clip-path:polygon(0_17%,30%_0,65%_0,100%_20%,100%_80%,65%_100%,30%_100%,0_83%)]";
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string | string[] }> }) {
-  const { next } = await searchParams;
-  const claims = await getClaims();
+type SearchParams = Promise<{ next?: string | string[]; error?: string | string[] }>;
+
+export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
+  const { next, error } = await searchParams;
+  const user = await getCurrentUser();
 
   return (
     <main className="min-h-screen bg-linear-to-br from-heading-from to-heading-to">
@@ -18,14 +20,14 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           Welcome to <strong className="font-bold">iBooker</strong>!
         </h1>
 
-        {claims && (
+        {user && (
           <form action={signOut} className="mt-3 text-sm">
-            <span className="mr-3 text-accent-3">Signed in as {claims.email}</span>
+            <span className="mr-3 text-accent-3">Signed in as {user.email}</span>
             <button className="underline">Sign out</button>
           </form>
         )}
 
-        <LoginForm next={safeNext(Array.isArray(next) ? next[0] : next) ?? ""} />
+        <LoginForm next={safeNext(Array.isArray(next) ? next[0] : next) ?? ""} failed={Boolean(error)} />
       </section>
     </main>
   );
