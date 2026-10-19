@@ -18,6 +18,10 @@
   --color-heading-from: #1C50B1;
   --color-heading-to: #113182;
 
+  /* Carousel gradient*/
+  --color-carousel-from: #102e66;
+  --color-carousel-to: #050a17;
+
   --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
