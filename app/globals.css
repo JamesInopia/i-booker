@@ -28,3 +28,31 @@
 body {
   background: var(--color-background);
 }
+
+/* Booking progress bar + confirm animation */
+@keyframes booking-ring {
+  from { transform: scale(1); opacity: 0.6; }
+  to { transform: scale(2.1); opacity: 0; }
+}
+@keyframes booking-pop {
+  0% { transform: scale(0.8); }
+  60% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes booking-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes booking-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.booking-ring { animation: booking-ring 900ms ease-out 700ms both; }
+.booking-pop { animation: booking-pop 500ms ease-out 650ms both; }
+.booking-draw { animation: booking-draw 350ms ease-out 700ms forwards; }
+.booking-fade { animation: booking-fade 300ms ease-out 900ms both; }
+.booking-circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: booking-draw 600ms ease-out 1100ms forwards; }
+.booking-tick { stroke-dasharray: 48; stroke-dashoffset: 48; animation: booking-draw 400ms ease-out 1600ms forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .booking-ring, .booking-pop, .booking-fade { animation: none; }
+  .booking-draw, .booking-circle, .booking-tick { animation: none; stroke-dashoffset: 0; }
+}

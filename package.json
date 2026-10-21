@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "seed:mock": "tsx scripts/seed-mock-accounts.ts"
+    "seed:mock": "tsx scripts/seed-mock-accounts.ts",
+    "seed:rooms": "tsx scripts/seed-rooms.ts"
   },
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.10",
