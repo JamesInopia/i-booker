@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { activityTypes, appUsers, reservationRequests, reservationSlotRooms, reservationSlots, rooms } from "@/db/schema";
-import { isId, isOtherName, type Draft, type Nature, type Slot } from "./rules";
+import { isId, isOtherName, type Draft, type Nature, type RoomListing, type Slot } from "./rules";
 
 export type Room = { roomId: string; name: string; description: string | null; maxCapacity: number | null };
 
@@ -22,6 +22,22 @@ const toRoom = (r: { roomId: number; name: string; description: string | null; m
 export async function listRooms(): Promise<Room[]> {
   const rows = await db.select(ROOM_COLUMNS).from(rooms).where(eq(rooms.status, "available")).orderBy(asc(rooms.name));
   return rows.map(toRoom);
+}
+
+export async function listAllRooms(): Promise<RoomListing[]> {
+  const rows = await db
+    .select({
+      roomId: rooms.roomId,
+      name: rooms.name,
+      description: rooms.description,
+      maxCapacity: rooms.maxCapacity,
+      prohibitions: rooms.prohibitions,
+      thumbnail: rooms.thumbnail,
+      status: rooms.status,
+    })
+    .from(rooms)
+    .orderBy(asc(rooms.roomId));
+  return rows.map((r) => ({ ...r, roomId: String(r.roomId), available: r.status === "available" }));
 }
 
 export async function getRoom(roomId: string): Promise<Room | null> {

@@ -39,6 +39,18 @@ export type Nature = { id: string; name: string; other: boolean };
 export const isOtherName = (name: string) => /^(others?|miscellaneous)\b/i.test(name.trim());
 
 export type Slot = { start: string; end: string };
+
+export type RoomListing = {
+  roomId: string;
+  name: string;
+  description: string | null;
+  maxCapacity: number | null;
+  prohibitions: string | null;
+  thumbnail: string | null;
+  status: string;
+  available: boolean;
+};
+
 export type DetailsErrors = Partial<Record<"contactNo" | "nature" | "natureOther" | "occupants" | "program" | "description", string>>;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
