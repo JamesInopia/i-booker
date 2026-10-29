@@ -2,20 +2,20 @@
 
 @theme {
   /* Background, Navbar, Container, and Accent Colors */
-  --color-background: #F0F4F8;
-  --color-nav: #D2D6DE;
-  --color-container: #FFFFFF;
+  --color-background: #f0f4f8;
+  --color-nav: #d2d6de;
+  --color-container: #ffffff;
 
-  --color-accent-1: #1A4BAA;
-  --color-accent-2: #D8463B;
+  --color-accent-1: #1a4baa;
+  --color-accent-2: #d8463b;
   --color-accent-3: #333333;
-  --color-accent-4: #ECECEC;
-  --color-accent-5: #F2EFEF;
-  --color-accent-6: #D9D9D9;
-  --color-accent-7: #FFAC4E;
+  --color-accent-4: #ececec;
+  --color-accent-5: #f2efef;
+  --color-accent-6: #d9d9d9;
+  --color-accent-7: #ffac4e;
 
   /* Heading gradient */
-  --color-heading-from: #1C50B1;
+  --color-heading-from: #1c50b1;
   --color-heading-to: #113182;
 
   /* Carousel gradient*/
@@ -31,28 +31,93 @@ body {
 
 /* Booking progress bar + confirm animation */
 @keyframes booking-ring {
-  from { transform: scale(1); opacity: 0.6; }
-  to { transform: scale(2.1); opacity: 0; }
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.1);
+    opacity: 0;
+  }
 }
 @keyframes booking-pop {
-  0% { transform: scale(0.8); }
-  60% { transform: scale(1.15); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.8);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 @keyframes booking-draw {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 @keyframes booking-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
-.booking-ring { animation: booking-ring 900ms ease-out 700ms both; }
-.booking-pop { animation: booking-pop 500ms ease-out 650ms both; }
-.booking-draw { animation: booking-draw 350ms ease-out 700ms forwards; }
-.booking-fade { animation: booking-fade 300ms ease-out 900ms both; }
-.booking-circle { stroke-dasharray: 151; stroke-dashoffset: 151; animation: booking-draw 600ms ease-out 1100ms forwards; }
-.booking-tick { stroke-dasharray: 48; stroke-dashoffset: 48; animation: booking-draw 400ms ease-out 1600ms forwards; }
+.booking-ring {
+  animation: booking-ring 900ms ease-out 700ms both;
+}
+.booking-pop {
+  animation: booking-pop 500ms ease-out 650ms both;
+}
+.booking-draw {
+  animation: booking-draw 350ms ease-out 700ms forwards;
+}
+.booking-fade {
+  animation: booking-fade 300ms ease-out 900ms both;
+}
+.booking-circle {
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+  animation: booking-draw 600ms ease-out 1100ms forwards;
+}
+.booking-tick {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: booking-draw 400ms ease-out 1600ms forwards;
+}
 @media (prefers-reduced-motion: reduce) {
-  .booking-ring, .booking-pop, .booking-fade { animation: none; }
-  .booking-draw, .booking-circle, .booking-tick { animation: none; stroke-dashoffset: 0; }
+  .booking-ring,
+  .booking-pop,
+  .booking-fade {
+    animation: none;
+  }
+  .booking-draw,
+  .booking-circle,
+  .booking-tick {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  summary,
+  select:not(:disabled),
+  label[for],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="submit"]:not(:disabled)
+    input[type="date"]::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
 }
