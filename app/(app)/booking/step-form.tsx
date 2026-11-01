@@ -1,7 +1,7 @@
 "use client";
 
 import { saveAndGo } from "./actions";
-import { useActionState, useEffect } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { EMPTY_FORM_STATE, STEP_FORM_ID, type FormState } from "./rules";
 
 export const LABEL = "block text-sm font-semibold";
@@ -14,6 +14,7 @@ type Props = {
   backHref: string;
   canConfirm: boolean;
   confirmLabel?: string;
+  confirmWarning?: string;
   onSubmitted?: () => void;
   children?: React.ReactNode;
 };
@@ -23,11 +24,14 @@ export function StepForm({
   backHref,
   canConfirm,
   confirmLabel = "Confirm",
+  confirmWarning,
   onSubmitted,
   children,
 }: Props) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
   const submitted = Boolean(state.submitted);
+  const [warnFor, setWarnFor] = useState<FormState | null>(null);
+  const warnOpen = Boolean(confirmWarning) && warnFor === state;
 
   useEffect(() => {
     if (submitted) onSubmitted?.();
@@ -50,6 +54,12 @@ export function StepForm({
         <button
           type="submit"
           disabled={!canConfirm || pending || submitted}
+          onClick={(e) => {
+            if (confirmWarning && !warnOpen) {
+              e.preventDefault();
+              setWarnFor(state);
+            }
+          }}
           className="order-2 rounded-lg bg-accent-1 px-12 py-2 font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-6 disabled:text-accent-3/50 disabled:hover:brightness-100"
         >
           {submitted ? "Submitted" : pending ? "Please wait" : confirmLabel}
@@ -64,6 +74,39 @@ export function StepForm({
           Back
         </button>
       </div>
+
+      {warnOpen && (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="confirm-warning-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        >
+          <div className="w-full max-w-sm rounded-xl bg-container p-6 shadow-lg">
+            <h2 id="confirm-warning-title" className="text-lg font-bold">
+              Are you sure?
+            </h2>
+            <p className="mt-2 text-sm">{confirmWarning}</p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setWarnFor(null)}
+                disabled={pending}
+                className="rounded-lg border border-accent-6 px-5 py-2 text-sm font-semibold hover:bg-accent-5"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={pending || submitted}
+                className="rounded-lg bg-accent-1 px-5 py-2 text-sm font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pending ? "Please wait" : "Yes, continue"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
