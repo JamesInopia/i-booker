@@ -16,9 +16,10 @@ export const PAGE_TABS: PageTabGroup[] = [
   {
     path: "/admin-dashboard",
     tabs: [
+      { id: "timeline", label: "Timeline", roles: ADMIN_ROLES },
       { id: "schedule", label: "Schedule", roles: ADMIN_ROLES },
       { id: "review", label: "Review", roles: ADMIN_ROLES },
-      { id: "accounts", label: "Accounts", roles: ADMIN_ROLES },
+      { id: "accounts", label: "Accounts", roles: ["admin_supervisor"] },
     ],
   },
   {

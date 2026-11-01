@@ -23,15 +23,15 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
 
       <section className="mt-6">
         <h2 className="text-2xl font-semibold">{tab.label} tab</h2>
-        {tab.id === "schedule" && (
+        {tab.id === "timeline" && (
           <>
-            <nav aria-label="Schedule views" className="mt-4 flex gap-4">
+            <nav aria-label="Timeline views" className="mt-4 flex gap-4">
               {VIEWS.map((v) => {
                 const active = v.id === view.id;
                 return (
                   <Link
                     key={v.id}
-                    href={{ pathname: "/admin-dashboard", query: { tab: "schedule", view: v.id } }}
+                    href={{ pathname: "/admin-dashboard", query: { tab: "timeline", view: v.id } }}
                     aria-current={active ? "true" : undefined}
                     className={`border px-3 py-1 ${active ? "bg-neutral-900 text-white" : "border-neutral-300"}`}
                   >
