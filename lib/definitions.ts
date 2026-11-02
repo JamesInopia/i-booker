@@ -39,3 +39,15 @@ export type Booking = {
   schedule: { date: string; time: string };
   status: BookingStatus;
 };
+
+export type ArchiveStatus = "approved" | "rejected" | "cancelled";
+
+export type ArchiveRow = {
+  id: number;
+  requestor: string;
+  purpose: string;
+  room: string;
+  requestDate: string;
+  scheduledDate: string;
+  status: ArchiveStatus;
+};

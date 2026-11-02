@@ -1,7 +1,11 @@
+import ArchiveTable from "./archive-table";
+import { SAMPLE_ROWS } from "./sample-data";
+
 export default function BookingArchivesPage() {
   return (
-    <main className="px-16 py-8">
-      <h1 className="text-4xl font-bold">Booking Archives page</h1>
+    <main className="flex h-full min-h-0 flex-col gap-6 px-8 py-5">
+      <h1 className="text-4xl font-bold">Booking Archives</h1>
+      <ArchiveTable initialRows={SAMPLE_ROWS} />
     </main>
   );
 }
