@@ -51,3 +51,20 @@ export type ArchiveRow = {
   scheduledDate: string;
   status: ArchiveStatus;
 };
+
+export type ArchiveDetail = {
+  id: number;
+  status: ArchiveStatus;
+  nature: string;
+  natureOther: string;
+  requestor: string;
+  contactDetails: string;
+  program: string;
+  dateFiled: string;
+  dateOfActivity: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  participants: number;
+  details: string;
+};

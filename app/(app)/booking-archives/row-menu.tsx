@@ -75,7 +75,7 @@ export default function RowMenu({
           className="fixed z-50 w-auto overflow-hidden rounded-lg border border-gray-200 bg-white text-left text-sm shadow-lg"
         >
           <Link
-            href={`/booking-archvies/view?ids=${id}`}
+            href={`/booking-archives/view?ids=${id}`}
             role="menuitem"
             className={ITEM}
           >
