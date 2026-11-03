@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useTransition } from "react";
+
 export default function DeleteDialog({
   count,
   onClose,
@@ -7,12 +9,22 @@ export default function DeleteDialog({
 }: {
   count: number;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<string | void> | string | void;
 }) {
+  const [error, setError] = useState("");
+  const [pending, start] = useTransition();
+
+  function confirm() {
+    start(async () => {
+      const err = await onConfirm();
+      if (err) setError(err);
+    });
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={onClose}
+      onClick={() => pending && onClose()}
     >
       <div
         role="dialog"
@@ -27,6 +39,11 @@ export default function DeleteDialog({
           This permanently deletes the {count === 1 ? "request" : "requests"}{" "}
           and cannot be undone.
         </p>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-red-600">
+            {error}
+          </p>
+        )}
         <div className="mt-5 flex justify-end gap-3">
           <button
             type="button"
@@ -40,7 +57,7 @@ export default function DeleteDialog({
             onClick={onConfirm}
             className="rounded-full bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700"
           >
-            Delete
+            {pending ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>

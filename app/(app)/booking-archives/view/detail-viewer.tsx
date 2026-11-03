@@ -6,12 +6,15 @@ import { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import type { ArchiveDetail } from "@/lib/definitions";
 import DeleteDialog from "../delete-dialog";
+import { STATUS_LABEL, STATUS_TEXT } from "@/lib/booking-status";
 import RequestDetails from "./request-details";
 
-const BTN =
-  "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
+const btn = "rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50";
+const btnPrimary = `${btn} bg-accent-1 text-white hover:opacity-90`;
+const btnOutline = `${btn} border border-accent-1 bg-container text-accent-1 hover:bg-accent-4`;
+const btnDanger = `${btn} bg-red-600 text-white hover:bg-red-700`;
 const ARROW =
-  "flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-100 dfisabled:cursor-not-allowed disabled:opacity-40";
+  "flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-md hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40";
 
 export default function DetailViewer({
   initial,
@@ -70,40 +73,30 @@ export default function DetailViewer({
         )}
       </div>
 
-      <div className="mt-4 rounded-2xl bg-white p-8">
-        <div className="flex items-baseline justify-between">
-          <h1 className="text-2xl font-bold">
-            Booking Details{" "}
-            <span className="font-normal text-accent-3">
-              #{String(current.id).padStart(5, "0")}
-            </span>
-          </h1>
-          <span className="rounded-full bg-accent-5 px-5 py-1 text-sm font-semibold capitalize">
-            {current.status}
-          </span>
-        </div>
+      <section className="mt-4 flex min-h-112 flex-col rounded-lg bg-container p-6 shadow-sm">
+        <h1 className={`text-3xl font-bold ${STATUS_TEXT[current.status]}`}>
+          {STATUS_LABEL[current.status]}
+        </h1>
 
         <RequestDetails d={current} />
-      </div>
 
-      <div className="mt-6 flex items-center justify-between">
-        <div className="flex gap-4">
+        <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
           {/* print and download dialogs later */}
-          <button type="button" className={`${BTN} bg-accent-1`}>
+          <button type="button" className={btnPrimary}>
             Print Details
           </button>
-          <button type="button" className={`${BTN} bg-accent-1`}>
+          <button type="button" className={btnOutline}>
             Download Details
           </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(true)}
+            className={btnDanger}
+          >
+            Delete
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => setConfirmDelete(true)}
-          className={`${BTN} bg-accent-2`}
-        >
-          Delete
-        </button>
-      </div>
+      </section>
 
       {confirmDelete && (
         <DeleteDialog

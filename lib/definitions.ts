@@ -58,6 +58,7 @@ export type ArchiveDetail = {
   nature: string;
   natureOther: string;
   requestor: string;
+  email: string;
   contactDetails: string;
   program: string;
   dateFiled: string;
