@@ -9,6 +9,23 @@ import {
   reservationSlotRooms,
   reservationSlots,
   rooms,
+  roomPictures,
+} from "@/db/schema";
+import {
+  isId,
+  isOtherName,
+  type Draft,
+  type Nature,
+  type RoomListing,
+  type Slot,
+} from "./rules";
+import {
+  activityTypes,
+  appUsers,
+  reservationRequests,
+  reservationSlotRooms,
+  reservationSlots,
+  rooms,
 } from "@/db/schema";
 import {
   isId,
@@ -215,103 +232,6 @@ export async function createRequest(input: {
       })
       .returning({ slotId: reservationSlots.slotId });
 
-    await tx
-      .insert(reservationSlotRooms)
-      .values({ slotId: slot.slotId, roomId: Number(roomId) });
-  });
-}
-
-export async function getEditableRequest(requestId: number, email: string) {
-  const [row] = await db
-    .select({
-      roomId: reservationSlotRooms.roomId,
-      date: reservationSlots.dateOfActivity,
-      startTime: reservationSlots.startTime,
-      endTime: reservationSlots.endTime,
-      occupants: reservationSlots.occupantQuantity,
-      details: reservationSlots.detailsOfActivity,
-      activityTypeId: reservationRequests.activityTypeId,
-      natureOther: reservationRequests.natureOther,
-      contactDetails: reservationRequests.contactDetails,
-      program: reservationRequests.program,
-    })
-    .from(reservationRequests)
-    .innerJoin(appUsers, eq(appUsers.userId, reservationRequests.userId))
-    .innerJoin(
-      reservationSlots,
-      eq(reservationSlots.requestId, reservationRequests.requestId),
-    )
-    .innerJoin(
-      reservationSlotRooms,
-      eq(reservationSlotRooms.slotId, reservationSlots.slotId),
-    )
-    .where(
-      and(
-        eq(reservationRequests.requestId, requestId),
-        eq(reservationRequests.status, "pending"),
-        sql`lower(${appUsers.email}) = ${email}`,
-      ),
-    )
-    .limit(1);
-  return row ?? null;
-}
-
-export async function updateRequest(input: {
-  requestId: number;
-  email: string;
-  draft: Draft;
-  nature: Nature;
-  roomId: string;
-}): Promise<void> {
-  const { requestId, email, draft, nature, roomId } = input;
-
-  await db.transaction(async (tx) => {
-    const myIds = tx
-      .select({ id: appUsers.userId })
-      .from(appUsers)
-      .where(sql`lower(${appUsers.email}) = ${email}`);
-
-    const updated = await tx
-      .update(reservationRequests)
-      .set({
-        activityTypeId: Number(nature.id),
-        natureOther: nature.other ? draft.natureOther : null,
-        contactDetails: draft.contactNo,
-        program: draft.program || null,
-      })
-      .where(
-        and(
-          eq(reservationRequests.requestId, requestId),
-          eq(reservationRequests.status, "pending"),
-          inArray(reservationRequests.userId, myIds),
-        ),
-      )
-      .returning({ requestId: reservationRequests.requestId });
-
-    if (updated.length === 0)
-      throw new BookingError("This request can no longer be edited.");
-
-    const [slot] = await tx
-      .select({ slotId: reservationSlots.slotId })
-      .from(reservationSlots)
-      .where(eq(reservationSlots.requestId, requestId))
-      .limit(1);
-    if (!slot) throw new BookingError("This request has no schedule to edit.");
-
-    await tx
-      .update(reservationSlots)
-      .set({
-        dateOfActivity: draft.date,
-        startTime: draft.startTime,
-        endTime: draft.endTime,
-        occupantQuantity: Number(draft.occupants),
-        detailsOfActivity: draft.description,
-      })
-      .where(eq(reservationSlots.slotId, slot.slotId));
-
-    await tx
-      .delete(reservationSlotRooms)
-      .where(eq(reservationSlotRooms.slotId, slot.slotId));
     await tx
       .insert(reservationSlotRooms)
       .values({ slotId: slot.slotId, roomId: Number(roomId) });
