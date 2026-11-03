@@ -39,3 +39,33 @@ export type Booking = {
   schedule: { date: string; time: string };
   status: BookingStatus;
 };
+
+export type ArchiveStatus = "approved" | "rejected" | "cancelled";
+
+export type ArchiveRow = {
+  id: number;
+  requestor: string;
+  purpose: string;
+  room: string;
+  requestDate: string;
+  scheduledDate: string;
+  status: ArchiveStatus;
+};
+
+export type ArchiveDetail = {
+  id: number;
+  status: ArchiveStatus;
+  nature: string;
+  natureOther: string;
+  requestor: string;
+  email: string;
+  contactDetails: string;
+  program: string;
+  dateFiled: string;
+  dateOfActivity: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  participants: number;
+  details: string;
+};

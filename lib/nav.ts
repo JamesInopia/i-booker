@@ -6,7 +6,7 @@ export const NAV_ITEMS: { href: string; label: string; roles: Role[] }[] = [
   { href: "/admin-dashboard", label: "Admin Dashboard", roles: ADMIN_ROLES },
   { href: "/booking", label: "Booking", roles: EVERYONE },
   { href: "/booking-status", label: "Booking Status", roles: EVERYONE },
-  { href: "/reservation-archives", label: "Booking Archives", roles: ADMIN_ROLES },
+  { href: "/booking-archives", label: "Booking Archives", roles: ADMIN_ROLES },
 ];
 
 export type PageTab = { id: string; label: string; roles: Role[] };
@@ -32,12 +32,17 @@ export const PAGE_TABS: PageTabGroup[] = [
 ];
 
 export function tabGroupsFor(role: Role): PageTabGroup[] {
-  return PAGE_TABS.map((g) => ({ path: g.path, tabs: g.tabs.filter((t) => t.roles.includes(role)) })).filter(
-    (g) => g.tabs.length > 1,
-  );
+  return PAGE_TABS.map((g) => ({
+    path: g.path,
+    tabs: g.tabs.filter((t) => t.roles.includes(role)),
+  })).filter((g) => g.tabs.length > 1);
 }
 
-export function resolveTab(path: string, role: Role, requested?: string | null): PageTab {
+export function resolveTab(
+  path: string,
+  role: Role,
+  requested?: string | null,
+): PageTab {
   const group = PAGE_TABS.find((g) => g.path === path);
   if (!group) throw new Error(`No tabs configured for ${path}`);
   const allowed = group.tabs.filter((t) => t.roles.includes(role));
