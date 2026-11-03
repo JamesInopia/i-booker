@@ -26,7 +26,7 @@ export default async function BookingPage({
     );
   }
 
-  const rooms = await listAllRooms();
+  const rooms = await listManagedRooms();
 
   return (
     <main className="px-16 pb-8 pt-2">
