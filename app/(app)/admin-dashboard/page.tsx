@@ -4,6 +4,7 @@ import { listAllRooms } from "../booking/queries";
 import { Legend } from "../calendar/calendar-parts";
 import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO } from "../calendar/dates";
 import { getDayMarks } from "../calendar/day-marks-queries";
+import { AccountsContent } from "./accounts/accounts-content";
 import { ReviewContent } from "./review/review-content";
 import { SummaryCounts } from "./summary-counts";
 import { CalendarView, TimetableView } from "./timeline";
@@ -41,6 +42,8 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           role={user.role}
           params={{ sort: first(params.sort), show: first(params.show), q: first(params.q), request: first(params.request) }}
         />
+      ) : tab.id === "accounts" ? (
+        <AccountsContent params={{ show: first(params.show), q: first(params.q) }} />
       ) : (
         <TabHeading label={tab.label} />
       )}
