@@ -125,7 +125,6 @@ function normalized(input: RoomInput): RoomInput {
 }
 
 function objectPath(value: string, origin: string): string | null {
-  // Delete only objects from our public bucket / rooms prefix, never user-controlled URLs.
   const prefix = `${origin.replace(/\/$/, "")}/storage/v1/object/public/${BUCKET}/rooms/`;
   if (!value.startsWith(prefix)) return null;
   const path = `rooms/${value.slice(prefix.length)}`;
@@ -256,7 +255,6 @@ export async function saveManagedRoom(payload: FormData): Promise<RoomResult> {
             ?.imagePath ?? null,
       ),
     ];
-    // Reserve an ID for new rooms before upload; clean up the row on upload failure.
     let recordId = id;
     if (recordId === null) {
       const [created] = await db
@@ -376,7 +374,6 @@ export async function deleteManagedRoom(
       .select()
       .from(roomPictures)
       .where(eq(roomPictures.roomId, id));
-    // FKs in PostgreSQL also protect against concurrent booking inserts.
     await db.delete(rooms).where(eq(rooms.roomId, id));
     const images = [existing.thumbnail, ...gallery.map((img) => img.imagePath)];
     if (images.some(Boolean)) {

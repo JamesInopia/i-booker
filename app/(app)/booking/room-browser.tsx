@@ -31,7 +31,6 @@ function Photo({ room, className }: { room: RoomListing; className: string }) {
     );
   }
   return (
-    // eslint-disable-next-line @next/next/no-img-element
     <img
       src={photoSrc(room.thumbnail)}
       alt={room.name}
@@ -40,7 +39,6 @@ function Photo({ room, className }: { room: RoomListing; className: string }) {
   );
 }
 
-/** Starts the booking process with this room already chosen (see startBooking in actions.ts). */
 function BookRoom({
   room,
   className = PILL,
@@ -74,7 +72,6 @@ function RoomPhotoCarousel({ room }: { room: RoomWithGallery }) {
     (photo): photo is string => Boolean(photo),
   );
 
-  // Reset to first photo when changing rooms.
   useEffect(() => {
     setIndex(0);
   }, [room.roomId]);
@@ -116,7 +113,6 @@ function RoomPhotoCarousel({ room }: { room: RoomWithGallery }) {
           touchStartX.current = null;
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           key={`${room.roomId}-${index}`}
           src={photoSrc(photos[index])}
