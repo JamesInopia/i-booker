@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@supabase/supabase-js";
 import { db } from "@/db";
-import { roomImages, rooms, reservationSlotRooms } from "@/db/schema";
+import { roomPictures, rooms, reservationSlotRooms } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { ADMIN_ROLES } from "@/lib/session";
 import type { RoomListing } from "./rules";
@@ -189,7 +189,7 @@ function friendlyError(error: unknown): string {
     if (error.code === "23503")
       return "This room is linked to existing records and cannot be deleted.";
     if (error.code === "42P01")
-      return "Missing room_image table. Run the provided SQL setup first.";
+      return "Missing room_pictures table. Confirm the table name and database configuration.";
   }
   return error instanceof Error
     ? error.message
@@ -224,15 +224,15 @@ export async function saveManagedRoom(input: RoomInput): Promise<RoomResult> {
     const previousGallery = existing
       ? await db
           .select()
-          .from(roomImages)
-          .where(eq(roomImages.roomId, existing.roomId))
+          .from(roomPictures)
+          .where(eq(roomPictures.roomId, existing.roomId))
       : [];
     const before = [
       existing?.thumbnail ?? null,
       ...[0, 1].map(
         (position) =>
-          previousGallery.find((image) => image.position === position)
-            ?.imageUrl ?? null,
+          previousGallery.find((image) => image.sortOrder === position + 1)
+            ?.imagePath ?? null,
       ),
     ];
     // Reserve an ID for new rooms before upload; clean up the row on upload failure.
@@ -275,13 +275,13 @@ export async function saveManagedRoom(input: RoomInput): Promise<RoomResult> {
           ...(createdId !== null ? { status: "available" } : {}),
         })
         .where(eq(rooms.roomId, roomId));
-      await tx.delete(roomImages).where(eq(roomImages.roomId, roomId));
+      await tx.delete(roomPictures).where(eq(roomPictures.roomId, roomId));
       const galleryRows = images
         .slice(1)
         .flatMap((image, position) =>
-          image ? [{ roomId, position, imageUrl: image }] : [],
+          image ? [{ roomId, sortOrder: position + 1, imagePath: image }] : [],
         );
-      if (galleryRows.length) await tx.insert(roomImages).values(galleryRows);
+      if (galleryRows.length) await tx.insert(roomPictures).values(galleryRows);
     });
     if (createdId !== null) createdId = null;
     const replaced = before.filter((img) => img && !images.includes(img));
@@ -353,11 +353,11 @@ export async function deleteManagedRoom(
       );
     const gallery = await db
       .select()
-      .from(roomImages)
-      .where(eq(roomImages.roomId, id));
+      .from(roomPictures)
+      .where(eq(roomPictures.roomId, id));
     // FKs in PostgreSQL also protect against concurrent booking inserts.
     await db.delete(rooms).where(eq(rooms.roomId, id));
-    const images = [existing.thumbnail, ...gallery.map((img) => img.imageUrl)];
+    const images = [existing.thumbnail, ...gallery.map((img) => img.imagePath)];
     if (images.some(Boolean)) {
       try {
         await removeOwnedImages(storage(), images);

@@ -59,21 +59,16 @@ export const rooms = pgTable("room", {
   status: text("status").notNull().default("available"),
 });
 
-// Two additional public room photos (the primary thumbnail remains in room.thumbnail).
-export const roomImages = pgTable(
-  "room_image",
-  {
-    roomId: integer("room_id")
-      .notNull()
-      .references(() => rooms.roomId, { onDelete: "cascade" }),
-    position: integer("position").notNull(),
-    imageUrl: text("image_url").notNull(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.roomId, t.position] }),
-    check("room_image_position_check", sql`${t.position} in (0, 1)`),
-  ],
-);
+// Existing Supabase room_pictures table: the primary thumbnail stays in room.thumbnail.
+// image_id is assumed to be an integer identity primary key; verify this in Supabase.
+export const roomPictures = pgTable("room_pictures", {
+  imageId: integer("image_id").primaryKey().generatedByDefaultAsIdentity(),
+  roomId: integer("room_id")
+    .notNull()
+    .references(() => rooms.roomId, { onDelete: "cascade" }),
+  imagePath: text("image_path").notNull(),
+  sortOrder: integer("sort_order").notNull(),
+});
 
 export const activityTypes = pgTable("activity_type", {
   activityTypeId: integer("activity_type_id")

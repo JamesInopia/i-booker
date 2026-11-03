@@ -9,7 +9,7 @@ import {
   reservationSlotRooms,
   reservationSlots,
   rooms,
-  roomImages,
+  roomPictures,
 } from "@/db/schema";
 import {
   isId,
@@ -229,18 +229,18 @@ export async function listManagedRooms(): Promise<
     listAllRooms(),
     db
       .select({
-        roomId: roomImages.roomId,
-        position: roomImages.position,
-        url: roomImages.imageUrl,
+        roomId: roomPictures.roomId,
+        sortOrder: roomPictures.sortOrder,
+        url: roomPictures.imagePath,
       })
-      .from(roomImages),
+      .from(roomPictures),
   ]);
   const gallery = new Map<string, (string | null)[]>();
   for (const image of images) {
     const id = String(image.roomId);
     const slots = gallery.get(id) ?? [null, null];
-    if (image.position === 0 || image.position === 1)
-      slots[image.position] = image.url;
+    if (image.sortOrder === 1 || image.sortOrder === 2)
+      slots[image.sortOrder - 1] = image.url;
     gallery.set(id, slots);
   }
   return list.map((room) => ({
