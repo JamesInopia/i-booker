@@ -1,3 +1,4 @@
+// Calendar-date helpers. All dates are plain "YYYY-MM-DD" strings
 export const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
 export const DAY_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -75,3 +76,5 @@ export function weekOfMonth(sunday: string) {
 }
 
 export const longDateLabel = (iso: string) => fmt(iso, { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+
+export const weekdayOf = (iso: string) => toDate(iso).getUTCDay();

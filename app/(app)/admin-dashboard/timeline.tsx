@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { RoomListing } from "../booking/rules";
-import { DayNumber, MonthGrid, TODAY_FILL } from "../calendar/calendar-parts";
+import { DayContent, MonthGrid, TODAY_FILL } from "../calendar/calendar-parts";
+import { MARK_STYLE, markFor, type DayMarks } from "../calendar/day-marks";
 import {
   DAY_NAMES,
   addDays,
@@ -14,6 +15,7 @@ import {
   weekRangeLabel,
 } from "../calendar/dates";
 import { MonthPicker } from "../calendar/month-picker";
+import { DayMenu } from "./day-menu";
 
 const TIME_SLOTS = ["730 - 1100", "1100 - 1430", "1430 - 1800", "1800 - 2130"] as const;
 
@@ -21,7 +23,8 @@ const href = (query: Record<string, string>) => ({ pathname: "/admin-dashboard",
 
 const navLink = "px-2 py-1 hover:underline";
 
-export function CalendarView({ month }: { month: string }) {
+
+export function CalendarView({ month, marks }: { month: string; marks: DayMarks }) {
   const today = todayISO();
 
   return (
@@ -35,25 +38,30 @@ export function CalendarView({ month }: { month: string }) {
           ›
         </Link>
       </div>
+
       <MonthGrid
         month={month}
         today={today}
-        renderDay={(day, className, { isToday }) => (
-          <Link
-            href={href({ view: "b", week: startOfWeek(day) })}
-            aria-label={`Open week of ${day}`}
-            aria-current={isToday ? "date" : undefined}
+        getMark={(day) => markFor(day, marks)}
+        renderDay={(day, className, { isToday, mark }) => (
+          <DayMenu
+            date={day}
+            mark={mark}
+            weekHref={`/admin-dashboard?tab=timeline&view=b&week=${startOfWeek(day)}`}
             className={className}
           >
-            <DayNumber day={day} />
-          </Link>
+            <span aria-current={isToday ? "date" : undefined}>
+              <DayContent day={day} mark={mark} />
+            </span>
+          </DayMenu>
         )}
       />
     </div>
   );
 }
 
-export function TimetableView({ sunday, rooms }: { sunday: string; rooms: RoomListing[] }) {
+
+export function TimetableView({ sunday, rooms, marks }: { sunday: string; rooms: RoomListing[]; marks: DayMarks }) {
   const today = todayISO();
   const days = weekDays(sunday);
   const midWeek = addDays(sunday, 3);
@@ -80,20 +88,24 @@ export function TimetableView({ sunday, rooms }: { sunday: string; rooms: RoomLi
 
       <div className="overflow-x-auto">
         <table className="w-full min-w-[56rem] table-fixed border-collapse text-center text-xs">
-          <thead>
+          <thead className="select-none">
             <tr className="bg-blue-100">
               <th className="w-28 border border-neutral-300 p-1">ROOM</th>
               <th className="w-24 border border-neutral-300 p-1">TIME</th>
-              {days.map((day, i) => (
-                <th
-                  key={day}
-                  className={`border border-neutral-300 p-1 ${day === today ? TODAY_FILL : ""}`}
-                  aria-current={day === today ? "date" : undefined}
-                >
-                  <div>{shortMonthDay(day)}</div>
-                  <div className="font-normal">{DAY_NAMES[i].toUpperCase()}</div>
-                </th>
-              ))}
+              {days.map((day, i) => {
+                const mark = markFor(day, marks);
+                const fill = mark ? MARK_STYLE[mark.kind].fill : day === today ? TODAY_FILL : "";
+                return (
+                  <th key={day} className={`border border-neutral-300 ${fill}`} aria-current={day === today ? "date" : undefined}>
+                    {/* Clicking a day header opens the same menu as the calendar (minus "View week"). */}
+                    <DayMenu date={day} mark={mark} className="block w-full cursor-pointer select-none p-1 hover:brightness-95">
+                      <div>{shortMonthDay(day)}</div>
+                      <div className="font-normal">{DAY_NAMES[i].toUpperCase()}</div>
+                      {mark && <div className="mt-0.5 truncate text-[10px] font-medium">{mark.label}</div>}
+                    </DayMenu>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -115,9 +127,10 @@ export function TimetableView({ sunday, rooms }: { sunday: string; rooms: RoomLi
                   <th scope="row" className="border border-neutral-300 p-1 font-normal">
                     {slot}
                   </th>
-                  {days.map((day) => (
-                    <td key={day} className="h-10 border border-neutral-300" />
-                  ))}
+                  {days.map((day) => {
+                    const mark = markFor(day, marks);
+                    return <td key={day} className={`h-10 border border-neutral-300 ${mark ? MARK_STYLE[mark.kind].tint : ""}`} />;
+                  })}
                 </tr>
               )),
             )}

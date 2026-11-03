@@ -121,3 +121,28 @@ body {
     cursor: not-allowed;
   }
 }
+
+/* Printing booking */
+.print-root {
+  display: none;
+}
+@page {
+  margin: 18mm;
+}
+@media print {
+  body > :not(.print-root) {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+  .print-root {
+    display: block;
+  }
+  .print-sheet {
+    break-after: page;
+  }
+  .print-sheet:last-child {
+    break-after: auto;
+  }
+}

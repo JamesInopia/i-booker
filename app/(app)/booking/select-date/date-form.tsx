@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Legend } from "../../calendar/calendar-parts";
 import { longDateLabel } from "../../calendar/dates";
+import type { DayMarks } from "../../calendar/day-marks";
 import { saveDate } from "../actions";
 import { ERROR_TEXT, StepForm } from "../step-form";
 import { validateDate } from "../rules";
@@ -10,10 +11,10 @@ import { DateCalendar } from "./date-calendar";
 
 const SAME_DAY_WARNING = "Same day applications may not be accepted. Are you sure you want to continue?";
 
-export function DateForm({ initialDate, min, max }: { initialDate: string; min: string; max: string }) {
-  const [date, setDate] = useState(initialDate >= min && initialDate <= max ? initialDate : "");
+export function DateForm({ initialDate, min, max, closed }: { initialDate: string; min: string; max: string; closed: DayMarks }) {
+  const [date, setDate] = useState(initialDate >= min && initialDate <= max && !closed[initialDate] ? initialDate : "");
   const error = validateDate(date);
-  const isToday = date === min;
+  const isToday = date === min; // `min` is today (Manila)
 
   return (
     <StepForm
@@ -31,6 +32,7 @@ export function DateForm({ initialDate, min, max }: { initialDate: string; min: 
             onSelect={setDate}
             today={min}
             max={max}
+            closed={closed}
             initialMonth={`${(date || min).slice(0, 7)}-01`}
           />
           <p className="mt-3 text-sm">

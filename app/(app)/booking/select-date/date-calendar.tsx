@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { DayNumber, MonthGrid } from "../../calendar/calendar-parts";
+import { DayContent, MonthGrid } from "../../calendar/calendar-parts";
+import type { DayMarks } from "../../calendar/day-marks";
 import { addMonths, monthKey } from "../../calendar/dates";
 import { MonthPicker } from "../../calendar/month-picker";
 
@@ -10,13 +11,15 @@ export function DateCalendar({
   onSelect,
   today,
   max,
+  closed,
   initialMonth,
 }: {
   selected: string;
   onSelect: (date: string) => void;
   today: string;
   max: string;
-  initialMonth: string;
+  closed: DayMarks;
+  initialMonth: string; // YYYY-MM-01
 }) {
   const [month, setMonth] = useState(initialMonth);
 
@@ -42,18 +45,20 @@ export function DateCalendar({
         month={month}
         today={today}
         selected={selected}
-        isDisabled={(day) => day < today || day > max}
-        renderDay={(day, className, { isToday, isSelected, disabled }) => (
+        isDisabled={(day) => day < today || day > max || Boolean(closed[day])}
+        getMark={(day) => closed[day] ?? null}
+        renderDay={(day, className, { isToday, isSelected, disabled, mark }) => (
           <button
             type="button"
             disabled={disabled}
             onClick={() => onSelect(day)}
             aria-pressed={isSelected}
             aria-current={isToday ? "date" : undefined}
-            aria-label={day}
+            aria-label={mark ? `${day}: ${mark.label}` : day}
+            title={mark ? `${mark.label} (bookings closed)` : undefined}
             className={className}
           >
-            <DayNumber day={day} />
+            <DayContent day={day} mark={mark} />
           </button>
         )}
       />
