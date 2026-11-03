@@ -6,6 +6,8 @@ import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO } from
 import { getDayMarks } from "../calendar/day-marks-queries";
 import { AccountsContent } from "./accounts/accounts-content";
 import { ReviewContent } from "./review/review-content";
+import { listWeekClasses } from "./schedule/queries";
+import { ScheduleContent } from "./schedule/schedule-content";
 import { SummaryCounts } from "./summary-counts";
 import { CalendarView, TimetableView } from "./timeline";
 
@@ -20,6 +22,7 @@ type Params = {
   show?: string | string[];
   q?: string | string[];
   request?: string | string[];
+  term?: string | string[];
 };
 
 const first = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
@@ -42,6 +45,8 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
           role={user.role}
           params={{ sort: first(params.sort), show: first(params.show), q: first(params.q), request: first(params.request) }}
         />
+      ) : tab.id === "schedule" ? (
+        <ScheduleContent params={{ term: first(params.term) }} />
       ) : tab.id === "accounts" ? (
         <AccountsContent params={{ show: first(params.show), q: first(params.q) }} />
       ) : (
@@ -57,7 +62,7 @@ async function TimelineContent({ params }: { params: Params }) {
 
   const month = parseMonth(first(params.month)) ?? `${today.slice(0, 7)}-01`;
   const sunday = startOfWeek(parseDate(first(params.week)) ?? today);
-  const rooms = isTimetable ? await listAllRooms() : [];
+  const [rooms, classes] = isTimetable ? await Promise.all([listAllRooms(), listWeekClasses(sunday)]) : [[], []];
 
   const grid = monthGrid(month);
   const marks = isTimetable ? await getDayMarks(sunday, addDays(sunday, 6)) : await getDayMarks(grid[0], grid[grid.length - 1]);
@@ -65,7 +70,7 @@ async function TimelineContent({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1">
-        {isTimetable ? <TimetableView sunday={sunday} rooms={rooms} marks={marks} /> : <CalendarView month={month} marks={marks} />}
+        {isTimetable ? <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} /> : <CalendarView month={month} marks={marks} />}
       </div>
       <Legend />
     </div>

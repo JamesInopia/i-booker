@@ -19,7 +19,11 @@ export function kindFromRow(description: string, isClassDay: boolean, allowBooki
   return description.trim().toLowerCase() === CLASS_CANCELLED_NAME.toLowerCase() ? "class_cancelled" : "no_classes";
 }
 
-export const blocksBooking = (kind: MarkKind) => kind === "holiday" || kind === "no_booking";
+/** Marks on which scheduled classes do not run (an implicit Sunday mark is just a default, so it doesn't count). */
+export const cancelsClasses = (mark: DayMark | null) =>
+  !!mark && !mark.implicit && (mark.kind === "holiday" || mark.kind === "class_cancelled" || mark.kind === "no_classes");
+
+export const blocksBooking =(kind: MarkKind) => kind === "holiday" || kind === "no_booking";
 
 export const MARK_OPTIONS = [
   { kind: "holiday", label: "Holiday", hint: "No classes and no bookings", noteLabel: "Holiday name", notePlaceholder: "e.g. Independence Day" },

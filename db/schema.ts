@@ -93,3 +93,35 @@ export const reservationSlotRooms = pgTable(
   },
   (t) => [primaryKey({ columns: [t.slotId, t.roomId] })],
 );
+
+export const terms = pgTable(
+  "term",
+  {
+    termId: integer("term_id").primaryKey().generatedByDefaultAsIdentity(),
+    name: text("name").notNull(),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+  },
+  (t) => [check("term_dates_chk", sql`${t.endDate} >= ${t.startDate}`)],
+);
+
+export const classSchedules = pgTable(
+  "class_schedule",
+  {
+    classId: integer("class_schedule_id").primaryKey().generatedByDefaultAsIdentity(),
+    termId: integer("term_id").notNull().references(() => terms.termId, { onDelete: "cascade" }),
+    roomId: integer("room_id").notNull().references(() => rooms.roomId, { onDelete: "cascade" }),
+    activityTypeId: integer("activity_type_id").notNull().references(() => activityTypes.activityTypeId),
+    dayOfWeek: integer("day_of_week").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    courseTitle: text("section_code"),
+    courseAdviser: text("instructor"),
+  },
+  (t) => [
+    index("class_schedule_term_id_idx").on(t.termId),
+    index("class_schedule_room_id_day_of_week_idx").on(t.roomId, t.dayOfWeek),
+    check("class_schedule_day_of_week_check", sql`${t.dayOfWeek} between 1 and 7`),
+    check("class_schedule_time_chk", sql`${t.endTime} > ${t.startTime}`),
+  ],
+);

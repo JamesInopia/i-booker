@@ -1,6 +1,6 @@
 export const TIME_ZONE = "Asia/Manila";
 export const OPEN_TIME = "07:30";
-export const CLOSE_TIME = "22:00";
+export const CLOSE_TIME = "21:30";
 export const SLOT_MINUTES = 30;
 export const MAX_ADVANCE_DAYS = 365;
 export const MAX_DESCRIPTION = 500;
