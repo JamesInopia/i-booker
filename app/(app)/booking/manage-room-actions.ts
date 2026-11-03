@@ -17,8 +17,8 @@ export type RoomInput = {
   description: string;
   maxCapacity: string;
   prohibitions: string;
-  thumbnail: string | null;
-  gallery: (string | null)[];
+  thumbnail: string | File | null;
+  gallery: (string | File | null)[];
 };
 export type RoomResult =
   | { ok: true; room: ManagedRoom }
@@ -103,10 +103,18 @@ function normalized(input: RoomInput): RoomInput {
   if (!Array.isArray(input.gallery) || input.gallery.length !== 2)
     throw new Error("Exactly two additional image positions are required.");
   for (const img of [input.thumbnail, ...input.gallery]) {
-    if (img !== null && typeof img !== "string")
+    if (img === null) continue;
+    if (typeof img === "string") {
+      if (img.length > 2048 || img.startsWith("data:"))
+        throw new Error("Images must be uploaded as binary files.");
+    } else if (img instanceof File) {
+      if (img.size > MAX_IMAGE_BYTES || !IMAGE_TYPES[img.type])
+        throw new Error(
+          "Each image must be PNG, JPEG, WebP, or GIF and at most 5 MB.",
+        );
+    } else {
       throw new Error("Invalid image.");
-    if (typeof img === "string" && img.length > 3_000_000)
-      throw new Error("Image size limit is 2 MB per image.");
+    }
   }
   return {
     ...input,
@@ -142,32 +150,25 @@ async function removeOwnedImages(
 }
 
 async function resolveImage(
-  value: string | null,
+  value: string | File | null,
   oldValue: string | null,
   roomId: number,
   client: ReturnType<typeof storage> | null,
   uploaded: string[],
 ): Promise<string | null> {
   if (value === null) return null;
-  if (value === oldValue) return value;
-  if (!value.startsWith("data:"))
+  if (typeof value === "string") {
+    if (value === oldValue) return value;
     throw new Error("Please select an image from your computer.");
-  const match =
-    /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/]+={0,2})$/.exec(
-      value,
-    );
-  if (!match)
-    throw new Error("Only PNG, JPEG, WebP, and GIF uploads are supported.");
-  const mime = match[1];
-  const bytes = Buffer.from(match[2], "base64");
-  if (
-    !bytes.length ||
-    bytes.length > MAX_IMAGE_BYTES ||
-    !isImageBytes(mime, bytes)
-  )
+  }
+  const mime = value.type;
+  if (!IMAGE_TYPES[mime] || value.size < 1 || value.size > MAX_IMAGE_BYTES)
     throw new Error(
-      "Each image must be a valid PNG, JPEG, WebP, or GIF of 2 MB or less.",
+      "Each image must be PNG, JPEG, WebP, or GIF and at most 5 MB.",
     );
+  const bytes = Buffer.from(await value.arrayBuffer());
+  if (!isImageBytes(mime, bytes))
+    throw new Error("The selected file is not a valid image.");
   const path = `rooms/${roomId}/${randomUUID()}.${IMAGE_TYPES[mime]}`;
   const service = client ?? storage();
   const { error } = await service.storage.from(BUCKET).upload(path, bytes, {
@@ -196,12 +197,32 @@ function friendlyError(error: unknown): string {
     : "Something went wrong. Please try again.";
 }
 
-export async function saveManagedRoom(input: RoomInput): Promise<RoomResult> {
+export async function saveManagedRoom(payload: FormData): Promise<RoomResult> {
   await requireRole(...ADMIN_ROLES);
   const uploaded: string[] = [];
   let client: ReturnType<typeof storage> | null = null;
   let createdId: number | null = null;
   try {
+    const field = (name: string): string => {
+      const value = payload.get(name);
+      if (typeof value !== "string") throw new Error(`Invalid ${name}.`);
+      return value;
+    };
+    const fileOrUrl = (name: string): string | File | null => {
+      const value = payload.get(name);
+      if (value === null || value === "") return null;
+      if (typeof value === "string" || value instanceof File) return value;
+      throw new Error(`Invalid ${name}.`);
+    };
+    const input: RoomInput = {
+      roomId: payload.has("roomId") ? field("roomId") : undefined,
+      name: field("name"),
+      description: field("description"),
+      maxCapacity: field("maxCapacity"),
+      prohibitions: field("prohibitions"),
+      thumbnail: fileOrUrl("thumbnail"),
+      gallery: [fileOrUrl("gallery0"), fileOrUrl("gallery1")],
+    };
     const data = normalized(input);
     const id = input.roomId === undefined ? null : validId(input.roomId);
     if (input.roomId !== undefined && id === null)

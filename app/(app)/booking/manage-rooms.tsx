@@ -22,8 +22,7 @@ import {
   deleteManagedRoom,
   saveManagedRoom,
   type ManagedRoom,
-  type RoomInput,
-} from "../booking/manage-room-actions";
+} from "./manage-room-actions";
 
 type EditorMode = "add" | "edit";
 type RoomForm = {
@@ -127,7 +126,7 @@ function ImageField({
       return;
     }
     if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be 2 MB or less.");
+      setError("Image must be 2 MB or less. Try compressing it?");
       return;
     }
     setError("");
@@ -427,13 +426,44 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
 
   const saveRoom = async (data: RoomForm) => {
     if (!modal || modal.kind !== "editor") return;
-    const input: RoomInput = {
-      ...data,
-      ...(modal.mode === "edit" && selectedRoom
-        ? { roomId: selectedRoom.roomId }
-        : {}),
-    };
-    const result = await saveManagedRoom(input);
+    // Send actual binary File objects via multipart FormData instead of
+    // sending multi-megabyte base64 strings through React's serializer.
+    const payload = new FormData();
+    if (modal.mode === "edit" && selectedRoom)
+      payload.set("roomId", selectedRoom.roomId);
+    payload.set("name", data.name);
+    payload.set("description", data.description);
+    payload.set("maxCapacity", data.maxCapacity);
+    payload.set("prohibitions", data.prohibitions);
+    const fields = ["thumbnail", "gallery0", "gallery1"] as const;
+    const selectedImages = [data.thumbnail, ...data.gallery];
+    for (const [index, field] of fields.entries()) {
+      const value = selectedImages[index];
+      if (!value) {
+        payload.set(field, "");
+      } else if (value.startsWith("data:")) {
+        // FileReader produced a preview data URI. Convert it back to a binary
+        // Blob before sending; base64 is not placed in the action arguments.
+        const blob = await (await fetch(value)).blob();
+        const ext = {
+          "image/png": "png",
+          "image/jpeg": "jpg",
+          "image/webp": "webp",
+          "image/gif": "gif",
+        }[blob.type];
+        if (!ext || blob.size > 2 * 1024 * 1024)
+          throw new Error(
+            "Each image must be PNG, JPEG, WebP, or GIF and at most 2 MB.",
+          );
+        payload.set(
+          field,
+          new File([blob], `${field}.${ext}`, { type: blob.type }),
+        );
+      } else {
+        payload.set(field, value);
+      }
+    }
+    const result = await saveManagedRoom(payload);
     if (!result.ok) throw new Error(result.error);
     if (modal.mode === "edit") {
       setRooms((current) =>
