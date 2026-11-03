@@ -2,10 +2,30 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { activityTypes, appUsers, reservationRequests, reservationSlotRooms, reservationSlots, rooms } from "@/db/schema";
-import { isId, isOtherName, type Draft, type Nature, type RoomListing, type Slot } from "./rules";
+import {
+  activityTypes,
+  appUsers,
+  reservationRequests,
+  reservationSlotRooms,
+  reservationSlots,
+  rooms,
+  roomImages,
+} from "@/db/schema";
+import {
+  isId,
+  isOtherName,
+  type Draft,
+  type Nature,
+  type RoomListing,
+  type Slot,
+} from "./rules";
 
-export type Room = { roomId: string; name: string; description: string | null; maxCapacity: number | null };
+export type Room = {
+  roomId: string;
+  name: string;
+  description: string | null;
+  maxCapacity: number | null;
+};
 
 const ROOM_COLUMNS = {
   roomId: rooms.roomId,
@@ -14,13 +34,22 @@ const ROOM_COLUMNS = {
   maxCapacity: rooms.maxCapacity,
 };
 
-const toRoom = (r: { roomId: number; name: string; description: string | null; maxCapacity: number | null }): Room => ({
+const toRoom = (r: {
+  roomId: number;
+  name: string;
+  description: string | null;
+  maxCapacity: number | null;
+}): Room => ({
   ...r,
   roomId: String(r.roomId),
 });
 
 export async function listRooms(): Promise<Room[]> {
-  const rows = await db.select(ROOM_COLUMNS).from(rooms).where(eq(rooms.status, "available")).orderBy(asc(rooms.name));
+  const rows = await db
+    .select(ROOM_COLUMNS)
+    .from(rooms)
+    .where(eq(rooms.status, "available"))
+    .orderBy(asc(rooms.name));
   return rows.map(toRoom);
 }
 
@@ -37,7 +66,11 @@ export async function listAllRooms(): Promise<RoomListing[]> {
     })
     .from(rooms)
     .orderBy(asc(rooms.roomId));
-  return rows.map((r) => ({ ...r, roomId: String(r.roomId), available: r.status === "available" }));
+  return rows.map((r) => ({
+    ...r,
+    roomId: String(r.roomId),
+    available: r.status === "available",
+  }));
 }
 
 export async function getRoom(roomId: string): Promise<Room | null> {
@@ -57,7 +90,11 @@ export async function getNatures(): Promise<Nature[]> {
     .where(eq(activityTypes.isFormOption, true))
     .orderBy(asc(activityTypes.activityTypeId));
   return rows
-    .map((r) => ({ id: String(r.id), name: r.name, other: isOtherName(r.name) }))
+    .map((r) => ({
+      id: String(r.id),
+      name: r.name,
+      other: isOtherName(r.name),
+    }))
     .sort((a, b) => Number(a.other) - Number(b.other));
 }
 
@@ -69,17 +106,31 @@ export async function getDayBlock(date: string): Promise<string | null> {
     where cd.calendar_date = ${date}::date and dt.allow_booking = false
     limit 1`);
   const row = res.rows[0];
-  return row ? `Bookings are closed on this date (${row.description}). Choose another date.` : null;
+  return row
+    ? `Bookings are closed on this date (${row.description}). Choose another date.`
+    : null;
 }
 
-export async function getBusySlots(roomId: string, date: string): Promise<Slot[]> {
+export async function getBusySlots(
+  roomId: string,
+  date: string,
+): Promise<Slot[]> {
   if (!isId(roomId) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
 
   const approved = await db
-    .select({ start: reservationSlots.startTime, end: reservationSlots.endTime })
+    .select({
+      start: reservationSlots.startTime,
+      end: reservationSlots.endTime,
+    })
     .from(reservationSlots)
-    .innerJoin(reservationRequests, eq(reservationRequests.requestId, reservationSlots.requestId))
-    .innerJoin(reservationSlotRooms, eq(reservationSlotRooms.slotId, reservationSlots.slotId))
+    .innerJoin(
+      reservationRequests,
+      eq(reservationRequests.requestId, reservationSlots.requestId),
+    )
+    .innerJoin(
+      reservationSlotRooms,
+      eq(reservationSlotRooms.slotId, reservationSlots.slotId),
+    )
     .where(
       and(
         eq(reservationSlotRooms.roomId, Number(roomId)),
@@ -115,13 +166,29 @@ export async function createRequest(input: {
 }): Promise<void> {
   const { email, requestor, draft, nature, roomId } = input;
   await db.transaction(async (tx) => {
-    const columns = { userId: appUsers.userId, status: appUsers.status, suspendedUntil: appUsers.suspendedUntil };
-    let [owner] = await tx.select(columns).from(appUsers).where(sql`lower(${appUsers.email}) = ${email}`).limit(1);
+    const columns = {
+      userId: appUsers.userId,
+      status: appUsers.status,
+      suspendedUntil: appUsers.suspendedUntil,
+    };
+    let [owner] = await tx
+      .select(columns)
+      .from(appUsers)
+      .where(sql`lower(${appUsers.email}) = ${email}`)
+      .limit(1);
     if (!owner) {
-      [owner] = await tx.insert(appUsers).values({ userId: randomUUID(), name: requestor, email }).returning(columns);
+      [owner] = await tx
+        .insert(appUsers)
+        .values({ userId: randomUUID(), name: requestor, email })
+        .returning(columns);
     }
-    if (owner.status === "suspended" && (!owner.suspendedUntil || owner.suspendedUntil > new Date())) {
-      throw new BookingError("Your account is suspended, so you can't submit new requests right now.");
+    if (
+      owner.status === "suspended" &&
+      (!owner.suspendedUntil || owner.suspendedUntil > new Date())
+    ) {
+      throw new BookingError(
+        "Your account is suspended, so you can't submit new requests right now.",
+      );
     }
 
     const [request] = await tx
@@ -149,6 +216,35 @@ export async function createRequest(input: {
       })
       .returning({ slotId: reservationSlots.slotId });
 
-    await tx.insert(reservationSlotRooms).values({ slotId: slot.slotId, roomId: Number(roomId) });
+    await tx
+      .insert(reservationSlotRooms)
+      .values({ slotId: slot.slotId, roomId: Number(roomId) });
   });
+}
+/** Admin room list includes the two optional gallery photos. */
+export async function listManagedRooms(): Promise<
+  (RoomListing & { gallery: (string | null)[] })[]
+> {
+  const [list, images] = await Promise.all([
+    listAllRooms(),
+    db
+      .select({
+        roomId: roomImages.roomId,
+        position: roomImages.position,
+        url: roomImages.imageUrl,
+      })
+      .from(roomImages),
+  ]);
+  const gallery = new Map<string, (string | null)[]>();
+  for (const image of images) {
+    const id = String(image.roomId);
+    const slots = gallery.get(id) ?? [null, null];
+    if (image.position === 0 || image.position === 1)
+      slots[image.position] = image.url;
+    gallery.set(id, slots);
+  }
+  return list.map((room) => ({
+    ...room,
+    gallery: gallery.get(room.roomId) ?? [null, null],
+  }));
 }

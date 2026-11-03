@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { resolveTab } from "@/lib/nav";
-import { listAllRooms } from "./queries";
+import { listAllRooms, listManagedRooms } from "./queries";
 import { RoomBrowser } from "./room-browser";
 import { ManageRooms } from "./manage-rooms";
 
@@ -18,7 +18,7 @@ export default async function BookingPage({
   const tab = resolveTab("/booking", user.role, first(params.tab));
 
   if (tab.id === "manage-rooms") {
-    const rooms = await listAllRooms();
+    const rooms = await listManagedRooms();
     return (
       <main className="px-4 pb-8 pt-5 sm:px-8 xl:px-14">
         <ManageRooms initialRooms={rooms} />

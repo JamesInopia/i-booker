@@ -18,9 +18,13 @@ import {
   FiTrash2,
   FiX,
 } from "react-icons/fi";
-import type { RoomListing } from "./rules";
+import {
+  deleteManagedRoom,
+  saveManagedRoom,
+  type ManagedRoom,
+  type RoomInput,
+} from "../booking/manage-room-actions";
 
-type ManagedRoom = RoomListing & { gallery: (string | null)[] };
 type EditorMode = "add" | "edit";
 type RoomForm = {
   name: string;
@@ -114,12 +118,16 @@ function ImageField({
   const upload = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      setError("Choose an image file.");
+    if (
+      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(
+        file.type,
+      )
+    ) {
+      setError("Choose a PNG, JPEG, WebP, or GIF image.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image must be 5 MB or less.");
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image must be 2 MB or less.");
       return;
     }
     setError("");
@@ -200,7 +208,7 @@ function RoomEditor({
   room?: ManagedRoom;
   existingRooms: ManagedRoom[];
   onCancel: () => void;
-  onSave: (data: RoomForm) => void;
+  onSave: (data: RoomForm) => Promise<void>;
 }) {
   const [form, setForm] = useState<RoomForm>(() =>
     room
@@ -215,14 +223,16 @@ function RoomEditor({
       : emptyForm(),
   );
   const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const update = <K extends keyof RoomForm>(key: K, value: RoomForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
     setError("");
   };
 
-  const save = (event: FormEvent<HTMLFormElement>) => {
+  const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (saving) return;
     const name = form.name.trim();
     const capacity = Number(form.maxCapacity);
     if (!name) {
@@ -243,7 +253,14 @@ function RoomEditor({
       setError("A room with this name already exists.");
       return;
     }
-    onSave({ ...form, name, maxCapacity: String(capacity) });
+    setSaving(true);
+    try {
+      await onSave({ ...form, name, maxCapacity: String(capacity) });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Could not save room.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputClass =
@@ -353,15 +370,17 @@ function RoomEditor({
           <button
             type="button"
             onClick={onCancel}
+            disabled={saving}
             className="min-w-32 rounded-full bg-accent-2 px-5 py-2 font-bold text-white hover:brightness-110"
           >
             Cancel
           </button>
           <button
             type="submit"
+            disabled={saving}
             className="min-w-32 rounded-full bg-accent-1 px-5 py-2 font-bold text-white hover:brightness-110"
           >
-            {mode === "add" ? "Add Room" : "Update"}
+            {saving ? "Saving..." : mode === "add" ? "Add Room" : "Update"}
           </button>
         </div>
       </form>
@@ -369,15 +388,14 @@ function RoomEditor({
   );
 }
 
-export function ManageRooms({ initialRooms }: { initialRooms: RoomListing[] }) {
-  // Frontend-only draft changes. Reloading restores the latest server-provided list.
-  const [rooms, setRooms] = useState<ManagedRoom[]>(() =>
-    initialRooms.map((room) => ({ ...room, gallery: [null, null] })),
-  );
+export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
+  const [rooms, setRooms] = useState<ManagedRoom[]>(initialRooms);
   const [query, setQuery] = useState("");
   const [openActionsId, setOpenActionsId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState>(null);
   const [message, setMessage] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -407,45 +425,52 @@ export function ManageRooms({ initialRooms }: { initialRooms: RoomListing[] }) {
       ? rooms.find((room) => room.roomId === modal.roomId)
       : undefined;
 
-  const saveRoom = (data: RoomForm) => {
+  const saveRoom = async (data: RoomForm) => {
     if (!modal || modal.kind !== "editor") return;
-    const values = {
-      name: data.name,
-      description: data.description,
-      maxCapacity: Number(data.maxCapacity),
-      prohibitions: data.prohibitions,
-      thumbnail: data.thumbnail,
-      gallery: data.gallery,
+    const input: RoomInput = {
+      ...data,
+      ...(modal.mode === "edit" && selectedRoom
+        ? { roomId: selectedRoom.roomId }
+        : {}),
     };
-    if (modal.mode === "edit" && selectedRoom) {
+    const result = await saveManagedRoom(input);
+    if (!result.ok) throw new Error(result.error);
+    if (modal.mode === "edit") {
       setRooms((current) =>
-        current.map((room) =>
-          room.roomId === selectedRoom.roomId ? { ...room, ...values } : room,
+        current.map((item) =>
+          item.roomId === result.room.roomId ? result.room : item,
         ),
       );
-      setMessage(`Updated "${data.name}" in this preview.`);
+      setMessage(`Updated "${result.room.name}" successfully.`);
     } else {
-      setRooms((current) => [
-        ...current,
-        {
-          roomId: `preview-${crypto.randomUUID()}`,
-          status: "available",
-          available: true,
-          ...values,
-        },
-      ]);
-      setMessage(`Added "${data.name}" in this preview.`);
+      setRooms((current) => [...current, result.room]);
+      setMessage(`Added "${result.room.name}" successfully.`);
     }
     setModal(null);
   };
 
-  const deleteRoom = () => {
-    if (!modal || modal.kind !== "delete" || !selectedRoom) return;
-    setRooms((current) =>
-      current.filter((room) => room.roomId !== selectedRoom.roomId),
-    );
-    setMessage(`Removed "${selectedRoom.name}" from this preview.`);
-    setModal(null);
+  const deleteRoom = async () => {
+    if (!modal || modal.kind !== "delete" || !selectedRoom || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const result = await deleteManagedRoom(selectedRoom.roomId);
+      if (!result.ok) {
+        setDeleteError(result.error);
+        return;
+      }
+      setRooms((current) =>
+        current.filter((room) => room.roomId !== selectedRoom.roomId),
+      );
+      setMessage(`Deleted "${selectedRoom.name}" successfully.`);
+      setModal(null);
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Could not delete this room.",
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -478,10 +503,6 @@ export function ManageRooms({ initialRooms }: { initialRooms: RoomListing[] }) {
         </button>
       </div>
 
-      <p className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
-        Frontend preview: changes are temporary and will reset when you refresh.
-        Supabase saving is not connected yet.
-      </p>
       {message && (
         <div
           role="status"
@@ -582,6 +603,7 @@ export function ManageRooms({ initialRooms }: { initialRooms: RoomListing[] }) {
                           onClick={() => {
                             setOpenActionsId(null);
                             setMessage("");
+                            setDeleteError("");
                             setModal({ kind: "delete", roomId: room.roomId });
                           }}
                           className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm font-semibold text-accent-2 hover:bg-red-50"
@@ -634,17 +656,28 @@ export function ManageRooms({ initialRooms }: { initialRooms: RoomListing[] }) {
               Are you sure you want to remove{" "}
               <strong>{selectedRoom.name}</strong>?
             </p>
+            {deleteError && (
+              <p
+                role="alert"
+                className="mt-3 text-sm font-semibold text-accent-2"
+              >
+                {deleteError}
+              </p>
+            )}
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
                 onClick={deleteRoom}
+                disabled={deleting}
                 className="inline-flex items-center gap-2 rounded-lg bg-accent-1 px-4 py-3 font-bold text-white hover:brightness-110"
               >
-                <FiCheck aria-hidden="true" /> Yes, Delete it!
+                <FiCheck aria-hidden="true" />{" "}
+                {deleting ? "Deleting..." : "Yes, Delete it!"}
               </button>
               <button
                 type="button"
                 onClick={() => setModal(null)}
+                disabled={deleting}
                 className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-3 font-bold text-white hover:brightness-110"
               >
                 <FiX aria-hidden="true" /> No, Keep it!
