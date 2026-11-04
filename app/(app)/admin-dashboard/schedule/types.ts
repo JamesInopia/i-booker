@@ -23,9 +23,28 @@ export type WeekClass = {
   adviser: string;
 };
 
-export type ClassInput = {
+export type DraftClass = Omit<ClassRow, "termId">;
+
+export type ClassPayload = {
   id?: number;
+  roomId: string;
+  dayOfWeek: number;
+  start: string;
+  end: string;
+  title: string;
+  adviser: string;
+};
+
+export type TermChanges = {
   termId: number;
+  name: string;
+  startDate: string;
+  endDate: string;
+  deletedIds: number[];
+  classes: ClassPayload[];
+};
+
+export type ClassFormFields = {
   roomId: string;
   days: number[];
   start: string;
@@ -33,6 +52,14 @@ export type ClassInput = {
   title: string;
   adviser: string;
 };
+
+type Slot = { id: number; roomId: string; dayOfWeek: number; start: string; end: string };
+
+export function findClash<T extends Slot>(others: T[], c: Slot): T | undefined {
+  return others.find(
+    (o) => o.id !== c.id && o.roomId === c.roomId && o.dayOfWeek === c.dayOfWeek && o.start < c.end && o.end > c.start,
+  );
+}
 
 export type ScheduleResult = { ok: true; id?: number } | { ok: false; error: string };
 
@@ -85,7 +112,7 @@ export function validateTermFields(name: string, startDate: string, endDate: str
   return null;
 }
 
-export function validateClassFields(c: Pick<ClassInput, "roomId" | "days" | "start" | "end" | "title" | "adviser">): string | null {
+export function validateClassFields(c: ClassFormFields): string | null {
   if (!c.roomId) return "Choose a room.";
   if (c.days.length === 0) return "Choose at least one day.";
   if (c.days.some((d) => !Number.isInteger(d) || d < 1 || d > 7)) return "Choose a valid day.";

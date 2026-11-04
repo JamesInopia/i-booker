@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
-import { deleteClass, createTerm, deleteTerm, saveClass } from "./actions";
+import { createTerm, deleteTerm } from "./actions";
 import {
   END_OPTIONS,
   MAX_ADVISER,
@@ -11,15 +11,17 @@ import {
   START_OPTIONS,
   WEEK_COLUMNS,
   validateClassFields,
+  findClash,
   validateTermFields,
-  type ClassRow,
+  type ClassFormFields,
+  type DraftClass,
   type ScheduleResult,
 } from "./types";
 import { formatTime } from "../../booking/rules";
 
 const input = "mt-1 w-full rounded-md border border-gray-300 p-2 text-sm outline-none focus:border-accent-1";
 
-function Shell({ title, description, onClose, pending, children }: {
+export function Shell({ title, description, onClose, pending, children }: {
   title: string;
   description?: string;
   onClose: () => void;
@@ -52,7 +54,7 @@ function Shell({ title, description, onClose, pending, children }: {
   );
 }
 
-function Footer({ pending, error, onClose, confirmLabel, pendingLabel, tone = "primary", extra }: {
+export function Footer({ pending, error, onClose, confirmLabel, pendingLabel, tone = "primary", extra }: {
   pending: boolean;
   error: string;
   onClose: () => void;
@@ -161,25 +163,29 @@ export function DeleteTermDialog({ term, onClose }: { term: { id: number; name: 
 }
 
 export type ClassDialogState = {
-  termId: number;
-  rooms: { roomId: string; name: string }[];
-  existing?: ClassRow;
-  prefill?: { roomId?: string; dayOfWeek?: number; start?: string };
+  existing?: DraftClass;
+  defaultRoomId: string;
 };
 
-export function ClassDialog({ state, termEnd, onClose }: { state: ClassDialogState; termEnd: string; onClose: () => void }) {
-  const router = useRouter();
-  const { existing, prefill, rooms, termId } = state;
-  const [roomId, setRoomId] = useState(existing?.roomId ?? prefill?.roomId ?? rooms[0]?.roomId ?? "");
-  const [days, setDays] = useState<number[]>(existing ? [existing.dayOfWeek] : prefill?.dayOfWeek ? [prefill.dayOfWeek] : []);
-  const [start, setStart] = useState(existing?.start ?? prefill?.start ?? "");
+const dayName = (iso: number) => WEEK_COLUMNS.find((d) => d.iso === iso)?.label ?? "That day";
+
+export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, onClose }: {
+  state: ClassDialogState;
+  rooms: { roomId: string; name: string }[];
+  classes: DraftClass[];
+  termEnd: string;
+  onSave: (values: ClassFormFields, existingId?: number) => void;
+  onDelete: (id: number) => void;
+  onClose: () => void;
+}) {
+  const { existing, defaultRoomId } = state;
+  const [roomId, setRoomId] = useState(existing?.roomId ?? defaultRoomId ?? rooms[0]?.roomId ?? "");
+  const [days, setDays] = useState<number[]>(existing ? [existing.dayOfWeek] : []);
+  const [start, setStart] = useState(existing?.start ?? "");
   const [end, setEnd] = useState(existing?.end ?? "");
   const [title, setTitle] = useState(existing?.title ?? "");
   const [adviser, setAdviser] = useState(existing?.adviser ?? "");
-  const { pending, error, setError, run } = useSubmit(() => {
-    onClose();
-    router.refresh();
-  });
+  const [error, setError] = useState("");
   const ids = [useId(), useId(), useId(), useId(), useId()];
 
   const toggleDay = (iso: number) =>
@@ -188,18 +194,28 @@ export function ClassDialog({ state, termEnd, onClose }: { state: ClassDialogSta
   return (
     <Shell
       title={existing ? "Edit class schedule" : "Add class schedule"}
-      description={`Repeats every week until the term ends on ${termEnd}. These periods can't be booked.`}
+      description={`Repeats every week until the term ends on ${termEnd}. These periods can't be booked. Changes only apply once you save the term.`}
       onClose={onClose}
-      pending={pending}
+      pending={false}
     >
       <form
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          const payload = { id: existing?.id, termId, roomId, days, start, end, title, adviser };
-          const problem = validateClassFields(payload);
+          const values = { roomId, days, start, end, title: title.trim(), adviser: adviser.trim() };
+          const problem = validateClassFields(values);
           if (problem) return setError(problem);
-          run(() => saveClass(payload));
+
+          for (const day of days) {
+            const clash = findClash(classes, { id: existing?.id ?? 0, roomId, dayOfWeek: day, start, end });
+            if (clash) {
+              const room = rooms.find((r) => r.roomId === roomId)?.name ?? "this room";
+              return setError(
+                `${dayName(day)} ${formatTime(clash.start)} – ${formatTime(clash.end)} is already taken by ${clash.title || "another class"} in ${room}.`,
+              );
+            }
+          }
+          onSave(values, existing?.id);
         }}
       >
         <label htmlFor={ids[0]} className="mt-4 block text-sm font-semibold">Room</label>
@@ -248,18 +264,17 @@ export function ClassDialog({ state, termEnd, onClose }: { state: ClassDialogSta
         <input id={ids[4]} className={input} value={adviser} maxLength={MAX_ADVISER} placeholder="e.g. John Doe" onChange={(e) => setAdviser(e.target.value)} />
 
         <Footer
-          pending={pending}
+          pending={false}
           error={error}
           onClose={onClose}
-          confirmLabel={existing ? "Save class" : "Add class"}
+          confirmLabel={existing ? "Update class" : "Add class"}
           pendingLabel="Saving..."
           extra={
             existing && (
               <button
                 type="button"
-                disabled={pending}
-                onClick={() => run(() => deleteClass(existing.id))}
-                className="rounded-full px-4 py-2 font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                onClick={() => onDelete(existing.id)}
+                className="rounded-full px-4 py-2 font-semibold text-red-600 hover:bg-red-50"
               >
                 Delete
               </button>

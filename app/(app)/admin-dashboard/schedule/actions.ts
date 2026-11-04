@@ -1,19 +1,28 @@
 "use server";
 
-import { and, asc, eq, gt, gte, ilike, lt, lte, ne, or } from "drizzle-orm";
+import { and, asc, eq, gte, ilike, inArray, lte, ne, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { activityTypes, classSchedules, rooms, terms } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { ADMIN_ROLES } from "@/lib/session";
 import { formatTime } from "../../booking/rules";
-import { validateClassFields, validateTermFields, type ClassInput, type ScheduleResult } from "./types";
+import {
+  WEEK_COLUMNS,
+  findClash,
+  validateClassFields,
+  validateTermFields,
+  type ClassPayload,
+  type ScheduleResult,
+  type TermChanges,
+} from "./types";
 
 const fail = (error: string): ScheduleResult => ({ ok: false, error });
 const isId = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v > 0 && v < 2_147_483_647;
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.slice(0, max) : "");
 
-const DAY_LABEL = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const dayLabel = (iso: number) => WEEK_COLUMNS.find((d) => d.iso === iso)?.label ?? "That day";
+const MAX_CLASSES_PER_SAVE = 500;
 
 async function classActivityTypeId(): Promise<number | null> {
   const [preferred] = await db
@@ -59,26 +68,6 @@ export async function createTerm(rawName: unknown, rawStart: unknown, rawEnd: un
   return { ok: true, id: row.id };
 }
 
-export async function updateTermDates(rawId: unknown, rawStart: unknown, rawEnd: unknown): Promise<ScheduleResult> {
-  await requireRole(...ADMIN_ROLES);
-  if (!isId(rawId)) return fail("Invalid term.");
-  const startDate = str(rawStart, 10);
-  const endDate = str(rawEnd, 10);
-
-  const [current] = await db.select({ name: terms.name }).from(terms).where(eq(terms.termId, rawId)).limit(1);
-  if (!current) return fail("This term no longer exists. Refresh the page.");
-
-  const problem = validateTermFields(current.name || "term", startDate, endDate);
-  if (problem) return fail(problem);
-
-  const clash = await termsOverlapping(startDate, endDate, rawId);
-  if (clash) return fail(`These dates overlap with "${clash.name}". Terms can't overlap.`);
-
-  await db.update(terms).set({ startDate, endDate }).where(eq(terms.termId, rawId));
-  revalidatePath("/admin-dashboard");
-  return { ok: true };
-}
-
 export async function deleteTerm(rawId: unknown): Promise<ScheduleResult> {
   await requireRole(...ADMIN_ROLES);
   if (!isId(rawId)) return fail("Invalid term.");
@@ -87,106 +76,145 @@ export async function deleteTerm(rawId: unknown): Promise<ScheduleResult> {
   return { ok: true };
 }
 
-export async function saveClass(raw: ClassInput): Promise<ScheduleResult> {
+class SaveError extends Error {}
+
+export async function saveTermChanges(raw: TermChanges): Promise<ScheduleResult> {
   await requireRole(...ADMIN_ROLES);
 
-  const input = {
-    id: raw?.id,
-    termId: raw?.termId,
-    roomId: str(raw?.roomId, 9),
-    days: Array.isArray(raw?.days) ? [...new Set(raw.days)] : [],
-    start: str(raw?.start, 5),
-    end: str(raw?.end, 5),
-    title: str(raw?.title, 200).trim(),
-    adviser: str(raw?.adviser, 200).trim(),
-  };
+  if (!isId(raw?.termId)) return fail("Invalid term.");
+  const termId = raw.termId;
+  const name = str(raw.name, 200).trim();
+  const startDate = str(raw.startDate, 10);
+  const endDate = str(raw.endDate, 10);
 
-  if (!isId(input.termId)) return fail("Invalid term.");
-  if (input.id !== undefined && !isId(input.id)) return fail("Invalid class.");
-  const problem = validateClassFields(input);
-  if (problem) return fail(problem);
+  const termProblem = validateTermFields(name, startDate, endDate);
+  if (termProblem) return fail(termProblem);
 
-  const roomId = Number(input.roomId);
-  if (!/^[1-9]\d{0,8}$/.test(input.roomId)) return fail("Choose a valid room.");
+  const deletedIds = Array.isArray(raw.deletedIds) ? [...new Set(raw.deletedIds)] : [];
+  if (!deletedIds.every(isId)) return fail("Invalid class.");
 
-  const [term] = await db.select({ id: terms.termId }).from(terms).where(eq(terms.termId, input.termId)).limit(1);
+  const rawClasses: unknown[] = Array.isArray(raw.classes) ? raw.classes : [];
+  if (rawClasses.length + deletedIds.length > MAX_CLASSES_PER_SAVE) return fail("Too many changes at once. Save in smaller batches.");
+
+  const incoming: (Omit<ClassPayload, "id"> & { id: number; isNew: boolean })[] = [];
+  for (const [i, item] of (rawClasses as Partial<ClassPayload>[]).entries()) {
+    if (item?.id !== undefined && !isId(item.id)) return fail("Invalid class.");
+    const c = {
+      roomId: str(item?.roomId, 9),
+      dayOfWeek: typeof item?.dayOfWeek === "number" ? item.dayOfWeek : NaN,
+      start: str(item?.start, 5),
+      end: str(item?.end, 5),
+      title: str(item?.title, 200).trim(),
+      adviser: str(item?.adviser, 200).trim(),
+    };
+    const problem = validateClassFields({ ...c, days: [c.dayOfWeek] });
+    if (problem) return fail(problem);
+    if (!/^[1-9]\d{0,8}$/.test(c.roomId)) return fail("Choose a valid room.");
+    // New classes get a unique negative id so they can be told apart in the clash check.
+    incoming.push({ ...c, id: item?.id ?? -(i + 1), isNew: item?.id === undefined });
+  }
+
+  const [term] = await db.select({ id: terms.termId }).from(terms).where(eq(terms.termId, termId)).limit(1);
   if (!term) return fail("This term no longer exists. Refresh the page.");
-  const [room] = await db.select({ id: rooms.roomId }).from(rooms).where(eq(rooms.roomId, roomId)).limit(1);
-  if (!room) return fail("That room no longer exists. Refresh the page.");
 
-  if (input.id !== undefined && input.days.length !== 1) return fail("Edit one day at a time.");
+  const termClash = await termsOverlapping(startDate, endDate, termId);
+  if (termClash) return fail(`These dates overlap with "${termClash.name}". Terms can't overlap.`);
 
-  const activityTypeId = input.id === undefined ? await classActivityTypeId() : null;
-  if (input.id === undefined && activityTypeId === null) return fail("No activity types exist yet. Add one in the database first.");
+  const roomIds = [...new Set(incoming.map((c) => Number(c.roomId)))];
+  const roomRows = roomIds.length
+    ? await db.select({ id: rooms.roomId, name: rooms.name }).from(rooms).where(inArray(rooms.roomId, roomIds))
+    : [];
+  if (roomRows.length !== roomIds.length) return fail("A room used in these changes no longer exists. Refresh the page.");
+  const roomName = new Map(roomRows.map((r) => [String(r.id), r.name]));
+
+  const needsActivityType = incoming.some((c) => c.isNew);
+  const activityTypeId = needsActivityType ? await classActivityTypeId() : null;
+  if (needsActivityType && activityTypeId === null) return fail("No activity types exist yet. Add one in the database first.");
 
   try {
     await db.transaction(async (tx) => {
-      for (const day of input.days) {
-        const [clash] = await tx
-          .select({ title: classSchedules.courseTitle, start: classSchedules.startTime, end: classSchedules.endTime })
-          .from(classSchedules)
-          .where(
-            and(
-              eq(classSchedules.termId, input.termId),
-              eq(classSchedules.roomId, roomId),
-              eq(classSchedules.dayOfWeek, day),
-              lt(classSchedules.startTime, input.end),
-              gt(classSchedules.endTime, input.start),
-              input.id !== undefined ? ne(classSchedules.classId, input.id) : undefined,
-            ),
-          )
-          .limit(1);
+      const existing = await tx
+        .select({
+          id: classSchedules.classId,
+          roomId: classSchedules.roomId,
+          dayOfWeek: classSchedules.dayOfWeek,
+          start: classSchedules.startTime,
+          end: classSchedules.endTime,
+          title: classSchedules.courseTitle,
+        })
+        .from(classSchedules)
+        .where(eq(classSchedules.termId, termId));
+      const existingIds = new Set(existing.map((r) => r.id));
+
+      const edited = incoming.filter((c) => !c.isNew);
+      if (edited.some((c) => !existingIds.has(c.id))) {
+        throw new SaveError("A class you edited no longer exists. Refresh the page.");
+      }
+
+      const gone = new Set([...deletedIds, ...edited.map((c) => c.id)]);
+      const final = [
+        ...existing
+          .filter((r) => !gone.has(r.id))
+          .map((r) => ({
+            id: r.id,
+            roomId: String(r.roomId),
+            dayOfWeek: r.dayOfWeek,
+            start: r.start.slice(0, 5),
+            end: r.end.slice(0, 5),
+            title: r.title ?? "",
+          })),
+        ...incoming,
+      ];
+      for (const [i, c] of final.entries()) {
+        const clash = findClash(final.slice(0, i), c);
         if (clash) {
-          throw new ClashError(
-            `${DAY_LABEL[day]} ${formatTime(clash.start.slice(0, 5))} – ${formatTime(clash.end.slice(0, 5))} is already taken by ${clash.title ?? "another class"} in this room.`,
+          throw new SaveError(
+            `${dayLabel(c.dayOfWeek)} ${formatTime(c.start)} – ${formatTime(c.end)} in ${roomName.get(c.roomId) ?? "this room"} overlaps with ${clash.title || "another class"}.`,
           );
         }
       }
 
-      if (input.id !== undefined) {
-        const updated = await tx
+      await tx.update(terms).set({ name, startDate, endDate }).where(eq(terms.termId, termId));
+
+      if (deletedIds.length) {
+        await tx.delete(classSchedules).where(and(eq(classSchedules.termId, termId), inArray(classSchedules.classId, deletedIds)));
+      }
+
+      for (const c of edited) {
+        await tx
           .update(classSchedules)
           .set({
-            roomId,
-            dayOfWeek: input.days[0],
-            startTime: input.start,
-            endTime: input.end,
-            courseTitle: input.title,
-            courseAdviser: input.adviser,
+            roomId: Number(c.roomId),
+            dayOfWeek: c.dayOfWeek,
+            startTime: c.start,
+            endTime: c.end,
+            courseTitle: c.title,
+            courseAdviser: c.adviser,
           })
-          .where(and(eq(classSchedules.classId, input.id), eq(classSchedules.termId, input.termId)))
-          .returning({ id: classSchedules.classId });
-        if (updated.length === 0) throw new ClashError("This class no longer exists. Refresh the page.");
-      } else {
+          .where(and(eq(classSchedules.classId, c.id), eq(classSchedules.termId, termId)));
+      }
+
+      const added = incoming.filter((c) => c.isNew);
+      if (added.length) {
         await tx.insert(classSchedules).values(
-          input.days.map((day) => ({
-            termId: input.termId,
-            roomId,
+          added.map((c) => ({
+            termId,
+            roomId: Number(c.roomId),
             activityTypeId: activityTypeId!,
-            dayOfWeek: day,
-            startTime: input.start,
-            endTime: input.end,
-            courseTitle: input.title,
-            courseAdviser: input.adviser,
+            dayOfWeek: c.dayOfWeek,
+            startTime: c.start,
+            endTime: c.end,
+            courseTitle: c.title,
+            courseAdviser: c.adviser,
           })),
         );
       }
     });
   } catch (err) {
-    if (err instanceof ClashError) return fail(err.message);
+    if (err instanceof SaveError) return fail(err.message);
     throw err;
   }
 
-  revalidatePath("/admin-dashboard");
-  return { ok: true };
-}
-
-class ClashError extends Error {}
-
-export async function deleteClass(rawId: unknown): Promise<ScheduleResult> {
-  await requireRole(...ADMIN_ROLES);
-  if (!isId(rawId)) return fail("Invalid class.");
-  await db.delete(classSchedules).where(eq(classSchedules.classId, rawId));
   revalidatePath("/admin-dashboard");
   return { ok: true };
 }
