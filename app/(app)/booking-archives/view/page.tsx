@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
-import { getArchiveDetails } from "../queries";
+import { getArchiveDetails } from "@/lib/request-details";
 import DetailViewer from "./detail-viewer";
 
 export default async function ViewBookingPage({

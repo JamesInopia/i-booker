@@ -4,14 +4,17 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { BsThreeDots } from "react-icons/bs";
 import type { ArchiveAction } from "./options";
+import type { ArchiveRow } from "@/lib/definitions";
 
 const ITEM = "block w-full px-4 py-2 text-left hover:bg-gray-100";
 
 export default function RowMenu({
   id,
+  status,
   onAction,
 }: {
   id: number;
+  status: ArchiveRow["status"];
   onAction: (a: ArchiveAction) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -81,22 +84,26 @@ export default function RowMenu({
           >
             View Details
           </Link>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => pick("print")}
-            className={ITEM}
-          >
-            Print Details
-          </button>
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => pick("download")}
-            className={ITEM}
-          >
-            Download Details
-          </button>
+          {status === "approved" && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => pick("print")}
+                className={ITEM}
+              >
+                Print Details
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => pick("download")}
+                className={ITEM}
+              >
+                Download Details
+              </button>
+            </>
+          )}
           <button
             type="button"
             role="menuitem"

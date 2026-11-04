@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import Link from "next/link";
 import { BsThreeDots } from "react-icons/bs";
 import { cancelRequest } from "./actions";
 import type { BookingStatus } from "@/lib/definitions";
@@ -31,9 +30,10 @@ export default function RowActions({
     const close = () => setOpen(false);
     const onClick = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t)) close;
+      if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t))
+        close();
     };
-    const onKey = (e: KeyboardEvent) => e.key === "escape" && close();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
 
     document.addEventListener("mousedown", onClick);
     document.addEventListener("keydown", onKey);
