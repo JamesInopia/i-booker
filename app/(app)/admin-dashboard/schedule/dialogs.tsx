@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { createTerm, deleteTerm } from "./actions";
 import {
   END_OPTIONS,
@@ -37,7 +38,7 @@ export function Shell({ title, description, onClose, pending, children }: {
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose, pending]);
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !pending && onClose()}>
       <div
         role="dialog"
@@ -50,7 +51,8 @@ export function Shell({ title, description, onClose, pending, children }: {
         {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

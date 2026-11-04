@@ -17,7 +17,7 @@ import {
 
 type Room = { roomId: string; name: string };
 
-const ROW_H = 30;
+const ROW_H = 45;
 const GRID_COLUMNS = "5.5rem repeat(7, minmax(0, 1fr))";
 
 const toDraft = (c: ClassRow): DraftClass => ({
@@ -55,6 +55,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
   const [dialog, setDialog] = useState<ClassDialogState | null>(null);
   const nextTempId = useRef(-1);
   const chipRefs = useRef(new Map<string, HTMLButtonElement>());
+  const headRef = useRef<HTMLDivElement>(null);
 
   const sig = signature(term, classes);
   const [seenSig, setSeenSig] = useState(sig);
@@ -195,7 +196,8 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
   const gridHeight = ROW_H * TIME_ROWS.length;
 
   return (
-    <div className="min-w-0 flex-1 overflow-hidden rounded-lg bg-container shadow-sm">
+    <div className="min-w-0 flex-1 overflow-clip rounded-lg bg-container shadow-sm">
+      <div className="sticky top-[calc(4rem-1px)] z-[9] bg-container shadow-sm">
       <div className="bg-linear-to-r from-heading-from to-heading-to px-3 py-2 text-sm font-bold text-white">
         {name.trim() || "Untitled term"}
         {dirty && <span className="ml-2 rounded bg-white/20 px-1.5 py-0.5 text-xs font-semibold">Unsaved changes</span>}
@@ -266,10 +268,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
         </p>
       </div>
 
-      {rooms.length === 0 ? (
-        <p className="p-6 text-center text-sm text-neutral-500">No rooms yet. Add rooms in Booking → Manage Rooms first.</p>
-      ) : (
-        <>
+        {rooms.length > 0 && (
           <div className="flex items-center gap-2 border-b border-neutral-300 bg-white px-2 py-2">
             <button
               type="button"
@@ -331,18 +330,31 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
               ›
             </button>
           </div>
+        )}
 
-          <p className="bg-white p-1 text-center text-sm font-semibold">Course planner · {room?.name}</p>
+        {rooms.length > 0 && (
+          <>
+            <p className="bg-white p-1 text-center text-sm font-semibold">Course planner · {room?.name}</p>
+            <div ref={headRef} className="overflow-hidden">
+              <div className="min-w-[56rem] select-none text-xs" style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}>
+                <div className="border border-neutral-300 bg-blue-100 p-1.5 text-center font-bold">TIME</div>
+                {WEEK_COLUMNS.map((d) => (
+                  <div key={d.iso} className="border border-l-0 border-neutral-300 bg-blue-100 p-1.5 text-center font-bold uppercase">
+                    {d.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
 
-          <div className="overflow-x-auto">
+      {rooms.length === 0 ? (
+        <p className="p-6 text-center text-sm text-neutral-500">No rooms yet. Add rooms in Booking → Manage Rooms first.</p>
+      ) : (
+        <>
+          <div className="overflow-x-auto" onScroll={(e) => headRef.current && (headRef.current.scrollLeft = e.currentTarget.scrollLeft)}>
             <div className="min-w-[56rem] select-none text-xs" style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}>
-              <div className="border border-neutral-300 bg-blue-100 p-1.5 text-center font-bold">TIME</div>
-              {WEEK_COLUMNS.map((d) => (
-                <div key={d.iso} className="border border-l-0 border-neutral-300 bg-blue-100 p-1.5 text-center font-bold uppercase">
-                  {d.label}
-                </div>
-              ))}
-
               <div className="border-x border-neutral-300">
                 {TIME_ROWS.map((row) => (
                   <div
@@ -357,6 +369,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
 
               {WEEK_COLUMNS.map((d) => (
                 <div key={d.iso} className="relative border-r border-neutral-300" style={{ height: gridHeight }}>
+                  {/* Empty cells are plain, non-interactive background rows. */}
                   {TIME_ROWS.map((row) => (
                     <div key={row.start} style={{ height: ROW_H }} className="border-b border-neutral-200" />
                   ))}

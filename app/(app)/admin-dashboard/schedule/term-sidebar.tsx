@@ -14,7 +14,7 @@ export function TermSidebar({ terms, selectedId, dirty = false }: { terms: TermR
   const selected = terms.find((t) => t.id === selectedId) ?? null;
 
   return (
-    <aside className="flex w-full flex-col rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0">
+    <aside className="flex w-full flex-col rounded-lg bg-container p-4 shadow-sm lg:sticky lg:top-20 lg:h-[calc(100vh-6rem)] lg:w-64 lg:shrink-0 lg:self-start lg:overflow-y-auto">
       <div className="flex flex-col gap-2">
         <button type="button" onClick={() => guard(() => setDialog("new"))} className="rounded-md bg-accent-1 py-2 font-bold text-white hover:opacity-90">
           New Term

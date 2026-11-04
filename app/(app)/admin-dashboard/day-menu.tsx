@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { longDateLabel } from "../calendar/dates";
 import { MARK_OPTIONS, needsNote, type DayMark, type MarkChoice } from "../calendar/day-marks";
 import { markDay } from "./actions";
@@ -136,7 +137,8 @@ export function DayMenu({
         {children}
       </button>
 
-      {pos && (
+      {pos &&
+        createPortal(
         <div
           ref={popoverRef}
           role="dialog"
@@ -181,10 +183,12 @@ export function DayMenu({
             style={{ top: pos.tailY - 6, [pos.tailOn]: -7 }}
             className={`absolute h-3 w-3 rotate-45 border-accent-6 bg-container ${pos.tailOn === "left" ? "border-b border-l" : "border-r border-t"}`}
           />
-        </div>
+        </div>,
+        document.body,
       )}
 
-      {markOpen && (
+      {markOpen &&
+        createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 text-left text-sm font-normal normal-case text-neutral-900"
           onMouseDown={(e) => {
@@ -255,7 +259,8 @@ export function DayMenu({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
