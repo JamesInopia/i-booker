@@ -15,7 +15,23 @@ export function TermSidebar({ terms, selectedId, dirty = false }: { terms: TermR
 
   return (
     <aside className="flex w-full flex-col rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0">
-      <h2 className="text-lg font-bold">Terms set:</h2>
+      <div className="flex flex-col gap-2">
+        <button type="button" onClick={() => guard(() => setDialog("new"))} className="rounded-md bg-accent-1 py-2 font-bold text-white hover:opacity-90">
+          New Term
+        </button>
+        <button
+          type="button"
+          disabled={!selected}
+          onClick={() => setDialog("delete")}
+          className="rounded-md bg-accent-2 py-2 font-bold text-white hover:opacity-90 disabled:opacity-50"
+        >
+          Delete Term
+        </button>
+      </div>
+
+      <hr className="mt-4 border-neutral-300" />
+
+      <h2 className="mt-4 text-lg font-bold">Terms set:</h2>
       <ul className="mt-3 flex flex-1 flex-col gap-2">
         {terms.map((t) => {
           const active = t.id === selectedId;
@@ -40,20 +56,6 @@ export function TermSidebar({ terms, selectedId, dirty = false }: { terms: TermR
           );
         })}
       </ul>
-
-      <div className="mt-6 flex flex-col gap-2">
-        <button type="button" onClick={() => guard(() => setDialog("new"))} className="rounded-md bg-accent-1 py-2 font-bold text-white hover:opacity-90">
-          New Term
-        </button>
-        <button
-          type="button"
-          disabled={!selected}
-          onClick={() => setDialog("delete")}
-          className="rounded-md bg-accent-2 py-2 font-bold text-white hover:opacity-90 disabled:opacity-50"
-        >
-          Delete Term
-        </button>
-      </div>
 
       {leaving && (
         <Shell

@@ -34,6 +34,7 @@ export function DayMenu({
   children: React.ReactNode;
 }) {
   const stored = mark && !mark.implicit ? mark : null;
+  const direct = !weekHref;
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +80,7 @@ export function DayMenu({
   }, [markOpen]);
 
   const toggle = () => {
+    if (direct) return openMarkDialog();
     if (pos) return closePopover();
     if (!triggerRef.current) return;
     setError(null);
@@ -87,8 +89,8 @@ export function DayMenu({
 
   const openMarkDialog = () => {
     closePopover();
-    setKind("holiday");
-    setNote("");
+    setKind(stored && MARK_OPTIONS.some((o) => o.kind === stored.kind) ? (stored.kind as MarkChoice) : "holiday");
+    setNote(stored?.note ?? "");
     setError(null);
     setMarkOpen(true);
   };
@@ -106,7 +108,10 @@ export function DayMenu({
   const removeMark = () => {
     const fd = new FormData();
     fd.set("kind", "clear");
-    run(fd, closePopover);
+    run(fd, () => {
+      closePopover();
+      setMarkOpen(false);
+    });
   };
 
   const option = MARK_OPTIONS.find((o) => o.kind === kind);
@@ -124,7 +129,7 @@ export function DayMenu({
         type="button"
         onClick={toggle}
         aria-haspopup="dialog"
-        aria-expanded={pos !== null}
+        aria-expanded={direct ? markOpen : pos !== null}
         aria-label={`${longDateLabel(date)}: options`}
         className={className}
       >
@@ -188,7 +193,7 @@ export function DayMenu({
         >
           <div role="dialog" aria-modal="true" aria-label={`Mark ${longDateLabel(date)}`} className="w-full max-w-sm rounded-xl bg-container p-6 shadow-lg">
             <h2 className="text-lg font-bold">{longDateLabel(date)}</h2>
-            <p className="mt-1 text-neutral-600">{mark?.implicit ? "Sundays have no classes by default" : "Not marked"}</p>
+            <p className="mt-1 text-neutral-600">{stored ? `Currently marked: ${stored.label}` : mark?.implicit ? "Sundays have no classes by default" : "Not marked"}</p>
 
             <form
               className="mt-5"
@@ -232,6 +237,11 @@ export function DayMenu({
               )}
 
               <div className="mt-5 flex justify-end gap-3">
+                {stored && (
+                  <button type="button" onClick={removeMark} disabled={pending} className={`${dialogButton} mr-auto text-accent-2`}>
+                    Remove mark
+                  </button>
+                )}
                 <button type="button" onClick={() => setMarkOpen(false)} disabled={pending} className={dialogButton}>
                   Cancel
                 </button>
