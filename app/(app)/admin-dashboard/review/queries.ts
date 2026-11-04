@@ -3,7 +3,7 @@ import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
-  appUsers,
+  user as authUsers,
   reservationRequests,
   reservationSlotRooms,
   reservationSlots,
@@ -32,7 +32,7 @@ export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]
       id: reservationRequests.requestId,
       status: reservationRequests.status,
       requestor: reservationRequests.requestor,
-      email: appUsers.email,
+      email: authUsers.email,
       contact: reservationRequests.contactDetails,
       program: reservationRequests.program,
       natureOther: reservationRequests.natureOther,
@@ -44,7 +44,7 @@ export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]
       decidedAt: reservationRequests.decidedAt,
     })
     .from(reservationRequests)
-    .innerJoin(appUsers, eq(appUsers.userId, reservationRequests.userId))
+    .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
     .innerJoin(activityTypes, eq(activityTypes.activityTypeId, reservationRequests.activityTypeId))
     .where(ids ? inArray(reservationRequests.requestId, ids) : undefined)
     .orderBy(desc(reservationRequests.requestDate));

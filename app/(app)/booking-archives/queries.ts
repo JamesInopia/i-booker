@@ -3,7 +3,7 @@ import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
-  appUsers,
+  user as authUsers,
   reservationRequests,
   reservationSlotRooms,
   reservationSlots,
@@ -76,7 +76,7 @@ export async function getArchiveDetails(
       activityName: activityTypes.name,
       natureOther: reservationRequests.natureOther,
       requestor: reservationRequests.requestor,
-      email: appUsers.email,
+      email: authUsers.email,
       contactDetails: reservationRequests.contactDetails,
       program: reservationRequests.program,
       requestDate: reservationRequests.requestDate,
@@ -88,7 +88,7 @@ export async function getArchiveDetails(
       details: reservationSlots.detailsOfActivity,
     })
     .from(reservationRequests)
-    .innerJoin(appUsers, eq(appUsers.userId, reservationRequests.userId))
+    .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
     .innerJoin(
       activityTypes,
       eq(activityTypes.activityTypeId, reservationRequests.activityTypeId),
@@ -111,7 +111,6 @@ export async function getArchiveDetails(
 
   const byId = new Map(rows.map((r) => [r.id, r]));
 
-  // keep the order the admin selected them in
   return ids.flatMap((id) => {
     const r = byId.get(id);
     if (!r) return [];

@@ -11,9 +11,10 @@ import {
   text,
   time,
   timestamp,
-  uuid,
 } from "drizzle-orm/pg-core";
 import { ROLES } from "../lib/session";
+
+import { user } from "./auth-schema";
 
 export * from "./auth-schema";
 
@@ -25,28 +26,10 @@ export const requestStatus = pgEnum("request_status", [
   "rejected",
   "cancelled",
 ]);
-export const userRole = pgEnum("user_role", [
-  "requestor",
-  "admin_liaison",
-  "admin_supervisor",
-]);
-export const userStatus = pgEnum("user_status", ["active", "suspended"]);
-
 export const roleAssignments = pgTable("role_assignments", {
   email: text("email").primaryKey(),
   role: appRole("role").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const appUsers = pgTable("users", {
-  userId: uuid("user_id").primaryKey(),
-  name: text("name").notNull().default(""),
-  course: text("course"),
-  email: text("email").notNull(),
-  role: userRole("role").notNull().default("requestor"),
-  status: userStatus("status").notNull().default("active"),
-  suspendedUntil: timestamp("suspended_until", { withTimezone: true }),
-  suspensionReason: text("suspension_reason"),
 });
 
 export const rooms = pgTable("room", {
@@ -85,13 +68,13 @@ export const reservationRequests = pgTable(
     requestId: integer("request_id")
       .primaryKey()
       .generatedByDefaultAsIdentity(),
-    userId: uuid("user_id")
+    userId: text("user_id")
       .notNull()
-      .references(() => appUsers.userId, { onDelete: "restrict" }),
-    reviewedBy: uuid("reviewed_by").references(() => appUsers.userId, {
+      .references(() => user.id, { onDelete: "restrict" }),
+    reviewedBy: text("reviewed_by").references(() => user.id, {
       onDelete: "set null",
     }),
-    decidedBy: uuid("decided_by").references(() => appUsers.userId, {
+    decidedBy: text("decided_by").references(() => user.id, {
       onDelete: "set null",
     }),
     activityTypeId: integer("activity_type_id")

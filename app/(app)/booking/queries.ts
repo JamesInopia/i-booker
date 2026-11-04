@@ -1,10 +1,9 @@
 import "server-only";
-import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
-  appUsers,
+  user as authUsers,
   reservationRequests,
   reservationSlotRooms,
   reservationSlots,
@@ -195,22 +194,16 @@ export async function createRequest(input: {
 }): Promise<void> {
   const { email, requestor, draft, nature, roomId } = input;
   await db.transaction(async (tx) => {
-    const columns = {
-      userId: appUsers.userId,
-      status: appUsers.status,
-      suspendedUntil: appUsers.suspendedUntil,
-    };
-    let [owner] = await tx
-      .select(columns)
-      .from(appUsers)
-      .where(sql`lower(${appUsers.email}) = ${email}`)
+    const [owner] = await tx
+      .select({
+        userId: authUsers.id,
+        status: authUsers.status,
+        suspendedUntil: authUsers.suspendedUntil,
+      })
+      .from(authUsers)
+      .where(sql`lower(${authUsers.email}) = ${email}`)
       .limit(1);
-    if (!owner) {
-      [owner] = await tx
-        .insert(appUsers)
-        .values({ userId: randomUUID(), name: requestor, email })
-        .returning(columns);
-    }
+    if (!owner) throw new BookingError("We couldn't find your account. Please sign in again.");
     if (
       owner.status === "suspended" &&
       (!owner.suspendedUntil || owner.suspendedUntil > new Date())
@@ -266,7 +259,7 @@ export async function getEditableRequest(requestId: number, email: string) {
       program: reservationRequests.program,
     })
     .from(reservationRequests)
-    .innerJoin(appUsers, eq(appUsers.userId, reservationRequests.userId))
+    .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
     .innerJoin(
       reservationSlots,
       eq(reservationSlots.requestId, reservationRequests.requestId),
@@ -279,7 +272,7 @@ export async function getEditableRequest(requestId: number, email: string) {
       and(
         eq(reservationRequests.requestId, requestId),
         eq(reservationRequests.status, "pending"),
-        sql`lower(${appUsers.email}) = ${email}`,
+        sql`lower(${authUsers.email}) = ${email}`,
       ),
     )
     .limit(1);
@@ -297,9 +290,9 @@ export async function updateRequest(input: {
 
   await db.transaction(async (tx) => {
     const myIds = tx
-      .select({ id: appUsers.userId })
-      .from(appUsers)
-      .where(sql`lower(${appUsers.email}) = ${email}`);
+      .select({ id: authUsers.id })
+      .from(authUsers)
+      .where(sql`lower(${authUsers.email}) = ${email}`);
 
     const updated = await tx
       .update(reservationRequests)

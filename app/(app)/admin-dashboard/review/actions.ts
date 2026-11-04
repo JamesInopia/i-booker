@@ -3,7 +3,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { appUsers, reservationRequests } from "@/db/schema";
+import { reservationRequests, user as authUsers } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
 import { ADMIN_ROLES } from "@/lib/session";
 import type { ActionResult } from "./types";
@@ -24,9 +24,9 @@ function cleanText(value: string, { required }: { required: boolean }): { text: 
 
 async function appUserId(email: string) {
   const [row] = await db
-    .select({ id: appUsers.userId })
-    .from(appUsers)
-    .where(eq(sql`lower(${appUsers.email})`, email))
+    .select({ id: authUsers.id })
+    .from(authUsers)
+    .where(eq(sql`lower(${authUsers.email})`, email))
     .limit(1);
   return row?.id ?? null;
 }

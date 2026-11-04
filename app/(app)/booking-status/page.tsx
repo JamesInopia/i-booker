@@ -2,7 +2,7 @@ import { desc, eq, ne, and, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
-  appUsers,
+  user as authUsers,
   reservationRequests,
   reservationSlotRooms,
   reservationSlots,
@@ -44,7 +44,7 @@ export default async function BookingStatusPage() {
       endTime: reservationSlots.endTime,
     })
     .from(reservationRequests)
-    .innerJoin(appUsers, eq(appUsers.userId, reservationRequests.userId))
+    .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
     .innerJoin(
       activityTypes,
       eq(activityTypes.activityTypeId, reservationRequests.activityTypeId),
@@ -60,7 +60,7 @@ export default async function BookingStatusPage() {
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
     .where(
       and(
-        eq(sql`lower(${appUsers.email})`, user.email),
+        eq(sql`lower(${authUsers.email})`, user.email),
         ne(reservationRequests.status, "cancelled"),
       ),
     )

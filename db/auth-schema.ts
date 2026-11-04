@@ -1,4 +1,6 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+export const userStatus = pgEnum("user_status", ["active", "suspended"]);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
@@ -6,6 +8,11 @@ export const user = pgTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  // Booking profile (these used to live in the separate `users` table).
+  course: text("course"),
+  status: userStatus("status").default("active").notNull(),
+  suspendedUntil: timestamp("suspended_until", { withTimezone: true }),
+  suspensionReason: text("suspension_reason"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().$onUpdate(() => new Date()).notNull(),
 });

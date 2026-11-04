@@ -3,7 +3,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { appUsers, reservationRequests } from "@/db/schema";
+import { reservationRequests, user as authUsers } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
 
 export async function cancelRequest(requestId: number, reason: string) {
@@ -15,9 +15,9 @@ export async function cancelRequest(requestId: number, reason: string) {
     return { error: "Reason is too long (max 500 characters)." };
 
   const myIds = db
-    .select({ id: appUsers.userId })
-    .from(appUsers)
-    .where(eq(sql`lower(${appUsers.email})`, user.email));
+    .select({ id: authUsers.id })
+    .from(authUsers)
+    .where(eq(sql`lower(${authUsers.email})`, user.email));
 
   const [req] = await db
     .select({ status: reservationRequests.status })
