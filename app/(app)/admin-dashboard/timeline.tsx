@@ -18,8 +18,6 @@ import { MonthPicker } from "../calendar/month-picker";
 import { DayMenu } from "./day-menu";
 import type { WeekClass } from "./schedule/types";
 
-// Bounds are minutes from midnight. The last slot runs to closing time (22:00) so a class
-// ending after 21:30 still lands in a row.
 const TIME_SLOTS = [
   { label: "7:30 AM - 11:00 AM", from: 7 * 60 + 30, to: 11 * 60 },
   { label: "11:00 AM - 2:30 PM", from: 11 * 60, to: 14 * 60 + 30 },
@@ -160,17 +158,19 @@ export function TimetableView({
                       (c) => toMinutes(c.start) < slot.to && toMinutes(c.end) > slot.from,
                     );
                     return (
-                      <td key={day} className={`h-10 border border-neutral-300 p-0.5 align-top ${mark ? MARK_STYLE[mark.kind].tint : ""}`}>
-                        {inSlot.map((c) => (
-                          <div
-                            key={c.id}
-                            title={`${c.title}${c.adviser ? ` — ${c.adviser}` : ""}\n${formatTime(c.start)} – ${formatTime(c.end)}`}
-                            className="mb-0.5 rounded bg-blue-100 px-1 py-0.5 text-[10px] leading-tight text-blue-950 last:mb-0"
-                          >
-                            <div className="truncate font-semibold">{c.title}</div>
-                            {c.adviser && <div className="truncate">{c.adviser}</div>}
-                          </div>
-                        ))}
+                      <td key={day} className={`h-24 border border-neutral-300 p-1 align-top ${mark ? MARK_STYLE[mark.kind].tint : ""}`}>
+                        <div className="flex h-full flex-col gap-1">
+                          {inSlot.map((c) => (
+                            <div
+                              key={c.id}
+                              title={`${c.title}${c.adviser ? ` — ${c.adviser}` : ""}\n${formatTime(c.start)} – ${formatTime(c.end)}`}
+                              className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-md bg-blue-100 px-2 py-1 text-center leading-tight text-blue-950"
+                            >
+                              <div className="break-words text-base font-bold uppercase">{c.title}</div>
+                              {c.adviser && <div className="break-words text-sm">{c.adviser}</div>}
+                            </div>
+                          ))}
+                        </div>
                       </td>
                     );
                   })}

@@ -67,10 +67,19 @@ async function TimelineContent({ params }: { params: Params }) {
   const grid = monthGrid(month);
   const marks = isTimetable ? await getDayMarks(sunday, addDays(sunday, 6)) : await getDayMarks(grid[0], grid[grid.length - 1]);
 
+  if (isTimetable) {
+    return (
+      <div className="flex flex-col gap-3">
+        <Legend compact />
+        <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1">
-        {isTimetable ? <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} /> : <CalendarView month={month} marks={marks} />}
+        <CalendarView month={month} marks={marks} />
       </div>
       <Legend />
     </div>

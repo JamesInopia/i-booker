@@ -81,7 +81,22 @@ export function DayContent({ day, mark }: { day: string; mark: DayMark | null })
   );
 }
 
-export function Legend() {
+export function Legend({ compact = false }: { compact?: boolean }) {
+  if (compact) {
+    // One slim row, so it doesn't take a column away from the page it sits above.
+    return (
+      <aside aria-label="Legend" className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-container px-4 py-2 text-sm shadow-sm">
+        <h3 className="font-bold">Legend</h3>
+        {MARK_OPTIONS.map((o) => (
+          <span key={o.kind} className="flex items-center gap-2">
+            <span aria-hidden className={`h-3 w-3 shrink-0 rounded-full ${MARK_STYLE[o.kind].dot}`} />
+            {o.label}
+          </span>
+        ))}
+      </aside>
+    );
+  }
+
   return (
     <aside aria-label="Legend" className="w-full rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0">
       <h3 className="text-lg font-bold">Legend</h3>
