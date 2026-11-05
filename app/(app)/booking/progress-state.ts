@@ -6,7 +6,7 @@ import { furthestStep } from "./rules";
 export async function getMaxStep(): Promise<number> {
   const draft = await readDraft();
   if (!draft) return 1;
-  if (draft.requestId) return 4;
+  if (draft.requestId) return 3;
 
   const [room, natures] = await Promise.all([
     getRoom(draft.roomId),

@@ -6,10 +6,17 @@ import { DetailsForm } from "./details-form";
 
 export default async function BookingDetailsPage() {
   const user = await requireUser();
-  const { draft, room, natures } = await requireStep(3);
+  const { draft, room, natures } = await requireStep(2);
 
   return (
-    <StepFrame step={3} subtitle={<>Room: {room.name} · Date: {formatDate(draft.date)}</>}>
+    <StepFrame
+      step={2}
+      subtitle={
+        <>
+          Room: {room.name} · Date: {formatDate(draft.date)}
+        </>
+      }
+    >
       <DetailsForm
         requestorName={user.name || user.email}
         maxCapacity={room.maxCapacity}

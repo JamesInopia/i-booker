@@ -27,16 +27,34 @@ export function DateCalendar({
   const maxKey = monthKey(max);
   const prev = addMonths(month, -1);
   const next = addMonths(month, 1);
-  const arrow = "px-2 py-1 hover:underline disabled:cursor-not-allowed disabled:opacity-30 disabled:no-underline";
+  const arrow =
+    "px-2 py-1 hover:underline disabled:cursor-not-allowed disabled:opacity-30 disabled:no-underline";
 
   return (
     <div className="overflow-hidden rounded-lg bg-container shadow-sm">
-      <div className="flex items-center justify-between bg-accent-1 px-3 py-2 text-white">
-        <button type="button" onClick={() => setMonth(prev)} disabled={monthKey(prev) < minKey} aria-label="Previous month" className={arrow}>
+      <div className="flex items-center justify-between bg-accent-1 px-3 py-1.5 text-white">
+        <button
+          type="button"
+          onClick={() => setMonth(prev)}
+          disabled={monthKey(prev) < minKey}
+          aria-label="Previous month"
+          className={arrow}
+        >
           ‹
         </button>
-        <MonthPicker month={month} minMonth={minKey} maxMonth={maxKey} onSelect={setMonth} />
-        <button type="button" onClick={() => setMonth(next)} disabled={monthKey(next) > maxKey} aria-label="Next month" className={arrow}>
+        <MonthPicker
+          month={month}
+          minMonth={minKey}
+          maxMonth={maxKey}
+          onSelect={setMonth}
+        />
+        <button
+          type="button"
+          onClick={() => setMonth(next)}
+          disabled={monthKey(next) > maxKey}
+          aria-label="Next month"
+          className={arrow}
+        >
           ›
         </button>
       </div>
@@ -47,7 +65,11 @@ export function DateCalendar({
         selected={selected}
         isDisabled={(day) => day < today || day > max || Boolean(closed[day])}
         getMark={(day) => closed[day] ?? null}
-        renderDay={(day, className, { isToday, isSelected, disabled, mark }) => (
+        renderDay={(
+          day,
+          className,
+          { isToday, isSelected, disabled, mark },
+        ) => (
           <button
             type="button"
             disabled={disabled}
@@ -56,7 +78,7 @@ export function DateCalendar({
             aria-current={isToday ? "date" : undefined}
             aria-label={mark ? `${day}: ${mark.label}` : day}
             title={mark ? `${mark.label} (bookings closed)` : undefined}
-            className={className}
+            className={`${className} !h-[64px] !min-h-0 !p-2`}
           >
             <DayContent day={day} mark={mark} />
           </button>

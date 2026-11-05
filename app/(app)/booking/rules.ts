@@ -256,14 +256,25 @@ export function validateDetails(
 export const hasErrors = (errors: object) => Object.keys(errors).length > 0;
 
 export function furthestStep(
-  d: Draft,
-  details: DetailsContext,
-  now: Date = new Date(),
-): 1 | 2 | 3 | 4 {
-  if (validateDate(d.date, now)) return 1;
-  if (validateTime(d.date, d.startTime, d.endTime, now)) return 2;
-  if (hasErrors(validateDetails(d, details))) return 3;
-  return 4;
+  draft: Draft,
+  context: {
+    maxCapacity: number | null;
+    natures: Nature[];
+  },
+): number {
+  if (validateDate(draft.date)) {
+    return 1;
+  }
+
+  if (validateTime(draft.date, draft.startTime, draft.endTime)) {
+    return 1;
+  }
+
+  if (hasErrors(validateDetails(draft, context))) {
+    return 2;
+  }
+
+  return 3;
 }
 
 const clip = (value: unknown, max: number) =>
