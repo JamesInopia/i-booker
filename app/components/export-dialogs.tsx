@@ -81,9 +81,12 @@ export function DownloadDialog({
   const [format, setFormat] = useState<"pdf" | "docx">("pdf");
   const [mode, setMode] = useState<"combined" | "separate">("combined");
   const many = ids.length > 1;
+  const ext = format.toUpperCase();
 
   function download() {
-    window.location.assign(exportUrl(ids, many ? `&mode=${mode}` : ""));
+    window.location.assign(
+      exportUrl(ids, `&format=${format}${many ? `&mode=${mode}` : ""}`),
+    );
     onClose();
   }
 
@@ -100,28 +103,28 @@ export function DownloadDialog({
           label="PDF"
         />
         <Option
-          checked={false}
-          disabled
+          checked={format === "docx"}
           onChange={() => setFormat("docx")}
           label="DOCX"
-          hint="Coming Soon"
+          hint="Word Document"
         />
       </div>
 
       {many && (
         <>
+          <p className="mb-2 mt-4 text-sm font-medium">Files</p>
           <div className="flex flex-col gap-2">
             <Option
               checked={mode === "combined"}
               onChange={() => setMode("combined")}
-              label="One PDF"
+              label={`One ${ext}`}
               hint="All requests in a single file"
             />
             <Option
               checked={mode === "separate"}
               onChange={() => setMode("separate")}
               label="Separate files"
-              hint="One PDF per request, in a .zip"
+              hint={`One ${ext} per request, in a .zip`}
             />
           </div>
         </>

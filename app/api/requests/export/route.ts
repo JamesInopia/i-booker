@@ -1,7 +1,11 @@
 import JSZip from "jszip";
 import { requireUser } from "@/lib/auth";
-import { buildRequestsPdf } from "@/lib/activity-form";
+import { buildRequestsPdf } from "@/lib/activity-form-pdf";
+import { buildRequestsDocx } from "@/lib/activity-form-docx";
 import { getArchiveDetails } from "@/lib/request-details";
+
+const DOCX_TYPE =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 export async function GET(req: Request) {
   const user = await requireUser();
@@ -18,7 +22,8 @@ export async function GET(req: Request) {
   if (ids.length === 0) return new Response("Not Found", { status: 404 });
 
   const mode = sp.get("mode") === "separate" ? "separate" : "combined";
-  const inline = sp.get("inline") === "1";
+  const format = sp.get("format") === "docx" ? "docx" : "pdf";
+  const inline = sp.get("inline") === "1" && format === "pdf";
 
   const all = await getArchiveDetails(ids);
   const items = all.filter((d) => d.status === "approved");
@@ -27,10 +32,13 @@ export async function GET(req: Request) {
       status: 403,
     });
 
+  const build = (list: typeof items) =>
+    format === "docx" ? buildRequestsDocx(list) : buildRequestsPdf(list);
+
   if (mode === "separate" && items.length > 1) {
     const zip = new JSZip();
     for (const d of items) {
-      zip.file(`activity-request-${d.id}.pdf`, await buildRequestsPdf([d]));
+      zip.file(`activity-request-${d.id}.${format}`, await build([d]));
     }
     const buf = await zip.generateAsync({ type: "uint8array" });
     return new Response(buf as BodyInit, {
@@ -41,14 +49,14 @@ export async function GET(req: Request) {
     });
   }
 
-  const pdf = await buildRequestsPdf(items);
+  const file = await build(items);
   const name =
     items.length === 1
-      ? `activity-request-${items[0].id}.pdf`
-      : "activity-requests.pdf";
-  return new Response(pdf as BodyInit, {
+      ? `activity-request-${items[0].id}.${format}`
+      : `activity-requests.${format}`;
+  return new Response(file as BodyInit, {
     headers: {
-      "Content-Type": "application/pdf",
+      "Content-Type": format === "docx" ? DOCX_TYPE : "application/pdf",
       "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${name}"`,
     },
   });
