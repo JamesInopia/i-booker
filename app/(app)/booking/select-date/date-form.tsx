@@ -14,7 +14,7 @@ import {
   formatTime,
   manilaNow,
   overlapMessage,
-  timeOptions,
+  TIME_BLOCKS,
   validateDate,
   validateTime,
   type Slot,
@@ -25,14 +25,6 @@ import { DateCalendar } from "./date-calendar";
 
 const SAME_DAY_WARNING =
   "Same day applications may not be accepted. Are you sure you want to continue?";
-
-const OPTIONS = timeOptions();
-
-const SLOTS = OPTIONS.slice(0, -1).map((option, index) => ({
-  start: option.value,
-  end: OPTIONS[index + 1].value,
-  label: option.label,
-}));
 
 type Availability = {
   date: string;
@@ -59,7 +51,6 @@ export function DateForm({
   max,
   closed,
 }: DateFormProps) {
-  // A. Current date and time selection
   const validInitialDate =
     initialDate >= min && initialDate <= max && !closed[initialDate];
 
@@ -69,7 +60,6 @@ export function DateForm({
 
   const [end, setEnd] = useState(validInitialDate ? initialEnd : "");
 
-  // B. Room availability
   const [availability, setAvailability] = useState<Availability | null>(
     validInitialDate
       ? {
@@ -82,7 +72,6 @@ export function DateForm({
 
   const [loading, setLoading] = useState(false);
 
-  // C. Fetch booked slots when date changes
   useEffect(() => {
     if (!date || availability?.date === date) return;
 
@@ -116,7 +105,6 @@ export function DateForm({
     };
   }, [date, availability?.date]);
 
-  // D. When the user chooses another date
   function chooseDate(nextDate: string) {
     if (nextDate === date) return;
 
@@ -127,7 +115,6 @@ export function DateForm({
     setLoading(true);
   }
 
-  // E. Only enable slots after availability loads
   const ready =
     Boolean(date) &&
     !loading &&
@@ -137,15 +124,17 @@ export function DateForm({
   const booked = ready ? availability!.booked : [];
   const now = manilaNow();
 
-  function isUnavailable(slot: { start: string; end: string }) {
-    const taken = Boolean(findOverlap(booked, slot.start, slot.end));
-
-    const past = date === now.date && slot.start <= now.time;
-
-    return taken || past;
+  function occupants(slot: { start: string; end: string }) {
+    return booked.filter((b) => slot.start < b.end && slot.end > b.start);
   }
 
-  // F. Selection logic
+  function isPast(slot: { start: string }) {
+    return date === now.date && slot.start <= now.time;
+  }
+
+  function isUnavailable(slot: { start: string; end: string }) {
+    return occupants(slot).length > 0 || isPast(slot);
+  }
 
   function selectSlot(slot: { start: string; end: string }) {
     if (!ready || isUnavailable(slot)) return;
@@ -259,14 +248,15 @@ export function DateForm({
             </p>
           ) : (
             <>
-              <div className="mt-3 max-h-[300px] overflow-y-auto rounded-md border border-accent-6">
-                <div className="sticky top-0 z-10 grid grid-cols-2 border-b border-accent-6 bg-accent-5 px-2 py-2 text-xs font-bold">
+              <div className="mt-3 overflow-hidden rounded-md border border-accent-6">
+                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-accent-6 bg-accent-5 px-2 py-2 text-xs font-bold">
                   <span>Time</span>
                   <span className="text-center">Status</span>
                 </div>
 
-                {SLOTS.map((slot) => {
-                  const unavailable = isUnavailable(slot);
+                {TIME_BLOCKS.map((slot) => {
+                  const taken = occupants(slot);
+                  const unavailable = taken.length > 0 || isPast(slot);
 
                   const selected = Boolean(
                     start && end && slot.start >= start && slot.end <= end,
@@ -279,7 +269,7 @@ export function DateForm({
                       disabled={unavailable}
                       aria-pressed={selected}
                       onClick={() => selectSlot(slot)}
-                      className={`grid w-full grid-cols-2 items-center border-t border-accent-6 px-2 py-2 text-left text-xs transition-colors ${
+                      className={`grid min-h-14 w-full grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-2 border-t border-accent-6 px-2 py-2 text-left text-xs transition-colors first:border-t-0 ${
                         unavailable
                           ? "cursor-not-allowed bg-accent-5 text-accent-3/60"
                           : selected
@@ -287,14 +277,22 @@ export function DateForm({
                             : "bg-container hover:bg-accent-5"
                       }`}
                     >
-                      <span>{formatTime(slot.start)}</span>
+                      <span>
+                        {formatTime(slot.start)} – {formatTime(slot.end)}
+                      </span>
 
-                      <span className="text-center">
-                        {unavailable
-                          ? "Unavailable"
-                          : selected
-                            ? "Selected"
-                            : "Available"}
+                      <span className="text-center [overflow-wrap:anywhere]">
+                        {taken.length > 0 ? (
+                          <span className="font-semibold">
+                            {taken.map((t) => t.label ?? "Taken").join(" · ")}
+                          </span>
+                        ) : unavailable ? (
+                          "Already passed"
+                        ) : selected ? (
+                          "Selected"
+                        ) : (
+                          "Available"
+                        )}
                       </span>
                     </button>
                   );

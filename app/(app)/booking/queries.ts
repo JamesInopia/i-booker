@@ -145,7 +145,7 @@ export async function getBusySlots(
 ): Promise<Slot[]> {
   if (!isId(roomId) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
 
-  const approved = await db
+  const approvedRows = await db
     .select({
       start: reservationSlots.startTime,
       end: reservationSlots.endTime,
@@ -167,8 +167,14 @@ export async function getBusySlots(
       ),
     );
 
-  const classes = await db.execute<{ start: string; end: string }>(sql`
-    select cs.start_time as start, cs.end_time as "end"
+  const classes = await db.execute<{
+    start: string;
+    end: string;
+    title: string | null;
+    adviser: string | null;
+  }>(sql`
+    select cs.start_time as start, cs.end_time as "end",
+           cs.section_code as title, cs.instructor as adviser
     from class_schedule cs join term t on t.term_id = cs.term_id
     where cs.room_id = ${Number(roomId)}
       and ${date}::date between t.start_date and t.end_date
@@ -178,9 +184,21 @@ export async function getBusySlots(
         where cd.calendar_date = ${date}::date and dt.is_class_day = false
       )`);
 
-  return [...approved, ...classes.rows]
-    .map((r) => ({ start: r.start.slice(0, 5), end: r.end.slice(0, 5) }))
-    .sort((a, b) => a.start.localeCompare(b.start));
+  const slots: Slot[] = [
+    ...approvedRows.map((r) => ({
+      start: r.start.slice(0, 5),
+      end: r.end.slice(0, 5),
+      kind: "booking" as const,
+      label: "Approved booking",
+    })),
+    ...classes.rows.map((r) => ({
+      start: r.start.slice(0, 5),
+      end: r.end.slice(0, 5),
+      kind: "class" as const,
+      label: r.title?.trim() || "Class",
+    })),
+  ];
+  return slots.sort((a, b) => a.start.localeCompare(b.start));
 }
 
 export class BookingError extends Error {}

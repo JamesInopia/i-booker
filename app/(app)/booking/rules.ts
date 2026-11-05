@@ -49,7 +49,21 @@ export type Nature = { id: string; name: string; other: boolean };
 export const isOtherName = (name: string) =>
   /^(others?|miscellaneous)\b/i.test(name.trim());
 
-export type Slot = { start: string; end: string };
+// What is occupying a period: a class or an approved booking.
+export type Slot = {
+  start: string;
+  end: string;
+  kind?: "class" | "booking";
+  label?: string;
+};
+
+// Bookings are made in these four fixed blocks (one or more, back to back).
+export const TIME_BLOCKS = [
+  { start: "07:30", end: "11:00" },
+  { start: "11:00", end: "14:30" },
+  { start: "14:30", end: "18:00" },
+  { start: "18:00", end: "21:30" },
+] as const;
 
 export type RoomListing = {
   roomId: string;
@@ -181,7 +195,8 @@ export function findOverlap(
 }
 
 export function overlapMessage(slot: Slot): string {
-  return `${formatTime(slot.start)} – ${formatTime(slot.end)} is already taken (a class or an approved booking). Choose a different time.`;
+  const by = slot.label ? ` by ${slot.label}` : " (a class or an approved booking)";
+  return `${formatTime(slot.start)} – ${formatTime(slot.end)} is already taken${by}. Choose a different time.`;
 }
 
 export function validateTime(
@@ -193,10 +208,10 @@ export function validateTime(
   if (!start || !end) return "Select a start time and an end time.";
   if (!TIME_RE.test(start) || !TIME_RE.test(end)) return "Enter a valid time.";
   if (
-    toMinutes(start) % SLOT_MINUTES !== 0 ||
-    toMinutes(end) % SLOT_MINUTES !== 0
+    !TIME_BLOCKS.some((b) => b.start === start) ||
+    !TIME_BLOCKS.some((b) => b.end === end)
   ) {
-    return `Times must be in ${SLOT_MINUTES}-minute steps.`;
+    return "Choose one or more of the available time blocks.";
   }
   if (start < OPEN_TIME || end > CLOSE_TIME) {
     return `Bookings must be between ${formatTime(OPEN_TIME)} and ${formatTime(CLOSE_TIME)}.`;

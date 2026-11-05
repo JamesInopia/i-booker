@@ -113,9 +113,8 @@ export function DayContent({
   );
 }
 
-export function Legend({ compact = false }: { compact?: boolean }) {
+export function Legend({ compact = false, horizontal = false,}: { compact?: boolean; horizontal?: boolean;}) {
   if (compact) {
-    // One slim row, so it doesn't take a column away from the page it sits above.
     return (
       <aside aria-label="Legend" className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-container px-4 py-2 text-sm shadow-sm">
         <h3 className="font-bold">Legend</h3>
