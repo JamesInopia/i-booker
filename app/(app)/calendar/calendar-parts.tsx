@@ -1,5 +1,10 @@
 import { DAY_SHORT, dayOfMonth, monthGrid, monthKey } from "./dates";
-import { MARK_OPTIONS, MARK_STYLE, showsLabelOnCalendar, type DayMark } from "./day-marks";
+import {
+  MARK_OPTIONS,
+  MARK_STYLE,
+  showsLabelOnCalendar,
+  type DayMark,
+} from "./day-marks";
 
 export const TODAY_FILL = "bg-blue-50";
 export const TODAY_STYLE = `border-accent-1/50 ${TODAY_FILL}`;
@@ -13,18 +18,28 @@ export type DayState = {
   mark: DayMark | null;
 };
 
-export function dayCellClass({ isToday, isSelected, inMonth, disabled, mark }: DayState) {
-  const base = "@container relative block h-24 w-full overflow-hidden rounded border p-1.5 text-left text-sm";
+export function dayCellClass({
+  isToday,
+  isSelected,
+  inMonth,
+  disabled,
+  mark,
+}: DayState) {
+  const base =
+    "@container relative block h-24 w-full overflow-hidden rounded border p-1.5 text-left text-sm";
   const interactive = "hover:border-accent-1 hover:shadow";
   const fade = inMonth ? "" : "opacity-60";
   if (disabled) {
-    if (mark) return `${base} cursor-not-allowed ${MARK_STYLE[mark.kind].cell} ${fade}`;
+    if (mark)
+      return `${base} cursor-not-allowed ${MARK_STYLE[mark.kind].cell} ${fade}`;
     return `${base} cursor-not-allowed border-neutral-200 bg-slate-50 text-neutral-300`;
   }
   if (isSelected) return `${base} ${interactive} ${SELECTED_STYLE}`;
-  if (mark) return `${base} ${interactive} ${MARK_STYLE[mark.kind].cell} ${fade} ${isToday ? "ring-2 ring-accent-1/60" : ""}`;
+  if (mark)
+    return `${base} ${interactive} ${MARK_STYLE[mark.kind].cell} ${fade} ${isToday ? "ring-2 ring-accent-1/60" : ""}`;
   if (isToday) return `${base} ${interactive} ${TODAY_STYLE}`;
-  if (!inMonth) return `${base} ${interactive} border-neutral-200 bg-slate-100 text-neutral-400`;
+  if (!inMonth)
+    return `${base} ${interactive} border-neutral-200 bg-slate-100 text-neutral-400`;
   return `${base} ${interactive} border-neutral-200 bg-container`;
 }
 
@@ -36,17 +51,24 @@ export function MonthGrid({
   getMark,
   renderDay,
 }: {
-  month: string; 
+  month: string;
   today: string;
   selected?: string;
   isDisabled?: (day: string) => boolean;
   getMark?: (day: string) => DayMark | null;
-  renderDay: (day: string, className: string, state: DayState) => React.ReactNode;
+  renderDay: (
+    day: string,
+    className: string,
+    state: DayState,
+  ) => React.ReactNode;
 }) {
   return (
     <div className="grid grid-cols-7 gap-2 p-3">
       {DAY_SHORT.map((d) => (
-        <div key={d} className="rounded bg-blue-100 py-1 text-center text-sm font-semibold">
+        <div
+          key={d}
+          className="rounded bg-blue-100 py-1 text-center text-sm font-semibold"
+        >
           {d}
         </div>
       ))}
@@ -58,13 +80,21 @@ export function MonthGrid({
           disabled: isDisabled?.(day) ?? false,
           mark: getMark?.(day) ?? null,
         };
-        return <div key={day}>{renderDay(day, dayCellClass(state), state)}</div>;
+        return (
+          <div key={day}>{renderDay(day, dayCellClass(state), state)}</div>
+        );
       })}
     </div>
   );
 }
 
-export function DayContent({ day, mark }: { day: string; mark: DayMark | null }) {
+export function DayContent({
+  day,
+  mark,
+}: {
+  day: string;
+  mark: DayMark | null;
+}) {
   const showLabel = mark && !mark.implicit && showsLabelOnCalendar(mark.kind);
   return (
     <>
@@ -74,7 +104,9 @@ export function DayContent({ day, mark }: { day: string; mark: DayMark | null })
           title={mark.label}
           className="absolute inset-0 flex items-center justify-center px-6 text-center text-[11px] font-semibold leading-tight @[9rem]:text-xs @[12rem]:text-sm"
         >
-          <span className="line-clamp-3 [overflow-wrap:anywhere]">{mark.label}</span>
+          <span className="line-clamp-3 [overflow-wrap:anywhere]">
+            {mark.label}
+          </span>
         </span>
       )}
     </>
@@ -98,16 +130,50 @@ export function Legend({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <aside aria-label="Legend" className="w-full rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0">
-      <h3 className="text-lg font-bold">Legend</h3>
-      <ul className="mt-3 space-y-2 text-sm">
-        {MARK_OPTIONS.map((o) => (
-          <li key={o.kind} className="flex items-center gap-2">
-            <span aria-hidden className={`h-3 w-3 shrink-0 rounded-full ${MARK_STYLE[o.kind].dot}`} />
-            {o.label}
-          </li>
-        ))}
-      </ul>
+    <aside
+      aria-label="Legend"
+      className={
+        horizontal
+          ? "w-full rounded-lg bg-container px-5 py-3 shadow-sm"
+          : "w-full rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0"
+      }
+    >
+      <div
+        className={
+          horizontal ? "flex flex-wrap items-center gap-x-6 gap-y-3" : ""
+        }
+      >
+        <h3
+          className={
+            horizontal ? "shrink-0 text-lg font-bold" : "text-lg font-bold"
+          }
+        >
+          Legend
+        </h3>
+
+        <ul
+          className={
+            horizontal
+              ? "flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm"
+              : "mt-3 space-y-2 text-sm"
+          }
+        >
+          {MARK_OPTIONS.map((o) => (
+            <li
+              key={o.kind}
+              className="flex items-center gap-2 whitespace-nowrap"
+            >
+              <span
+                aria-hidden
+                className={`h-3 w-3 shrink-0 rounded-full ${
+                  MARK_STYLE[o.kind].dot
+                }`}
+              />
+              {o.label}
+            </li>
+          ))}
+        </ul>
+      </div>
     </aside>
   );
 }

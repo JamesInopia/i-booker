@@ -1,0 +1,195 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
+
+import { db } from "@/db";
+import {
+  activityTypes,
+  reservationRequests,
+  reservationSlots,
+  reservationSlotRooms,
+  rooms,
+  user as authUsers,
+} from "@/db/schema";
+import { requireUser } from "@/lib/auth";
+
+function formatDate(value: string | Date) {
+  const date =
+    typeof value === "string"
+      ? new Date(
+          /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00+08:00` : value,
+        )
+      : value;
+
+  return date.toLocaleDateString("en-PH", {
+    timeZone: "Asia/Manila",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatTime(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+
+  return new Date(Date.UTC(2000, 0, 1, hour, minute)).toLocaleTimeString(
+    "en-US",
+    {
+      timeZone: "UTC",
+      hour: "numeric",
+      minute: "2-digit",
+    },
+  );
+}
+
+function DetailField({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-bold text-black">{label}</label>
+
+      <div className="flex min-h-[49px] items-center rounded-md border border-gray-300 bg-white px-5 py-3 text-base text-black break-words">
+        {value === null || value === undefined || value === "" ? "—" : value}
+      </div>
+    </div>
+  );
+}
+
+export default async function ReservationReviewPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const user = await requireUser();
+  const { id } = await params;
+
+  const requestId = Number(id);
+
+  if (!Number.isSafeInteger(requestId) || requestId <= 0) {
+    notFound();
+  }
+
+  const results = await db
+    .select({
+      id: reservationRequests.requestId,
+      status: reservationRequests.status,
+
+      requestor: reservationRequests.requestor,
+      email: authUsers.email,
+      contact: reservationRequests.contactDetails,
+      program: reservationRequests.program,
+
+      activityName: activityTypes.name,
+      natureOther: reservationRequests.natureOther,
+
+      dateOfActivity: reservationSlots.dateOfActivity,
+      startTime: reservationSlots.startTime,
+      endTime: reservationSlots.endTime,
+      occupants: reservationSlots.occupantQuantity,
+      description: reservationSlots.detailsOfActivity,
+
+      room: rooms.name,
+    })
+    .from(reservationRequests)
+    .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
+    .innerJoin(
+      activityTypes,
+      eq(activityTypes.activityTypeId, reservationRequests.activityTypeId),
+    )
+    .innerJoin(
+      reservationSlots,
+      eq(reservationSlots.requestId, reservationRequests.requestId),
+    )
+    .leftJoin(
+      reservationSlotRooms,
+      eq(reservationSlotRooms.slotId, reservationSlots.slotId),
+    )
+    .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
+    .where(
+      and(
+        eq(reservationRequests.requestId, requestId),
+        eq(sql`lower(${authUsers.email})`, user.email.toLowerCase()),
+        inArray(reservationRequests.status, ["approved", "rejected"]),
+      ),
+    )
+    .orderBy(asc(reservationSlots.slotId))
+    .limit(1);
+
+  const booking = results[0];
+
+  if (!booking) {
+    notFound();
+  }
+
+  const isApproved = booking.status === "approved";
+
+  return (
+    <main className="min-h-screen bg-[#f0f4f8] px-6 py-8 md:px-10">
+      {/* Back navigation */}
+      <Link
+        href="/booking-status"
+        className="mb-5 inline-flex items-center gap-2 text-base font-semibold text-blue-700 hover:underline"
+      >
+        &lt; Back to Reservation Status
+      </Link>
+
+      {/* White reservation details container */}
+      <section className="rounded-xl bg-white p-6 shadow-sm md:p-8">
+        {/* Reservation status */}
+        <h1
+          className={`mb-5 text-4xl font-bold ${
+            isApproved ? "text-green-600" : "text-red-600"
+          }`}
+        >
+          {isApproved ? "Approved" : "Rejected"}
+        </h1>
+
+        {/* Two-column booking details */}
+        <div className="grid grid-cols-1 gap-x-11 gap-y-5 md:grid-cols-2">
+          <DetailField label="Requestor's Name" value={booking.requestor} />
+
+          <DetailField label="Requestor's Email" value={booking.email} />
+
+          <DetailField
+            label="Date"
+            value={formatDate(booking.dateOfActivity)}
+          />
+
+          <DetailField label="Room" value={booking.room} />
+
+          <DetailField
+            label="Time"
+            value={`${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`}
+          />
+
+          <DetailField label="No. of Occupants" value={booking.occupants} />
+
+          <DetailField
+            label="Booking Purpose"
+            value={booking.natureOther || booking.activityName}
+          />
+
+          <DetailField label="Contact No." value={booking.contact} />
+
+          <DetailField label="Program" value={booking.program} />
+        </div>
+
+        {/* Full-width booking description */}
+        <div className="mt-5">
+          <label className="mb-1 block text-sm font-bold">
+            Booking Description
+          </label>
+
+          <div className="min-h-[160px] whitespace-pre-wrap break-words rounded-md border border-gray-300 bg-white px-5 py-4 text-base">
+            {booking.description || "—"}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}

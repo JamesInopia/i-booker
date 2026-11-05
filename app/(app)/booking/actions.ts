@@ -48,16 +48,44 @@ export async function saveAndGo(targetPath: string, formData: FormData) {
 
   if (formData.has("date")) {
     const date = text(formData, "date");
+
     if (validateDate(date) === null && !(await getDayBlock(date))) {
-      if (date !== draft.date) {
-        const times = await keepTimesIfValid(draft, date, draft.roomId);
-        next = { ...draft, date, ...times };
+      const startTime = formData.has("startTime")
+        ? text(formData, "startTime")
+        : draft.startTime;
+
+      const endTime = formData.has("endTime")
+        ? text(formData, "endTime")
+        : draft.endTime;
+
+      const room = await getRoom(draft.roomId);
+
+      if (
+        room &&
+        validateTime(date, startTime, endTime) === null &&
+        !findOverlap(await getBusySlots(room.roomId, date), startTime, endTime)
+      ) {
+        next = {
+          ...draft,
+          date,
+          startTime,
+          endTime,
+        };
+      } else if (date !== draft.date) {
+        next = {
+          ...draft,
+          date,
+          startTime: "",
+          endTime: "",
+        };
       }
     }
   } else if (formData.has("startTime") || formData.has("endTime")) {
     const startTime = text(formData, "startTime");
     const endTime = text(formData, "endTime");
+
     const room = await getRoom(draft.roomId);
+
     if (
       room &&
       validateTime(draft.date, startTime, endTime) === null &&
@@ -67,12 +95,18 @@ export async function saveAndGo(targetPath: string, formData: FormData) {
         endTime,
       )
     ) {
-      next = { ...draft, startTime, endTime };
+      next = {
+        ...draft,
+        startTime,
+        endTime,
+      };
     }
   } else if (formData.has("contactNo")) {
     const nature = text(formData, "nature");
+
     const isOther =
       (await getNatures()).find((n) => n.id === nature)?.other ?? false;
+
     next = {
       ...draft,
       contactNo: text(formData, "contactNo"),
@@ -119,67 +153,69 @@ export async function startEdit(requestId: number) {
   });
   if (!ok) redirect("/booking-status");
 
-  redirect(STEPS[3].path);
-}
-
-export async function saveDate(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  await requireUser();
-  const { draft, room } = await requireStep(1);
-
-  const date = text(formData, "date");
-  const error = validateDate(date, new Date()) ?? (await getDayBlock(date));
-  if (error) return { error };
-  const times =
-    date !== draft.date
-      ? await keepTimesIfValid(draft, date, room.roomId)
-      : { startTime: draft.startTime, endTime: draft.endTime };
-  const next: Draft = { ...draft, date, ...times };
-
-  if (!(await writeDraft(next))) return TOO_LONG;
-  const keptTimes = Boolean(next.startTime && next.endTime);
-  redirect(draft.requestId && keptTimes ? STEPS[3].path : STEPS[1].path);
-}
-
-export async function saveTime(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  await requireUser();
-  const { draft, room } = await requireStep(2);
-
-  const startTime = text(formData, "startTime");
-  const endTime = text(formData, "endTime");
-  const error = validateTime(draft.date, startTime, endTime, new Date());
-  if (error) return { error };
-
-  const clash = findOverlap(
-    await getBusySlots(room.roomId, draft.date),
-    startTime,
-    endTime,
-  );
-  if (clash) return { error: overlapMessage(clash) };
-
-  if (!(await writeDraft({ ...draft, startTime, endTime }))) return TOO_LONG;
   redirect(STEPS[2].path);
 }
 
-async function keepTimesIfValid(draft: Draft, date: string, roomId: string) {
-  const empty = { startTime: "", endTime: "" };
-  const { startTime, endTime } = draft;
+export async function getDateAvailability(date: string): Promise<{
+  booked: { start: string; end: string }[];
+  error: string | null;
+}> {
+  await requireUser();
 
-  if (!startTime || !endTime) return empty;
-  if (validateTime(date, startTime, endTime)) return empty;
+  const { room } = await requireStep(1);
 
-  const clash = findOverlap(
-    await getBusySlots(roomId, date),
+  const error = validateDate(date) ?? (await getDayBlock(date));
+
+  if (error) {
+    return { booked: [], error };
+  }
+
+  const booked = await getBusySlots(room.roomId, date);
+
+  return { booked, error: null };
+}
+
+export async function saveDateTime(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireUser();
+
+  const { draft, room } = await requireStep(1);
+
+  const date = text(formData, "date");
+  const startTime = text(formData, "startTime");
+  const endTime = text(formData, "endTime");
+
+  const error =
+    validateDate(date) ??
+    (await getDayBlock(date)) ??
+    validateTime(date, startTime, endTime);
+
+  if (error) {
+    return { error };
+  }
+
+  const booked = await getBusySlots(room.roomId, date);
+
+  const clash = findOverlap(booked, startTime, endTime);
+
+  if (clash) {
+    return { error: overlapMessage(clash) };
+  }
+
+  const next = {
+    ...draft,
+    date,
     startTime,
     endTime,
-  );
+  };
 
-  return clash ? empty : { startTime, endTime };
+  if (!(await writeDraft(next))) {
+    return TOO_LONG;
+  }
+
+  redirect(draft.requestId ? STEPS[2].path : STEPS[1].path);
 }
 
 export async function saveDetails(
@@ -187,7 +223,7 @@ export async function saveDetails(
   formData: FormData,
 ): Promise<FormState> {
   await requireUser();
-  const { draft, room, natures } = await requireStep(3);
+  const { draft, room, natures } = await requireStep(2);
 
   const nature = text(formData, "nature");
   const isOther = natures.find((n) => n.id === nature)?.other ?? false;
@@ -209,12 +245,12 @@ export async function saveDetails(
     return { error: Object.values(errors)[0] ?? "Please check your details." };
 
   if (!(await writeDraft(next))) return TOO_LONG;
-  redirect(STEPS[3].path);
+  redirect(STEPS[2].path);
 }
 
 export async function submitBooking(_prev: FormState): Promise<FormState> {
   const user = await requireUser();
-  const { draft, room, natures } = await requireStep(4);
+  const { draft, room, natures } = await requireStep(3);
   const nature = natures.find((n) => n.id === draft.nature);
   if (!nature || (await getDayBlock(draft.date)))
     return { error: "This request is no longer valid. Please go back." };
@@ -254,3 +290,65 @@ export async function finishBooking() {
   await clearDraft();
   redirect("/booking-status?submitted=1");
 }
+
+//Commented for future references
+
+// export async function saveDate(
+//   _prev: FormState,
+//   formData: FormData,
+// ): Promise<FormState> {
+//   await requireUser();
+//   const { draft, room } = await requireStep(1);
+
+//   const date = text(formData, "date");
+//   const error = validateDate(date, new Date()) ?? (await getDayBlock(date));
+//   if (error) return { error };
+//   const times =
+//     date !== draft.date
+//       ? await keepTimesIfValid(draft, date, room.roomId)
+//       : { startTime: draft.startTime, endTime: draft.endTime };
+//   const next: Draft = { ...draft, date, ...times };
+
+//   if (!(await writeDraft(next))) return TOO_LONG;
+//   const keptTimes = Boolean(next.startTime && next.endTime);
+//   redirect(draft.requestId && keptTimes ? STEPS[3].path : STEPS[1].path);
+// }
+
+// export async function saveTime(
+//   _prev: FormState,
+//   formData: FormData,
+// ): Promise<FormState> {
+//   await requireUser();
+//   const { draft, room } = await requireStep(2);
+
+//   const startTime = text(formData, "startTime");
+//   const endTime = text(formData, "endTime");
+//   const error = validateTime(draft.date, startTime, endTime, new Date());
+//   if (error) return { error };
+
+//   const clash = findOverlap(
+//     await getBusySlots(room.roomId, draft.date),
+//     startTime,
+//     endTime,
+//   );
+//   if (clash) return { error: overlapMessage(clash) };
+
+//   if (!(await writeDraft({ ...draft, startTime, endTime }))) return TOO_LONG;
+//   redirect(STEPS[2].path);
+// }
+
+// async function keepTimesIfValid(draft: Draft, date: string, roomId: string) {
+//   const empty = { startTime: "", endTime: "" };
+//   const { startTime, endTime } = draft;
+
+//   if (!startTime || !endTime) return empty;
+//   if (validateTime(date, startTime, endTime)) return empty;
+
+//   const clash = findOverlap(
+//     await getBusySlots(roomId, date),
+//     startTime,
+//     endTime,
+//   );
+
+//   return clash ? empty : { startTime, endTime };
+// }

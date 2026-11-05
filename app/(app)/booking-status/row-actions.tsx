@@ -4,20 +4,23 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { BsThreeDots } from "react-icons/bs";
 import { cancelRequest } from "./actions";
-import type { BookingStatus } from "@/lib/definitions";
+import type { Booking, BookingStatus } from "@/lib/definitions";
 import { startEdit } from "../booking/actions";
 
 export default function RowActions({
   id,
   status,
+  booking,
 }: {
   id: number;
   status: BookingStatus;
+  booking: Booking;
 }) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const [pending, startTransition] = useTransition();
   const [showCancel, setShowCancel] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [reason, setReason] = useState("");
   const [cancelError, setCancelError] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -25,13 +28,15 @@ export default function RowActions({
 
   const canCancel = status === "pending" || status === "reviewed";
   const canEdit = status === "pending";
+  const canReview = status === "approved" || status === "rejected";
 
   useEffect(() => {
     if (!open) return;
     const close = () => setOpen(false);
     const onClick = (e: MouseEvent) => {
       const t = e.target as Node;
-      if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t)) close;
+      if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t))
+        close();
     };
     const onKey = (e: KeyboardEvent) => e.key === "escape" && close();
 
@@ -77,6 +82,11 @@ export default function RowActions({
     });
   }
 
+  function openReview() {
+    setOpen(false);
+    setShowReview(true);
+  }
+
   function onEdit() {
     setOpen(false);
     startTransition(async () => {
@@ -104,7 +114,7 @@ export default function RowActions({
           ref={menuRef}
           role="menu"
           style={{ top: pos.top, right: pos.right }}
-          className="fixed z-50 w-36 overflow-hidden rounded-lg-border border-gray-200 bg-white text-left text-sm shadow-lg"
+          className="fixed z-50 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white text-left text-sm shadow-lg"
         >
           {canEdit && (
             <button
@@ -125,6 +135,16 @@ export default function RowActions({
             >
               Cancel Request
             </button>
+          )}
+          {canReview && (
+            <Link
+              href={`/booking-status/${id}`}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className="block w-full px-4 py-2 text-left hover:bg-gray-100"
+            >
+              Review
+            </Link>
           )}
         </div>
       )}
@@ -178,6 +198,69 @@ export default function RowActions({
                 className="rounded-full bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
               >
                 {pending ? "Cancelling..." : "Confirm cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReview && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setShowReview(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="review-title"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-2xl bg-white p-6 text-left shadow-xl"
+          >
+            <h2 id="review-title" className="mb-5 text-xl font-bold">
+              Reservation Review
+            </h2>
+
+            <div className="space-y-4 text-sm">
+              <div>
+                <p className="text-gray-500">Room</p>
+                <p className="font-semibold">{booking.room}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Purpose</p>
+                <p>{booking.purpose}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Date Booked</p>
+                <p>{booking.dateBooked}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Booking Schedule</p>
+                <p>{booking.schedule.date}</p>
+                <p>{booking.schedule.time}</p>
+              </div>
+
+              <div>
+                <p className="text-gray-500">Status</p>
+                <p
+                  className={`font-bold capitalize ${
+                    status === "approved" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {status}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowReview(false)}
+                className="rounded-full bg-blue-900 px-6 py-2 font-semibold text-white hover:bg-blue-800"
+              >
+                Close
               </button>
             </div>
           </div>

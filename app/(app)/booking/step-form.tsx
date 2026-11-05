@@ -17,6 +17,7 @@ type Props = {
   confirmWarning?: string;
   onSubmitted?: () => void;
   children?: React.ReactNode;
+  buttonsLayout?: "default" | "under-calendar";
 };
 
 export function StepForm({
@@ -27,6 +28,7 @@ export function StepForm({
   confirmWarning,
   onSubmitted,
   children,
+  buttonsLayout = "default",
 }: Props) {
   const [state, formAction, pending] = useActionState(action, EMPTY_FORM_STATE);
   const submitted = Boolean(state.submitted);
@@ -50,7 +52,13 @@ export function StepForm({
         </p>
       )}
 
-      <div className="mt-10 flex justify-center gap-6 sm:gap-32">
+      <div
+        className={
+          buttonsLayout === "under-calendar"
+            ? "mt-3 flex w-full items-center justify-between gap-4 lg:w-[69%]"
+            : "mt-10 flex justify-center gap-6 sm:gap-32"
+        }
+      >
         <button
           type="submit"
           disabled={!canConfirm || pending || submitted}

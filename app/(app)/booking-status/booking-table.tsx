@@ -67,7 +67,7 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
                 {b.status}
               </td>
               <td className="rounded-r-[15px] bg-gray-200 px-4 py-3">
-                <RowActions id={b.id} status={b.status} />
+                <RowActions id={b.id} status={b.status} booking={b} />
               </td>
             </tr>
           ))}

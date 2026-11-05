@@ -56,7 +56,7 @@ function Stepper({
 
   return (
     <div className="relative">
-      <div className="absolute left-[12.5%] right-[12.5%] top-5 h-1 -translate-y-1/2 rounded-full bg-accent-6">
+      <div className="absolute left-[16.6667%] right-[16.6667%] top-5 h-1 -translate-y-1/2 rounded-full bg-accent-6">
         <div
           className="h-full rounded-full bg-accent-1 transition-[width] duration-700 ease-in-out motion-reduce:transition-none"
           style={{ width: `${fill}%` }}
