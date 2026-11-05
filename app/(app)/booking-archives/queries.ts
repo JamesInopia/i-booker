@@ -1,5 +1,5 @@
 import "server-only";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
@@ -9,8 +9,6 @@ import {
   rooms,
 } from "@/db/schema";
 import type { ArchiveRow } from "@/lib/definitions";
-
-const FINISHED = ["approved", "rejected", "cancelled"] as const;
 
 const dmy = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
@@ -48,7 +46,12 @@ export async function getArchiveRows(): Promise<ArchiveRow[]> {
       eq(reservationSlotRooms.slotId, reservationSlots.slotId),
     )
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
-    .where(inArray(reservationRequests.status, [...FINISHED]))
+    .where(
+      and(
+        eq(reservationRequests.status, "approved"),
+        lt(reservationSlots.dateOfActivity, manilaIso(new Date())),
+      ),
+    )
     .orderBy(desc(reservationRequests.requestDate));
 
   return rows.map((r) => ({
