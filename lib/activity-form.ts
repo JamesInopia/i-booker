@@ -103,19 +103,30 @@ async function fillOne(
     size = 7,
     minSize = 5,
     wrap = true,
+    center = false,
   ) => {
     const t = safe(raw),
       maxW = w - 7;
     let sz = size;
     while (sz > minSize && W(t, sz) > maxW) sz -= 0.5;
     if (W(t, sz) <= maxW) {
-      page.drawText(t, { x: x + 4, y: Y(top + 0.36 * sz), font, size: sz });
+      page.drawText(t, {
+        x: center ? x + (w - W(t, sz)) / 2 : x + 4,
+        y: Y(top + 0.36 * sz),
+        font,
+        size: sz,
+      });
       return;
     }
     if (!wrap) {
       let c = t;
       while (c.length > 1 && W(c + "\u2026", sz) > maxW) c = c.slice(0, -1);
-      page.drawText(c + "\u2026", { x: x + 2, y: Y(top), font, size: sz });
+      page.drawText(c + "\u2026", {
+        x: x + 4,
+        y: Y(top + 0.36 * sz),
+        font,
+        size: sz,
+      });
       return;
     }
 
@@ -128,9 +139,11 @@ async function fillOne(
       l1 = words.shift() ?? "";
       while (l1.length > 1 && W(l1, sz) > maxW) l1 = l1.slice(0, -1);
     }
-    let l2 = words.join(" ");
-    while (l2.length > 1 && W(l2, sz) > maxW) l2 = l2.slice(0, -1);
-    if (l2 !== words.join(" ")) l2 += "\u2026";
+    const full = words.join(" ");
+    let l2 = full;
+    while (l2.length > 1 && W(l2 + (l2 !== full ? "\u2026" : ""), sz) > maxW)
+      l2 = l2.slice(0, -1);
+    if (l2 !== full) l2 += "\u2026";
     page.drawText(l1, {
       x: x + 4,
       y: Y(top - 2.7 + 0.36 * sz),
@@ -148,7 +161,8 @@ async function fillOne(
   const idx = natureIndex(d.nature);
   const [cx, cy] = NATURE_BOXES[idx];
   page.drawText("X", { x: cx - 3, y: Y(cy) - 3, font: bold, size: 9 });
-  if (idx === 6) text(d.natureOther || d.nature, 429.1, 173, 112.7);
+  if (idx === 6)
+    text(clip(d.natureOther || d.nature, 70), 429.1, 173, 112.7, 7, 5);
 
   const time = `${d.startTime} - ${d.endTime}`;
 
@@ -156,9 +170,33 @@ async function fillOne(
     [210.5, 242.8],
     [464.2, 496.4],
   ]) {
-    text(d.requestor, HDR.requestor[0], h, HDR.requestor[1] - HDR.requestor[0]);
-    text(d.contactDetails, HDR.contact[0], h, HDR.contact[1] - HDR.contact[0]);
-    text(d.program, HDR.program[0], h, HDR.program[1] - HDR.program[0]);
+    text(
+      d.requestor,
+      HDR.requestor[0],
+      h,
+      HDR.requestor[1] - HDR.requestor[0],
+      7,
+      5,
+      false,
+    );
+    text(
+      d.contactDetails,
+      HDR.contact[0],
+      h,
+      HDR.contact[1] - HDR.contact[0],
+      7,
+      5,
+      false,
+    );
+    text(
+      d.program,
+      HDR.program[0],
+      h,
+      HDR.program[1] - HDR.program[0],
+      7,
+      5,
+      false,
+    );
     text(
       shortMonth(d.dateFiled),
       HDR.filed[0],
@@ -177,11 +215,20 @@ async function fillOne(
       ["details", clip(d.details, 140)],
     ];
     for (const [k, v] of row)
-      text(v, COLS[k][0], r, COLS[k][1] - COLS[k][0], 6.5);
+      text(
+        v,
+        COLS[k][0],
+        r,
+        COLS[k][1] - COLS[k][0],
+        6.5,
+        k === "details" ? 4.5 : 5,
+        true,
+        k === "start" || k === "end",
+      );
   }
 
-  text(d.requestor, 78, 340.5, 135);
-  text(d.venue, 66, 350, 147);
+  text(d.requestor, 78, 340.5, 135, 7, 5, false);
+  text(d.venue, 66, 350, 147, 7, 5, false);
   text(
     `${shortMonth(d.dateOfActivity)}  ${time}`,
     122,

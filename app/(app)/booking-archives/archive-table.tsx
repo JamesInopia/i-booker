@@ -123,7 +123,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 href={`/booking-archives/view?ids=${chosen.join(",")}`}
                 className={`${BTN} bg-accent-1`}
               >
-                View Booking Details
+                View Details
               </Link>
               <button
                 type="button"
@@ -132,11 +132,11 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 title={
                   allApproved
                     ? undefined
-                    : "Only unapprovved requests can be downloaded or printed."
+                    : "Only unapproved requests can be downloaded or printed."
                 }
                 className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                Print Booking Details
+                Print Details
               </button>
               <button
                 type="button"
@@ -149,7 +149,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 }
                 className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                Download Booking Details
+                Download Details
               </button>
             </div>
             <button
