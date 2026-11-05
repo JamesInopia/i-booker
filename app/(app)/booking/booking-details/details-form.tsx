@@ -5,6 +5,7 @@ import { saveDetails } from "../actions";
 import {
   EMPTY_DRAFT,
   MAX_DESCRIPTION,
+  MAX_NATURE_OTHER,
   PROGRAMS,
   hasErrors,
   validateDetails,
@@ -152,7 +153,7 @@ export function DetailsForm({
           <Field label="Others; please specify" required error={shown("natureOther")}>
             <input
               name="natureOther"
-              maxLength={100}
+              maxLength={MAX_NATURE_OTHER}
               placeholder="Please specify"
               value={values.natureOther}
               onChange={set("natureOther")}

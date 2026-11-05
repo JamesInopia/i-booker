@@ -5,6 +5,7 @@ import { BsThreeDots } from "react-icons/bs";
 import { cancelRequest } from "./actions";
 import type { Booking, BookingStatus } from "@/lib/definitions";
 import { startEdit } from "../booking/actions";
+import Link from "next/link";
 
 export default function RowActions({
   id,

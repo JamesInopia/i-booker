@@ -3,7 +3,8 @@ export const OPEN_TIME = "07:30";
 export const CLOSE_TIME = "21:30";
 export const SLOT_MINUTES = 30;
 export const MAX_ADVANCE_DAYS = 365;
-export const MAX_DESCRIPTION = 140;
+export const MAX_DESCRIPTION = 40;
+export const MAX_NATURE_OTHER = 25;
 export const PROGRAMS = [
   "BSCS-SE",
   "AB-ANI",
@@ -246,8 +247,8 @@ export function validateDetails(
   else if (!nature) errors.nature = "Choose a valid nature of activity.";
   else if (nature.other && !d.natureOther.trim())
     errors.natureOther = "Please specify the activity.";
-  if (d.natureOther.trim().length > 100)
-    errors.natureOther = "Keep this under 100 characters.";
+  if (d.natureOther.trim().length > MAX_NATURE_OTHER)
+    errors.natureOther = `Keep this to ${MAX_NATURE_OTHER} characters or fewer.`;
 
   const occupants = Number(d.occupants);
   if (!d.occupants.trim()) errors.occupants = "Enter the number of occupants.";
@@ -262,7 +263,7 @@ export function validateDetails(
 
   if (!d.description.trim()) errors.description = "Describe your request.";
   else if (d.description.trim().length > MAX_DESCRIPTION) {
-    errors.description = `Keep the description under ${MAX_DESCRIPTION} characters.`;
+    errors.description = `Keep the description to ${MAX_DESCRIPTION} characters or fewer.`;
   }
 
   return errors;
@@ -319,7 +320,7 @@ export function parseDraft(raw: string | undefined): Draft | null {
     endTime: clip(r.endTime, 5),
     contactNo: clip(r.contactNo, 30),
     nature: /^\d{1,9}$/.test(clip(r.nature, 9)) ? clip(r.nature, 9) : "",
-    natureOther: clip(r.natureOther, 100),
+    natureOther: clip(r.natureOther, MAX_NATURE_OTHER),
     occupants: clip(r.occupants, 4),
     program: clip(r.program, 100),
     description: clip(r.description, MAX_DESCRIPTION),

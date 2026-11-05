@@ -1,7 +1,15 @@
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument, type PDFFont } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ArchiveDetail } from "@/lib/definitions";
+import {
+  MAX_DESCRIPTION,
+  MAX_NATURE_OTHER,
+} from "@/app/(app)/booking/rules";
+
+const FONT_PATH = path.join(process.cwd(), "public/fonts/Barlow-Regular.ttf");
+const FS = 5;
 
 const PAGE_H = 792;
 const Y = (top: number) => PAGE_H - top;
@@ -70,28 +78,22 @@ async function fillOne(
   out: PDFDocument,
   templateBytes: Uint8Array,
   d: ArchiveDetail,
+  font: PDFFont,
 ) {
   const [page] = await out.copyPages(
     await PDFDocument.load(templateBytes),
     [0],
   );
   out.addPage(page);
-  const font = await out.embedFont(StandardFonts.Helvetica);
-  const bold = await out.embedFont(StandardFonts.HelveticaBold);
+  const bold = font;
+  const supported = new Set(font.getCharacterSet());
 
   const safe = (s: string) =>
     String(s ?? "")
       .replace(/\s+/g, " ")
       .trim()
       .split("")
-      .map((c) => {
-        try {
-          font.encodeText(c);
-          return c;
-        } catch {
-          return "?";
-        }
-      })
+      .map((c) => (supported.has(c.codePointAt(0)!) ? c : "?"))
       .join("");
   const W = (t: string, sz: number) => font.widthOfTextAtSize(t, sz);
 
@@ -108,7 +110,7 @@ async function fillOne(
   ) => {
     const t = safe(raw),
       maxW = w - 7;
-    let sz = size;
+    let sz = FS;
     while (sz > minSize && W(t, sz) > maxW) sz -= 0.5;
     if (W(t, sz) <= maxW) {
       page.drawText(t, {
@@ -131,7 +133,7 @@ async function fillOne(
       return;
     }
 
-    sz = minSize;
+    sz = FS;
     const words = t.split(" ");
     let l1 = "";
     while (words.length && W((l1 + " " + words[0]).trim(), sz) <= maxW)
@@ -162,17 +164,17 @@ async function fillOne(
   const idx = natureIndex(d.nature);
   const [cx, cy] = NATURE_BOXES[idx];
   page.drawText("X", { x: cx - 3, y: Y(cy) - 3, font: bold, size: 9 });
+  // One line, sat just above the underline. The box is nudged 2pt left and
+  // widened so a worst-case 25 x "W" (109.8pt at 5pt) still fits.
   if (idx === 6)
     text(
-      clip(d.natureOther || d.nature, 70),
-      429.1,
-      173,
-      112.7,
+      clip(d.natureOther || d.nature, MAX_NATURE_OTHER),
+      427.1,
+      174,
+      117,
       7,
       5,
-      true,
       false,
-      2,
     );
 
   const time = `${d.startTime} - ${d.endTime}`;
@@ -223,7 +225,7 @@ async function fillOne(
       ["end", d.endTime],
       ["venue", d.venue],
       ["pax", String(d.participants)],
-      ["details", clip(d.details, 140)],
+      ["details", clip(d.details, MAX_DESCRIPTION)],
     ];
     for (const [k, v] of row)
       text(
@@ -233,7 +235,7 @@ async function fillOne(
         COLS[k][1] - COLS[k][0],
         6.5,
         k === "details" ? 4.5 : 5,
-        true,
+        k === "venue",
         k === "start" || k === "end",
       );
   }
@@ -256,6 +258,8 @@ export async function buildRequestsPdf(details: ArchiveDetail[]) {
     path.join(process.cwd(), "public/forms/activity-request-format.pdf"),
   );
   const out = await PDFDocument.create();
-  for (const d of details) await fillOne(out, tpl, d);
+  out.registerFontkit(fontkit);
+  const font = await out.embedFont(await readFile(FONT_PATH), { subset: true });
+  for (const d of details) await fillOne(out, tpl, d, font);
   return out.save();
 }

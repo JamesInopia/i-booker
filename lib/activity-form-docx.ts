@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { randomUUID } from "node:crypto";
 import {
   AlignmentType,
   Document,
@@ -11,10 +12,19 @@ import {
   TextRun,
   VerticalPositionRelativeFrom,
 } from "docx";
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { PDFDocument } from "pdf-lib";
+import fontkit from "@pdf-lib/fontkit";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ArchiveDetail } from "./definitions";
+import {
+  MAX_DESCRIPTION,
+  MAX_NATURE_OTHER,
+} from "@/app/(app)/booking/rules";
+
+const FONT_PATH = path.join(process.cwd(), "public/fonts/Barlow-Regular.ttf");
+const FS = 5;
+const FONT_FAMILY = "Barlow";
 
 const OFF = 12;
 const INSET_X = 7.2;
@@ -81,9 +91,11 @@ const natureIndex = (n: string) => {
 let fontPromise: Promise<Awaited<ReturnType<PDFDocument["embedFont"]>>> | null =
   null;
 const measureFont = () =>
-  (fontPromise ??= PDFDocument.create().then((d) =>
-    d.embedFont(StandardFonts.Helvetica),
-  ));
+  (fontPromise ??= (async () => {
+    const d = await PDFDocument.create();
+    d.registerFontkit(fontkit);
+    return d.embedFont(await readFile(FONT_PATH));
+  })());
 
 type Fitted = { lines: string[]; sz: number };
 
@@ -96,7 +108,7 @@ function fit(
   maxLines: 1 | 2,
 ): Fitted {
   const maxW = w - 7;
-  let sz = size;
+  let sz = FS;
   while (sz > minSize && W(t, sz) > maxW) sz -= 0.5;
   if (W(t, sz) <= maxW) return { lines: [t], sz };
   if (maxLines === 1) {
@@ -104,7 +116,7 @@ function fit(
     while (c.length > 1 && W(c + "\u2026", sz) > maxW) c = c.slice(0, -1);
     return { lines: [c + "\u2026"], sz };
   }
-  sz = minSize;
+  sz = FS;
   const words = t.split(" ");
   let l1 = "";
   while (words.length && W((l1 + " " + words[0]).trim(), sz) <= maxW)
@@ -175,7 +187,7 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
               (l, i) =>
                 new TextRun({
                   text: l,
-                  font: "Arial",
+                  font: FONT_FAMILY,
                   size: Math.round(f.sz * 2),
                   break: i ? 1 : 0,
                 }),
@@ -190,11 +202,12 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
   const [cx, cy] = NATURE_BOXES[idx];
   field("X", cx - 7, cy, 14, { size: 9, center: true });
   if (idx === 6)
-    field(clip(d.natureOther || d.nature, 70), 429.1, 173, 112.7, {
+    // One line, sat just above the underline. The box is nudged 2pt left and
+    // widened so a worst-case 25 x "W" (109.8pt at 5pt) still fits.
+    field(clip(d.natureOther || d.nature, MAX_NATURE_OTHER), 427.1, 174, 117, {
       size: 7,
       minSize: 5,
-      lines: 2,
-      lift: 2,
+      lines: 1,
     });
 
   const time = `${d.startTime}-${d.endTime}`;
@@ -223,14 +236,14 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
       ["end", d.endTime],
       ["venue", d.venue],
       ["pax", String(d.participants)],
-      ["details", clip(d.details, 140)],
+      ["details", clip(d.details, MAX_DESCRIPTION)],
     ];
 
     for (const [k, v] of row) {
       field(v, COLS[k][0], r, COLS[k][1] - COLS[k][0], {
         size: 6.5,
         minSize: k === "details" ? 4.5 : 5,
-        lines: k === "venue" || k === "details" ? 2 : 1,
+        lines: k === "venue" ? 2 : 1,
         center: k === "start" || k === "end",
       });
     }
@@ -265,6 +278,35 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
   });
 }
 
+// Embeds the font in the .docx (obfuscated .odttf, per ECMA-376) so Word
+// shows it even when it is not installed on the viewer's computer.
+function embedFont(zip: JSZip, xmlParts: { fontTable: string; rels: string; settings: string }, ttf: Buffer) {
+  const guid = randomUUID().toUpperCase();
+  const key = Buffer.from(guid.replace(/-/g, ""), "hex").reverse();
+  const data = Buffer.from(ttf);
+  for (let i = 0; i < 32 && i < data.length; i++) data[i] ^= key[i % 16];
+  zip.file("word/fonts/font1.odttf", data);
+
+  const entry =
+    `<w:font w:name="${FONT_FAMILY}"><w:embedRegular r:id="rId1" w:fontKey="{${guid}}"/></w:font>`;
+  const rel =
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font1.odttf"/>';
+  const open = (xml: string, tag: string, inner: string) =>
+    xml.includes("</" + tag + ">")
+      ? xml.replace("</" + tag + ">", inner + "</" + tag + ">")
+      : xml.replace(new RegExp("(<" + tag + "\\b[^>]*?)\\s*/>"), "$1>" + inner + "</" + tag + ">");
+
+  zip.file("word/fontTable.xml", open(xmlParts.fontTable, "w:fonts", entry));
+  zip.file("word/_rels/fontTable.xml.rels", open(xmlParts.rels, "Relationships", rel));
+  zip.file(
+    "word/settings.xml",
+    xmlParts.settings.replace(
+      "<w:displayBackgroundShape/>",
+      "<w:displayBackgroundShape/><w:embedTrueTypeFonts/>",
+    ),
+  );
+}
+
 export async function buildRequestsDocx(details: ArchiveDetail[]) {
   const bg = await readFile(
     path.join(process.cwd(), "public/forms/activity-request-format.jpg"),
@@ -295,6 +337,16 @@ export async function buildRequestsDocx(details: ArchiveDetail[]) {
   zip.file(
     "word/document.xml",
     xml.replace(/<v:shape\b/g, '<v:shape stroked="f" filled="f"'),
+  );
+
+  embedFont(
+    zip,
+    {
+      fontTable: await zip.file("word/fontTable.xml")!.async("string"),
+      rels: await zip.file("word/_rels/fontTable.xml.rels")!.async("string"),
+      settings: await zip.file("word/settings.xml")!.async("string"),
+    },
+    await readFile(FONT_PATH),
   );
   return zip.generateAsync({ type: "nodebuffer" });
 }
