@@ -71,16 +71,20 @@ export default async function ReviewAndSubmitPage() {
           return (
             <li
               key={n.id}
-              className={`flex items-center gap-2 text-sm font-semibold ${n.other ? "lg:col-span-2" : ""}`}
+              className={`flex min-w-0 items-center gap-2 text-sm font-semibold ${
+                n.other ? "sm:col-span-2 lg:col-span-2" : ""
+              }`}
             >
               <Box checked={checked} />
-              <span>
+
+              <span className="shrink-0">
                 {n.name}
                 {n.other && "; please specify:"}
                 {checked && <span className="sr-only"> (selected)</span>}
               </span>
+
               {n.other && (
-                <span className="min-w-0 flex-1 break-words border-b border-accent-3/60 px-1 font-normal">
+                <span className="min-w-0 w-full max-w-md flex-1 self-end break-words border-b border-accent-3/60 px-1 pb-0.5 font-normal">
                   {checked ? draft.natureOther : ""}
                 </span>
               )}
