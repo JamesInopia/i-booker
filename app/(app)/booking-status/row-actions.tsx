@@ -104,7 +104,7 @@ export default function RowActions({
           ref={menuRef}
           role="menu"
           style={{ top: pos.top, right: pos.right }}
-          className="fixed z-50 w-36 overflow-hidden rounded-lg-border border-gray-200 bg-white text-left text-sm shadow-lg"
+          className="fixed z-50 w-36 overflow-hidden rounded-lg border border-gray-200 bg-white text-left text-sm shadow-lg"
         >
           {canEdit && (
             <button
