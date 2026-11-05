@@ -37,7 +37,9 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-4 py-0.5">
       <dt className="w-40 shrink-0 font-semibold">{label}</dt>
-      <dd className="min-w-0 flex-1 whitespace-pre-wrap break-words">{value || "—"}</dd>
+      <dd className="min-w-0 flex-1 whitespace-pre-wrap wrap-break-word">
+        {value || "—"}
+      </dd>
     </div>
   );
 }
@@ -46,7 +48,9 @@ function BookingSheet({ booking: b }: { booking: ReviewBooking }) {
   return (
     <article className="print-sheet text-sm text-black">
       <p className="text-xs font-semibold tracking-widest">iACADEMY CEBU</p>
-      <h1 className="mt-1 text-2xl font-bold">Room Reservation – Booking Details</h1>
+      <h1 className="mt-1 text-2xl font-bold">
+        Room Reservation – Booking Details
+      </h1>
       <p className="mt-1">
         Request No. {b.id} · Status: <strong>{STATUS_LABEL[b.status]}</strong>
       </p>
@@ -69,7 +73,9 @@ function BookingSheet({ booking: b }: { booking: ReviewBooking }) {
       {b.slots.map((s, i) => (
         <section key={i} className="mt-5">
           <h2 className="mb-1 text-base font-bold">
-            {b.slots.length > 1 ? `Schedule ${i + 1} of ${b.slots.length}` : "Schedule"}
+            {b.slots.length > 1
+              ? `Schedule ${i + 1} of ${b.slots.length}`
+              : "Schedule"}
           </h2>
           <dl>
             <Row label="Date" value={s.date} />
@@ -83,9 +89,16 @@ function BookingSheet({ booking: b }: { booking: ReviewBooking }) {
 
       <h2 className="mb-1 mt-5 text-base font-bold">Approval</h2>
       <dl>
-        <Row label="Approved on" value={b.status === "approved" ? (b.decidedAt ?? "") : ""} />
-        {b.liaisonRemarks && <Row label="Liaison remarks" value={b.liaisonRemarks} />}
-        {b.supervisorRemarks && <Row label="Supervisor remarks" value={b.supervisorRemarks} />}
+        <Row
+          label="Approved on"
+          value={b.status === "approved" ? (b.decidedAt ?? "") : ""}
+        />
+        {b.liaisonRemarks && (
+          <Row label="Liaison remarks" value={b.liaisonRemarks} />
+        )}
+        {b.supervisorRemarks && (
+          <Row label="Supervisor remarks" value={b.supervisorRemarks} />
+        )}
       </dl>
     </article>
   );

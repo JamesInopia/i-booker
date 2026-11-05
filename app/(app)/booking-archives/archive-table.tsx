@@ -7,6 +7,7 @@ import DeleteDialog from "./delete-dialog";
 import type { ArchiveAction } from "./options";
 import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
+import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 
 const BTN =
   "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
@@ -25,6 +26,9 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
     [rows, selected],
   );
   const allSelected = rows.length > 0 && chosen.length === rows.length;
+  const allApproved = chosen.every(
+    (id) => rows.find((r) => r.id === id)?.status === "approved",
+  );
 
   function toggle(id: number) {
     setSelected((prev) => {
@@ -90,7 +94,12 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 <td className={TD}>
                   <RowMenu
                     id={r.id}
-                    onAction={(type) => setDialog({ type, ids: [r.id] })}
+                    status={r.status}
+                    onAction={(a) =>
+                      a === "print"
+                        ? printRequests([r.id])
+                        : setDialog({ type: a, ids: [r.id] })
+                    }
                   />
                 </td>
               </tr>
@@ -114,21 +123,33 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 href={`/booking-archives/view?ids=${chosen.join(",")}`}
                 className={`${BTN} bg-accent-1`}
               >
-                View Booking Details
+                View Details
               </Link>
               <button
                 type="button"
-                onClick={() => setDialog({ type: "print", ids: chosen })}
-                className={`${BTN} bg-accent-1`}
+                onClick={() => printRequests(chosen)}
+                disabled={!allApproved}
+                title={
+                  allApproved
+                    ? undefined
+                    : "Only unapproved requests can be downloaded or printed."
+                }
+                className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                Print Booking Details
+                Print Details
               </button>
               <button
                 type="button"
                 onClick={() => setDialog({ type: "download", ids: chosen })}
-                className={`${BTN} bg-accent-1`}
+                disabled={!allApproved}
+                title={
+                  allApproved
+                    ? undefined
+                    : "Only approved requests can be downloaded or printed."
+                }
+                className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                Download Booking Details
+                Download Details
               </button>
             </div>
             <button
@@ -149,7 +170,9 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
           onConfirm={confirmDelete}
         />
       )}
-      {/* dialogs for print and download here */}
+      {dialog?.type === "download" && (
+        <DownloadDialog ids={dialog.ids} onClose={() => setDialog(null)} />
+      )}
     </>
   );
 }

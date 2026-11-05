@@ -8,6 +8,7 @@ import type { ArchiveDetail } from "@/lib/definitions";
 import DeleteDialog from "../delete-dialog";
 import { STATUS_LABEL, STATUS_TEXT } from "@/lib/booking-status";
 import RequestDetails from "./request-details";
+import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 
 const btn = "rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50";
 const btnPrimary = `${btn} bg-accent-1 text-white hover:opacity-90`;
@@ -25,6 +26,9 @@ export default function DetailViewer({
   const [items, setItems] = useState(initial);
   const [index, setIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [exportType, setExportType] = useState<"print" | "download" | null>(
+    null,
+  );
 
   const current = items[index];
 
@@ -81,13 +85,24 @@ export default function DetailViewer({
         <RequestDetails d={current} />
 
         <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
-          {/* print and download dialogs later */}
-          <button type="button" className={btnPrimary}>
-            Print Details
-          </button>
-          <button type="button" className={btnOutline}>
-            Download Details
-          </button>
+          {current.status === "approved" && (
+            <>
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={() => printRequests([current.id])}
+              >
+                Print Details
+              </button>
+              <button
+                type="button"
+                className={btnOutline}
+                onClick={() => setExportType("download")}
+              >
+                Download Details
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
@@ -98,6 +113,12 @@ export default function DetailViewer({
         </div>
       </section>
 
+      {exportType === "download" && (
+        <DownloadDialog
+          ids={[current.id]}
+          onClose={() => setExportType(null)}
+        />
+      )}
       {confirmDelete && (
         <DeleteDialog
           count={1}

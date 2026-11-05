@@ -1,6 +1,6 @@
 "use server";
 
-import { and, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { reservationRequests } from "@/db/schema";
@@ -11,6 +11,9 @@ export async function deleteArchived(ids: number[]) {
 
   const clean = [...new Set(ids)].filter(Number.isInteger).slice(0, 200);
   if (clean.length === 0) return { error: "Nothing selected..." };
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Manila",
+  }).format(new Date());
 
   try {
     const done = await db
@@ -18,11 +21,12 @@ export async function deleteArchived(ids: number[]) {
       .where(
         and(
           inArray(reservationRequests.requestId, clean),
-          inArray(reservationRequests.status, [
-            "approved",
-            "rejected",
-            "cancelled",
-          ]),
+          eq(reservationRequests.status, "approved"),
+          sql`exists (
+            select 1 from reservation_slot s
+            where s.request_id = ${reservationRequests.requestId}
+              and s.date_of_activity < ${today}
+          )`,
         ),
       )
       .returning({ id: reservationRequests.requestId });

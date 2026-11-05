@@ -3,8 +3,13 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { approveRequest, cancelApprovedRequests, rejectRequest, sendForApproval } from "./actions";
-import { PrintPortal, usePrintBookings } from "./booking-sheet";
+import {
+  approveRequest,
+  cancelApprovedRequests,
+  rejectRequest,
+  sendForApproval,
+} from "./actions";
+import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 import { ReasonDialog } from "./reason-dialog";
 import { isOpen, STATUS_LABEL, STATUS_TEXT, type ReviewBooking } from "./types";
 import type { Role } from "@/lib/session";
@@ -33,7 +38,7 @@ export function ReviewDetail({
 }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogKind | null>(null);
-  const { items: printItems, print } = usePrintBookings();
+  const [showDownload, setShowDownload] = useState(false);
 
   const approved = b.status === "approved";
   const canSend = role === "admin_liaison" && b.status === "pending";
@@ -42,14 +47,18 @@ export function ReviewDetail({
   const unreviewed = b.status === "pending";
 
   let waitingNote = "";
-  if (role === "admin_liaison" && b.status === "reviewed") waitingNote = "Sent to the Admin Supervisor for approval.";
+  if (role === "admin_liaison" && b.status === "reviewed")
+    waitingNote = "Sent to the Admin Supervisor for approval.";
 
   const closeDialog = () => setDialog(null);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href={backHref} className="flex items-center gap-2 text-xl hover:text-accent-1">
+        <Link
+          href={backHref}
+          className="flex items-center gap-2 text-xl hover:text-accent-1"
+        >
           <span aria-hidden="true" className="text-3xl leading-none">
             ←
           </span>
@@ -58,8 +67,10 @@ export function ReviewDetail({
         <RequestScroller currentId={b.id} options={options} />
       </div>
 
-      <section className="flex min-h-[28rem] flex-col rounded-lg bg-container p-6 shadow-sm">
-        <h2 className={`text-3xl font-bold ${STATUS_TEXT[b.status]}`}>{STATUS_LABEL[b.status]}</h2>
+      <section className="flex min-h-112 flex-col rounded-lg bg-container p-6 shadow-sm">
+        <h2 className={`text-3xl font-bold ${STATUS_TEXT[b.status]}`}>
+          {STATUS_LABEL[b.status]}
+        </h2>
 
         <div className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-2">
           <Field label="Requestor's Name" value={b.requestor} />
@@ -79,54 +90,90 @@ export function ReviewDetail({
           <div className="mt-1 min-h-28 whitespace-pre-wrap rounded-md border border-accent-6 bg-container p-3 text-base">
             {b.slots.length === 1
               ? b.slots[0].details || "—"
-              : b.slots.map((s, i) => `Schedule ${i + 1}: ${s.details || "—"}`).join("\n")}
+              : b.slots
+                  .map((s, i) => `Schedule ${i + 1}: ${s.details || "—"}`)
+                  .join("\n")}
           </div>
         </div>
 
         {(b.liaisonRemarks || b.supervisorRemarks || b.cancelReason) && (
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {b.liaisonRemarks && <Field label="Liaison Remarks" value={b.liaisonRemarks} />}
-            {b.supervisorRemarks && <Field label="Supervisor Remarks" value={b.supervisorRemarks} />}
-            {b.cancelReason && <Field label="Cancellation Reason" value={b.cancelReason} />}
+            {b.liaisonRemarks && (
+              <Field label="Liaison Remarks" value={b.liaisonRemarks} />
+            )}
+            {b.supervisorRemarks && (
+              <Field label="Supervisor Remarks" value={b.supervisorRemarks} />
+            )}
+            {b.cancelReason && (
+              <Field label="Cancellation Reason" value={b.cancelReason} />
+            )}
           </div>
         )}
 
         <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
-          {waitingNote && <p className="mr-auto text-sm text-gray-600">{waitingNote}</p>}
+          {waitingNote && (
+            <p className="mr-auto text-sm text-gray-600">{waitingNote}</p>
+          )}
 
           {approved && (
             <>
-              <button type="button" className={btnPrimary} onClick={() => print([b])}>
-                Print Booking Details
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={() => printRequests([b.id])}
+              >
+                Print Details
               </button>
-              <a href={`/api/booking-details?id=${b.id}`} download className={btnOutline}>
-                Download Booking Details
-              </a>
-              <button type="button" className={btnDanger} onClick={() => setDialog("cancel")}>
+              <button
+                type="button"
+                className={btnPrimary}
+                onClick={() => setShowDownload(true)}
+              >
+                Download Details
+              </button>
+              <button
+                type="button"
+                className={btnDanger}
+                onClick={() => setDialog("cancel")}
+              >
                 Cancel Request
               </button>
             </>
           )}
 
           {canSend && (
-            <button type="button" className={btnPrimary} onClick={() => setDialog("send")}>
+            <button
+              type="button"
+              className={btnPrimary}
+              onClick={() => setDialog("send")}
+            >
               Send for Approval
             </button>
           )}
           {canApprove && (
-            <button type="button" className={btnSuccess} onClick={() => setDialog("approve")}>
+            <button
+              type="button"
+              className={btnSuccess}
+              onClick={() => setDialog("approve")}
+            >
               Approve Request
             </button>
           )}
           {canReject && (
-            <button type="button" className={btnDangerOutline} onClick={() => setDialog("reject")}>
+            <button
+              type="button"
+              className={btnDangerOutline}
+              onClick={() => setDialog("reject")}
+            >
               Reject Request
             </button>
           )}
         </div>
       </section>
 
-      <PrintPortal items={printItems} />
+      {showDownload && (
+        <DownloadDialog ids={[b.id]} onClose={() => setShowDownload(false)} />
+      )}
 
       {dialog === "send" && (
         <ReasonDialog
@@ -143,7 +190,9 @@ export function ReviewDetail({
       )}
       {dialog === "approve" && (
         <ReasonDialog
-          title={unreviewed ? "Approve without review?" : "Approve this request?"}
+          title={
+            unreviewed ? "Approve without review?" : "Approve this request?"
+          }
           description="The room will be reserved for the requester."
           warning={
             unreviewed
@@ -199,16 +248,28 @@ export function ReviewDetail({
   );
 }
 
-function RequestScroller({ currentId, options }: { currentId: number; options: ScrollerOption[] }) {
+function RequestScroller({
+  currentId,
+  options,
+}: {
+  currentId: number;
+  options: ScrollerOption[];
+}) {
   const router = useRouter();
   const index = options.findIndex((o) => o.id === currentId);
   const prev = index > 0 ? options[index - 1] : null;
-  const next = index >= 0 && index < options.length - 1 ? options[index + 1] : null;
+  const next =
+    index >= 0 && index < options.length - 1 ? options[index + 1] : null;
 
-  const arrow = "flex h-8 w-8 items-center justify-center rounded-full border border-accent-6 bg-container text-sm";
+  const arrow =
+    "flex h-8 w-8 items-center justify-center rounded-full border border-accent-6 bg-container text-sm";
 
   return (
-    <div className="flex items-center gap-2" role="group" aria-label="Browse requests">
+    <div
+      className="flex items-center gap-2"
+      role="group"
+      aria-label="Browse requests"
+    >
       <select
         value={currentId}
         aria-label="Jump to request"
@@ -226,7 +287,11 @@ function RequestScroller({ currentId, options }: { currentId: number; options: S
       </select>
 
       {prev ? (
-        <Link href={prev.href} aria-label="Previous request" className={`${arrow} hover:bg-accent-4`}>
+        <Link
+          href={prev.href}
+          aria-label="Previous request"
+          className={`${arrow} hover:bg-accent-4`}
+        >
           ‹
         </Link>
       ) : (
@@ -236,7 +301,11 @@ function RequestScroller({ currentId, options }: { currentId: number; options: S
       )}
 
       {next ? (
-        <Link href={next.href} aria-label="Next request" className={`${arrow} hover:bg-accent-4`}>
+        <Link
+          href={next.href}
+          aria-label="Next request"
+          className={`${arrow} hover:bg-accent-4`}
+        >
           ›
         </Link>
       ) : (
@@ -252,10 +321,20 @@ function RequestScroller({ currentId, options }: { currentId: number; options: S
   );
 }
 
-function SlotFields({ index, total, slot }: { index: number; total: number; slot: ReviewBooking["slots"][number] }) {
+function SlotFields({
+  index,
+  total,
+  slot,
+}: {
+  index: number;
+  total: number;
+  slot: ReviewBooking["slots"][number];
+}) {
   return (
     <>
-      {total > 1 && <p className="text-sm font-bold sm:col-span-2">{`Schedule ${index + 1} of ${total}`}</p>}
+      {total > 1 && (
+        <p className="text-sm font-bold sm:col-span-2">{`Schedule ${index + 1} of ${total}`}</p>
+      )}
       <Field label="Date" value={slot.date} />
       <Field label="Room" value={slot.rooms.join(", ") || "—"} />
       <Field label="Time" value={slot.time} />
@@ -268,7 +347,7 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div>
       <p className="text-xs font-semibold">{label}</p>
-      <div className="mt-1 min-h-8 whitespace-pre-wrap break-words rounded-md border border-accent-6 bg-container px-3 py-1.5 text-sm">
+      <div className="mt-1 min-h-8 whitespace-pre-wrap wrap-break-word rounded-md border border-accent-6 bg-container px-3 py-1.5 text-sm">
         {value}
       </div>
     </div>
