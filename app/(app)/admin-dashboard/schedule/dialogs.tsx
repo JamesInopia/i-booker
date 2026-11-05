@@ -10,6 +10,7 @@ import {
   MAX_COURSE_TITLE,
   MAX_TERM_NAME,
   START_OPTIONS,
+  toHHMM,
   WEEK_COLUMNS,
   validateClassFields,
   findClash,
@@ -18,7 +19,7 @@ import {
   type DraftClass,
   type ScheduleResult,
 } from "./types";
-import { formatTime } from "../../booking/rules";
+import { SLOT_MINUTES, formatTime, toMinutes } from "../../booking/rules";
 
 const input = "mt-1 w-full rounded-md border border-gray-300 p-2 text-sm outline-none focus:border-accent-1";
 
@@ -190,6 +191,16 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
   const [error, setError] = useState("");
   const ids = [useId(), useId(), useId(), useId(), useId()];
 
+  // A time is "taken" when it would clash with another class in this room on any of the chosen days.
+  const clashes = (from: string, to: string) =>
+    days.some((day) => findClash(classes, { id: existing?.id ?? 0, roomId, dayOfWeek: day, start: from, end: to }));
+  const startTaken = (t: string) => clashes(t, toHHMM(toMinutes(t) + SLOT_MINUTES));
+  // A choice that became taken (after changing room or days) is dropped rather than left selected.
+  const startValue = start && !startTaken(start) ? start : "";
+  const endTaken = (t: string) =>
+    startValue ? clashes(startValue, t) : clashes(toHHMM(toMinutes(t) - SLOT_MINUTES), t);
+  const endValue = end && !endTaken(end) ? end : "";
+
   const toggleDay = (iso: number) =>
     setDays((d) => (existing ? [iso] : d.includes(iso) ? d.filter((x) => x !== iso) : [...d, iso]));
 
@@ -204,12 +215,12 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          const values = { roomId, days, start, end, title: title.trim(), adviser: adviser.trim() };
+          const values = { roomId, days, start: startValue, end: endValue, title: title.trim(), adviser: adviser.trim() };
           const problem = validateClassFields(values);
           if (problem) return setError(problem);
 
           for (const day of days) {
-            const clash = findClash(classes, { id: existing?.id ?? 0, roomId, dayOfWeek: day, start, end });
+            const clash = findClash(classes, { id: existing?.id ?? 0, roomId, dayOfWeek: day, start: startValue, end: endValue });
             if (clash) {
               const room = rooms.find((r) => r.roomId === roomId)?.name ?? "this room";
               return setError(
@@ -245,16 +256,22 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div>
             <label htmlFor={ids[1]} className="block text-sm font-semibold">Start time</label>
-            <select id={ids[1]} className={input} value={start} onChange={(e) => setStart(e.target.value)}>
+            <select id={ids[1]} className={input} value={startValue} onChange={(e) => setStart(e.target.value)}>
               <option value="">Select</option>
-              {START_OPTIONS.map((t) => <option key={t} value={t}>{formatTime(t)}</option>)}
+              {START_OPTIONS.map((t) => {
+                const taken = startTaken(t);
+                return <option key={t} value={t} disabled={taken}>{formatTime(t)}{taken ? " (taken)" : ""}</option>;
+              })}
             </select>
           </div>
           <div>
             <label htmlFor={ids[2]} className="block text-sm font-semibold">End time</label>
-            <select id={ids[2]} className={input} value={end} onChange={(e) => setEnd(e.target.value)}>
+            <select id={ids[2]} className={input} value={endValue} onChange={(e) => setEnd(e.target.value)}>
               <option value="">Select</option>
-              {END_OPTIONS.filter((t) => !start || t > start).map((t) => <option key={t} value={t}>{formatTime(t)}</option>)}
+              {END_OPTIONS.filter((t) => !startValue || t > startValue).map((t) => {
+                const taken = endTaken(t);
+                return <option key={t} value={t} disabled={taken}>{formatTime(t)}{taken ? " (taken)" : ""}</option>;
+              })}
             </select>
           </div>
         </div>

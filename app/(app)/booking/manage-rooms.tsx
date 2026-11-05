@@ -284,34 +284,32 @@ function RoomEditor({
         </button>
       </div>
       <form onSubmit={save} className="space-y-3">
-        <div className="grid grid-cols-3 gap-3">
+        {/* One 3-column row so the Thumbnail, Image 1 and Image 2 labels and cards line up. */}
+        <div
+          role="group"
+          aria-label="Room images"
+          className="grid grid-cols-3 items-start gap-3"
+        >
           <ImageField
             label="Thumbnail"
             value={form.thumbnail}
             onChange={(value) => update("thumbnail", value)}
           />
-          <div className="col-span-2">
-            <span className="mb-1 block text-xs font-bold text-gray-800">
-              Upload Images
-            </span>
-            <div className="grid grid-cols-2 gap-3">
-              {form.gallery.map((image, index) => (
-                <ImageField
-                  key={index}
-                  label={`Image ${index + 1}`}
-                  value={image}
-                  onChange={(value) =>
-                    update(
-                      "gallery",
-                      form.gallery.map((existing, position) =>
-                        position === index ? value : existing,
-                      ),
-                    )
-                  }
-                />
-              ))}
-            </div>
-          </div>
+          {form.gallery.map((image, index) => (
+            <ImageField
+              key={index}
+              label={`Image ${index + 1}`}
+              value={image}
+              onChange={(value) =>
+                update(
+                  "gallery",
+                  form.gallery.map((existing, position) =>
+                    position === index ? value : existing,
+                  ),
+                )
+              }
+            />
+          ))}
         </div>
         <label className="block text-xs font-bold">
           Name <span className="text-red-600">*</span>

@@ -382,6 +382,15 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                       if (first < 0 || last < first) return null;
                       const span = last - first + 1;
                       const unsaved = diff.changedIds.has(c.id);
+                      // Use the whole block: titles and advisers wrap instead of truncating,
+                      // and only clamp once they would run out of height.
+                      const inner = span * ROW_H - 2 - 8;
+                      const showTime = span >= 2;
+                      const adviserLines = span >= 3 ? 2 : 1;
+                      const reserved = (c.adviser ? adviserLines * 14 + 2 : 0) + (showTime ? 14 + 2 : 0);
+                      const titleLines = Math.max(1, Math.floor((inner - reserved) / 20));
+                      const clamp = (lines: number) =>
+                        ({ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden" }) as const;
                       return (
                         <button
                           key={c.id}
@@ -396,9 +405,11 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                               : "border-blue-200 bg-blue-50 hover:bg-blue-100"
                           }`}
                         >
-                          <span className="w-full truncate text-sm font-bold uppercase">{c.title}</span>
-                          <span className="w-full truncate text-[11px] text-gray-600">{c.adviser}</span>
-                          {span >= 2 && <span className="text-[10px] text-gray-500">{c.start} – {c.end}</span>}
+                          <span style={clamp(titleLines)} className="w-full break-words text-sm font-bold uppercase leading-5 [overflow-wrap:anywhere]">{c.title}</span>
+                          {c.adviser && (
+                            <span style={clamp(adviserLines)} className="w-full break-words text-[11px] leading-[14px] text-gray-600 [overflow-wrap:anywhere]">{c.adviser}</span>
+                          )}
+                          {showTime && <span className="text-[10px] leading-[14px] text-gray-500">{c.start} – {c.end}</span>}
                         </button>
                       );
                     })}

@@ -55,10 +55,23 @@ export type ClassFormFields = {
 
 type Slot = { id: number; roomId: string; dayOfWeek: number; start: string; end: string };
 
+// The day is split into four class blocks. A class that uses any part of a
+// block takes the whole block: the rest of it can't be used by another class.
+export const CLASS_BLOCKS = ["07:30", "11:00", "14:30", "18:00", "21:30"] as const;
+
+export function expandToBlocks(start: string, end: string): { start: string; end: string } {
+  let from: string = CLASS_BLOCKS[0];
+  for (const b of CLASS_BLOCKS.slice(0, -1)) if (b <= start) from = b;
+  const to = CLASS_BLOCKS.find((b) => b >= end) ?? CLASS_BLOCKS[CLASS_BLOCKS.length - 1];
+  return { start: from, end: to };
+}
+
 export function findClash<T extends Slot>(others: T[], c: Slot): T | undefined {
-  return others.find(
-    (o) => o.id !== c.id && o.roomId === c.roomId && o.dayOfWeek === c.dayOfWeek && o.start < c.end && o.end > c.start,
-  );
+  return others.find((o) => {
+    if (o.id === c.id || o.roomId !== c.roomId || o.dayOfWeek !== c.dayOfWeek) return false;
+    const taken = expandToBlocks(o.start, o.end);
+    return taken.start < c.end && taken.end > c.start;
+  });
 }
 
 export type ScheduleResult = { ok: true; id?: number } | { ok: false; error: string };
