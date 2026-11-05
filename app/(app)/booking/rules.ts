@@ -3,7 +3,7 @@ export const OPEN_TIME = "07:30";
 export const CLOSE_TIME = "21:30";
 export const SLOT_MINUTES = 30;
 export const MAX_ADVANCE_DAYS = 365;
-export const MAX_DESCRIPTION = 500;
+export const MAX_DESCRIPTION = 140;
 export const PROGRAMS = [
   "BSCS-SE",
   "AB-ANI",
