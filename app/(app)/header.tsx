@@ -105,7 +105,7 @@ export function Header({
       <Suspense fallback={<div />}>
         <Tabs groups={tabGroups} />
       </Suspense>
-      <div className="ml-auto flex items-center gap-5">
+      <div className="relative ml-auto flex items-center gap-5">
         <NotificationBell initial={notifications} />
         <ProfileMenu name={name} />
       </div>

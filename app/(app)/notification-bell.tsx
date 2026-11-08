@@ -107,7 +107,7 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
   const badge = unread > 9 ? "9+" : String(unread);
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref}>
       <button
         type="button"
         aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
