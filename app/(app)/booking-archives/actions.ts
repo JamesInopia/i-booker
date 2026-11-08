@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, sql, or } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { reservationRequests } from "@/db/schema";
@@ -19,14 +19,16 @@ export async function deleteArchived(ids: number[]) {
     const done = await db
       .delete(reservationRequests)
       .where(
-        and(
-          inArray(reservationRequests.requestId, clean),
-          eq(reservationRequests.status, "approved"),
-          sql`exists (
-            select 1 from reservation_slot s
-            where s.request_id = ${reservationRequests.requestId}
-              and s.date_of_activity < ${today}
-          )`,
+        or(
+          inArray(reservationRequests.status, ["rejected", "cancelled"]),
+          and(
+            eq(reservationRequests.status, "approved"),
+            sql`exists (
+              select 1 from reservation_slot s
+              where s.request_id = ${reservationRequests.requestId}
+                and s.date_of_activity < ${today}
+            )`,
+          ),
         ),
       )
       .returning({ id: reservationRequests.requestId });

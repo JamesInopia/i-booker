@@ -1,5 +1,5 @@
 import "server-only";
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, lt, inArray, or } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
@@ -47,9 +47,12 @@ export async function getArchiveRows(): Promise<ArchiveRow[]> {
     )
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
     .where(
-      and(
-        eq(reservationRequests.status, "approved"),
-        lt(reservationSlots.dateOfActivity, manilaIso(new Date())),
+      or(
+        inArray(reservationRequests.status, ["rejected", "cancelled"]),
+        and(
+          eq(reservationRequests.status, "approved"),
+          lt(reservationSlots.dateOfActivity, manilaIso(new Date())),
+        ),
       ),
     )
     .orderBy(desc(reservationRequests.requestDate));

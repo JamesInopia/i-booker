@@ -1,4 +1,4 @@
-import { desc, eq, ne, and, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
@@ -58,12 +58,7 @@ export default async function BookingStatusPage() {
       eq(reservationSlotRooms.slotId, reservationSlots.slotId),
     )
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
-    .where(
-      and(
-        eq(sql`lower(${authUsers.email})`, user.email),
-        ne(reservationRequests.status, "cancelled"),
-      ),
-    )
+    .where(eq(sql`lower(${authUsers.email})`, user.email))
     .orderBy(desc(reservationRequests.requestDate));
 
   const bookings: Booking[] = rows.map((r) => ({

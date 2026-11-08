@@ -7,7 +7,7 @@ const statusColor: Record<BookingStatus, string> = {
   reviewed: "text-blue-500",
   approved: "text-green-500",
   rejected: "text-red-500",
-  cancelled: "text-gray-300",
+  cancelled: "text-gray-500",
 };
 
 export default function BookingTable({ bookings }: { bookings: Booking[] }) {

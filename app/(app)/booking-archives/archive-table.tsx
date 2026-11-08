@@ -8,7 +8,7 @@ import type { ArchiveAction } from "./options";
 import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
-import { canPrint } from "@/lib/booking-status";
+import { STATUS_LABEL, STATUS_TEXT, canPrint } from "@/lib/booking-status";
 
 const BTN =
   "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
@@ -73,6 +73,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
               <th className={TH}>Room Name</th>
               <th className={TH}>Date of Request</th>
               <th className={TH}>Scheduled Date</th>
+              <th className={TH}>Status</th>
               <th className={TH}>Action</th>
             </tr>
           </thead>
@@ -93,6 +94,9 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 <td className={TD}>{r.room}</td>
                 <td className={TD}>{r.requestDate}</td>
                 <td className={TD}>{r.scheduledDate}</td>
+                <td className={`${TD} font-semibold ${STATUS_TEXT[r.status]}`}>
+                  {STATUS_LABEL[r.status]}
+                </td>
                 <td className={TD}>
                   <RowMenu
                     id={r.id}
@@ -108,7 +112,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="py-10 text-gray-500">
+                <td colSpan={9} className="py-10 text-gray-500">
                   No archived requests at the moment...
                 </td>
               </tr>
