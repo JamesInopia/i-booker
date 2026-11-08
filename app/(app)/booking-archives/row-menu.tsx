@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { BsThreeDots } from "react-icons/bs";
 import type { ArchiveAction } from "./options";
 import type { ArchiveRow } from "@/lib/definitions";
+import { canPrint } from "@/lib/booking-status";
 
 const ITEM = "block w-full px-4 py-2 text-left hover:bg-gray-100";
 
@@ -84,7 +85,7 @@ export default function RowMenu({
           >
             View Details
           </Link>
-          {status === "approved" && (
+          {canPrint(status) && (
             <>
               <button
                 type="button"

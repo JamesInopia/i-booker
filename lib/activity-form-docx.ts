@@ -17,10 +17,7 @@ import fontkit from "@pdf-lib/fontkit";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ArchiveDetail } from "./definitions";
-import {
-  MAX_DESCRIPTION,
-  MAX_NATURE_OTHER,
-} from "@/app/(app)/booking/rules";
+import { MAX_DESCRIPTION, MAX_NATURE_OTHER } from "@/app/(app)/booking/rules";
 
 const FONT_PATH = path.join(process.cwd(), "public/fonts/Barlow-Regular.ttf");
 const FS = 5;
@@ -210,6 +207,14 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
       lines: 1,
     });
 
+  const decisionX =
+    d.status === "approved" ? 163 : d.status === "rejected" ? 263.7 : null;
+  if (decisionX !== null) {
+    for (const ay of [302, 551.7]) {
+      field("X", decisionX - 7, ay, 14, { size: 9, center: true });
+    }
+  }
+
   const time = `${d.startTime}-${d.endTime}`;
   for (const [h, r] of [
     [210.5, 242.8],
@@ -280,24 +285,33 @@ async function buildPage(d: ArchiveDetail, bg: Uint8Array) {
 
 // Embeds the font in the .docx (obfuscated .odttf, per ECMA-376) so Word
 // shows it even when it is not installed on the viewer's computer.
-function embedFont(zip: JSZip, xmlParts: { fontTable: string; rels: string; settings: string }, ttf: Buffer) {
+function embedFont(
+  zip: JSZip,
+  xmlParts: { fontTable: string; rels: string; settings: string },
+  ttf: Buffer,
+) {
   const guid = randomUUID().toUpperCase();
   const key = Buffer.from(guid.replace(/-/g, ""), "hex").reverse();
   const data = Buffer.from(ttf);
   for (let i = 0; i < 32 && i < data.length; i++) data[i] ^= key[i % 16];
   zip.file("word/fonts/font1.odttf", data);
 
-  const entry =
-    `<w:font w:name="${FONT_FAMILY}"><w:embedRegular r:id="rId1" w:fontKey="{${guid}}"/></w:font>`;
+  const entry = `<w:font w:name="${FONT_FAMILY}"><w:embedRegular r:id="rId1" w:fontKey="{${guid}}"/></w:font>`;
   const rel =
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/font" Target="fonts/font1.odttf"/>';
   const open = (xml: string, tag: string, inner: string) =>
     xml.includes("</" + tag + ">")
       ? xml.replace("</" + tag + ">", inner + "</" + tag + ">")
-      : xml.replace(new RegExp("(<" + tag + "\\b[^>]*?)\\s*/>"), "$1>" + inner + "</" + tag + ">");
+      : xml.replace(
+          new RegExp("(<" + tag + "\\b[^>]*?)\\s*/>"),
+          "$1>" + inner + "</" + tag + ">",
+        );
 
   zip.file("word/fontTable.xml", open(xmlParts.fontTable, "w:fonts", entry));
-  zip.file("word/_rels/fontTable.xml.rels", open(xmlParts.rels, "Relationships", rel));
+  zip.file(
+    "word/_rels/fontTable.xml.rels",
+    open(xmlParts.rels, "Relationships", rel),
+  );
   zip.file(
     "word/settings.xml",
     xmlParts.settings.replace(

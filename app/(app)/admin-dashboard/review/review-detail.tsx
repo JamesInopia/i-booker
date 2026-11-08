@@ -13,6 +13,7 @@ import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 import { ReasonDialog } from "./reason-dialog";
 import { isOpen, STATUS_LABEL, STATUS_TEXT, type ReviewBooking } from "./types";
 import type { Role } from "@/lib/session";
+import { canPrint } from "@/lib/booking-status";
 
 export type ScrollerOption = { id: number; label: string; href: string };
 
@@ -105,7 +106,14 @@ export function ReviewDetail({
               <Field label="Supervisor Remarks" value={b.supervisorRemarks} />
             )}
             {b.cancelReason && (
-              <Field label="Cancellation Reason" value={b.cancelReason} />
+              <Field
+                label={
+                  b.status === "rejected"
+                    ? "Rejection Reason"
+                    : "Cancellation Reason"
+                }
+                value={b.cancelReason}
+              />
             )}
           </div>
         )}
@@ -115,7 +123,7 @@ export function ReviewDetail({
             <p className="mr-auto text-sm text-gray-600">{waitingNote}</p>
           )}
 
-          {approved && (
+          {canPrint(b.status) && (
             <>
               <button
                 type="button"
@@ -131,14 +139,16 @@ export function ReviewDetail({
               >
                 Download Details
               </button>
-              <button
-                type="button"
-                className={btnDanger}
-                onClick={() => setDialog("cancel")}
-              >
-                Cancel Request
-              </button>
             </>
+          )}
+          {approved && (
+            <button
+              type="button"
+              className={btnDanger}
+              onClick={() => setDialog("cancel")}
+            >
+              Cancel Request
+            </button>
           )}
 
           {canSend && (
@@ -211,7 +221,7 @@ export function ReviewDetail({
       {dialog === "reject" && (
         <ReasonDialog
           title="Reject this request?"
-          description="The request will be permanently deleted. This can't be undone."
+          description='The request will be marked as "Rejected".'
           label="Reason for rejection"
           placeholder="Reason for rejection"
           confirmLabel="Reject"
@@ -229,7 +239,7 @@ export function ReviewDetail({
       {dialog === "cancel" && (
         <ReasonDialog
           title="Cancel this request?"
-          description="The booking will be permanently deleted. This can't be undone."
+          description='The request will be marked as "Cancelled" and the room will be available again.'
           label="Reason for cancellation"
           placeholder="Reason for cancellation"
           confirmLabel="Confirm cancel"

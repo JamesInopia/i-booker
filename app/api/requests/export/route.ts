@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { buildRequestsPdf } from "@/lib/activity-form-pdf";
 import { buildRequestsDocx } from "@/lib/activity-form-docx";
 import { getArchiveDetails } from "@/lib/request-details";
+import { canPrint } from "@/lib/booking-status";
 
 const DOCX_TYPE =
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -26,11 +27,12 @@ export async function GET(req: Request) {
   const inline = sp.get("inline") === "1" && format === "pdf";
 
   const all = await getArchiveDetails(ids);
-  const items = all.filter((d) => d.status === "approved");
+  const items = all.filter((d) => canPrint(d.status));
   if (items.length === 0)
-    return new Response("Only approved requests can be downloaded or printed", {
-      status: 403,
-    });
+    return new Response(
+      "Only approved, rejected or cancelled requests can be downloaded or printed",
+      { status: 403 },
+    );
 
   const build = (list: typeof items) =>
     format === "docx" ? buildRequestsDocx(list) : buildRequestsPdf(list);

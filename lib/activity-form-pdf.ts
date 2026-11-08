@@ -3,10 +3,7 @@ import fontkit from "@pdf-lib/fontkit";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import type { ArchiveDetail } from "@/lib/definitions";
-import {
-  MAX_DESCRIPTION,
-  MAX_NATURE_OTHER,
-} from "@/app/(app)/booking/rules";
+import { MAX_DESCRIPTION, MAX_NATURE_OTHER } from "@/app/(app)/booking/rules";
 
 const FONT_PATH = path.join(process.cwd(), "public/fonts/Barlow-Regular.ttf");
 const FS = 5;
@@ -176,6 +173,19 @@ async function fillOne(
       5,
       false,
     );
+
+  const decisionX =
+    d.status === "approved" ? 163 : d.status === "rejected" ? 264.2 : null;
+  if (decisionX !== null) {
+    for (const ay of [302, 551.7]) {
+      page.drawText("X", {
+        x: decisionX - 3,
+        y: Y(ay) - 2.25,
+        font: bold,
+        size: 9,
+      });
+    }
+  }
 
   const time = `${d.startTime} - ${d.endTime}`;
 

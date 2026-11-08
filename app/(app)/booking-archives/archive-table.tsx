@@ -8,6 +8,7 @@ import type { ArchiveAction } from "./options";
 import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
+import { canPrint } from "@/lib/booking-status";
 
 const BTN =
   "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
@@ -26,9 +27,10 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
     [rows, selected],
   );
   const allSelected = rows.length > 0 && chosen.length === rows.length;
-  const allApproved = chosen.every(
-    (id) => rows.find((r) => r.id === id)?.status === "approved",
-  );
+  const allPrintable = chosen.every((id) => {
+    const row = rows.find((r) => r.id === id);
+    return !!row && canPrint(row.status);
+  });
 
   function toggle(id: number) {
     setSelected((prev) => {
@@ -128,9 +130,9 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
               <button
                 type="button"
                 onClick={() => printRequests(chosen)}
-                disabled={!allApproved}
+                disabled={!allPrintable}
                 title={
-                  allApproved
+                  allPrintable
                     ? undefined
                     : "Only unapproved requests can be downloaded or printed."
                 }
@@ -141,9 +143,9 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
               <button
                 type="button"
                 onClick={() => setDialog({ type: "download", ids: chosen })}
-                disabled={!allApproved}
+                disabled={!allPrintable}
                 title={
-                  allApproved
+                  allPrintable
                     ? undefined
                     : "Only approved requests can be downloaded or printed."
                 }

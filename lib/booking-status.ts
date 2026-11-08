@@ -15,3 +15,10 @@ export const STATUS_TEXT: Record<BookingStatus, string> = {
   rejected: "text-red-600",
   cancelled: "text-gray-400",
 };
+
+export const PRINTABLE_STATUSES: readonly BookingStatus[] = [
+  "approved",
+  "rejected",
+  "cancelled",
+];
+export const canPrint = (s: BookingStatus) => PRINTABLE_STATUSES.includes(s);

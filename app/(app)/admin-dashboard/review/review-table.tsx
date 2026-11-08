@@ -13,6 +13,7 @@ import {
   STATUS_TEXT,
   type ReviewBooking,
 } from "./types";
+import { canPrint } from "@/lib/booking-status";
 
 const th = "px-3 py-3 text-left text-sm font-bold";
 const td = "px-3 py-3 text-sm";
@@ -42,6 +43,7 @@ export function ReviewTable({
     [bookings, selected],
   );
   const approvedChosen = chosen.filter((b) => b.status === "approved");
+  const printableChosen = chosen.filter((b) => canPrint(b.status));
   const allApproved =
     chosen.length > 0 && approvedChosen.length === chosen.length;
   const allSelected = bookings.length > 0 && chosen.length === bookings.length;
@@ -164,35 +166,35 @@ export function ReviewTable({
           <button
             type="button"
             className={buttonPrimary}
-            disabled={approvedChosen.length === 0}
+            disabled={printableChosen.length === 0}
             title={
-              approvedChosen.length === 0
-                ? "Only approved requests can be printed"
+              printableChosen.length === 0
+                ? "Only approved, rejected and cancelled requests can be printed"
                 : undefined
             }
-            onClick={() => printRequests(approvedChosen.map((b) => b.id))}
+            onClick={() => printRequests(printableChosen.map((b) => b.id))}
           >
             Print Details
-            {approvedChosen.length > 0 &&
-            approvedChosen.length !== chosen.length
-              ? ` (${approvedChosen.length})`
+            {printableChosen.length > 0 &&
+            printableChosen.length !== chosen.length
+              ? ` (${printableChosen.length})`
               : ""}
           </button>
           <button
             type="button"
             className={buttonPrimary}
-            disabled={approvedChosen.length === 0}
+            disabled={printableChosen.length === 0}
             title={
-              approvedChosen.length === 0
-                ? "Only approved requests can be downloaded"
+              printableChosen.length === 0
+                ? "Only approved, rejected and cancelled requests can be downloaded"
                 : undefined
             }
-            onClick={() => setDownloadIds(approvedChosen.map((b) => b.id))}
+            onClick={() => setDownloadIds(printableChosen.map((b) => b.id))}
           >
             Download Details
-            {approvedChosen.length > 0 &&
-            approvedChosen.length !== chosen.length
-              ? ` (${approvedChosen.length})`
+            {printableChosen.length > 0 &&
+            printableChosen.length !== chosen.length
+              ? ` (${printableChosen.length})`
               : ""}
           </button>
           <button
@@ -201,7 +203,7 @@ export function ReviewTable({
             disabled={!allApproved}
             title={
               !allApproved
-                ? "Every selected request must be approved"
+                ? "Only approved requests can be cancelled."
                 : undefined
             }
             onClick={() => setCancelIds(chosen.map((b) => b.id))}
@@ -225,7 +227,7 @@ export function ReviewTable({
               ? "Cancel this request?"
               : `Cancel ${cancelIds.length} requests?`
           }
-          description="The booking will be permanently deleted. This can't be undone."
+          description='The request will be marked as "Cancelled" and the room will be available again.'
           label="Reason for cancellation"
           placeholder="Reason for cancellation"
           confirmLabel="Confirm cancel"

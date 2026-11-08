@@ -9,6 +9,7 @@ import DeleteDialog from "../delete-dialog";
 import { STATUS_LABEL, STATUS_TEXT } from "@/lib/booking-status";
 import RequestDetails from "./request-details";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
+import { canPrint } from "@/lib/booking-status";
 
 const btn = "rounded-md px-6 py-2 text-sm font-semibold disabled:opacity-50";
 const btnPrimary = `${btn} bg-accent-1 text-white hover:opacity-90`;
@@ -85,7 +86,7 @@ export default function DetailViewer({
         <RequestDetails d={current} />
 
         <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
-          {current.status === "approved" && (
+          {canPrint(current.status) && (
             <>
               <button
                 type="button"
