@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   approveRequest,
   cancelApprovedRequests,
+  pingSupervisors,
   rejectRequest,
   sendForApproval,
 } from "./actions";
@@ -39,11 +40,14 @@ export function ReviewDetail({
   const router = useRouter();
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [showDownload, setShowDownload] = useState(false);
+  const [pinging, setPinging] = useState(false);
+  const [pingNote, setPingNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const approved = b.status === "approved";
   const canSend = role === "admin_liaison" && b.status === "pending";
   const canApprove = role === "admin_supervisor" && isOpen(b.status);
   const canReject = isOpen(b.status);
+  const canPing = role === "admin_liaison" && b.status === "reviewed";
   const unreviewed = b.status === "pending";
 
   let waitingNote = "";
@@ -51,6 +55,23 @@ export function ReviewDetail({
     waitingNote = "Sent to the Admin Supervisor for approval.";
 
   const closeDialog = () => setDialog(null);
+
+  async function ping() {
+    setPinging(true);
+    setPingNote(null);
+    try {
+      const res = await pingSupervisors(b.id);
+      setPingNote(
+        res.ok
+          ? { ok: true, text: "Reminder sent to the Admin Supervisors." }
+          : { ok: false, text: res.error },
+      );
+    } catch {
+      setPingNote({ ok: false, text: "Something went wrong. Please try again." });
+    } finally {
+      setPinging(false);
+    }
+  }
 
   return (
     <div className="flex flex-col gap-3">
@@ -111,8 +132,29 @@ export function ReviewDetail({
         )}
 
         <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
-          {waitingNote && (
-            <p className="mr-auto text-sm text-gray-600">{waitingNote}</p>
+          {(waitingNote || pingNote) && (
+            <div className="mr-auto text-sm">
+              {waitingNote && <p className="text-gray-600">{waitingNote}</p>}
+              {pingNote && (
+                <p
+                  role="status"
+                  className={pingNote.ok ? "text-green-700" : "text-red-600"}
+                >
+                  {pingNote.text}
+                </p>
+              )}
+            </div>
+          )}
+
+          {canPing && (
+            <button
+              type="button"
+              className={btnOutline}
+              disabled={pinging}
+              onClick={ping}
+            >
+              {pinging ? "Pinging..." : "Ping Supervisor"}
+            </button>
           )}
 
           {approved && (

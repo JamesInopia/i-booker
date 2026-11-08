@@ -5,6 +5,13 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { reservationRequests, user as authUsers } from "@/db/schema";
 import { requireRole } from "@/lib/auth";
+import {
+  getRequestInfo,
+  notifyBookingApproved,
+  notifyBookingRemoved,
+  notifyBookingReviewed,
+  pingSupervisorsAbout,
+} from "@/lib/notifications";
 import { ADMIN_ROLES } from "@/lib/session";
 import type { ActionResult } from "./types";
 
@@ -57,6 +64,7 @@ export async function sendForApproval(requestId: number, remarks: string): Promi
     .returning({ id: reservationRequests.requestId });
 
   if (updated.length === 0) return fail("This request is no longer in review. Refresh the page.");
+  await notifyBookingReviewed(requestId, user);
   return done();
 }
 
@@ -83,14 +91,18 @@ export async function approveRequest(requestId: number, remarks: string): Promis
     .returning({ id: reservationRequests.requestId });
 
   if (updated.length === 0) return fail("This request can no longer be approved. Refresh the page.");
+  await notifyBookingApproved(requestId, user, clean.text);
   return done();
 }
 
 export async function rejectRequest(requestId: number, reason: string): Promise<ActionResult> {
-  await requireRole(...ADMIN_ROLES);
+  const user = await requireRole(...ADMIN_ROLES);
   if (!validId(requestId)) return fail("Invalid request.");
   const clean = cleanText(reason, { required: true });
   if ("error" in clean) return fail(clean.error);
+
+  // The row is deleted below, so capture what the notification needs first.
+  const info = (await getRequestInfo([requestId])).get(requestId);
 
   const updated = await db
     .delete(reservationRequests)
@@ -103,15 +115,19 @@ export async function rejectRequest(requestId: number, reason: string): Promise<
     .returning({ id: reservationRequests.requestId });
 
   if (updated.length === 0) return fail("This request can no longer be rejected. Refresh the page.");
+  if (info) await notifyBookingRemoved([info], "rejected", user, clean.text);
   return done();
 }
 
 export async function cancelApprovedRequests(requestIds: number[], reason: string): Promise<ActionResult> {
-  await requireRole(...ADMIN_ROLES);
+  const user = await requireRole(...ADMIN_ROLES);
   const ids = [...new Set(requestIds)];
   if (ids.length === 0 || ids.length > MAX_BULK || !ids.every(validId)) return fail("Invalid selection.");
   const clean = cleanText(reason, { required: true });
   if ("error" in clean) return fail(clean.error);
+
+  // Rows are deleted below, so capture what the notifications need first.
+  const infos = [...(await getRequestInfo(ids)).values()];
 
   try {
     await db.transaction(async (tx) => {
@@ -127,5 +143,15 @@ export async function cancelApprovedRequests(requestIds: number[], reason: strin
     }
     throw err;
   }
+  await notifyBookingRemoved(infos, "cancelled", user, clean.text);
   return done();
+}
+
+/** Admin Liaison reminds every Admin Supervisor about a request awaiting approval. */
+export async function pingSupervisors(requestId: number): Promise<ActionResult> {
+  const user = await requireRole("admin_liaison");
+  if (!validId(requestId)) return fail("Invalid request.");
+
+  const result = await pingSupervisorsAbout(requestId, user);
+  return result.ok ? { ok: true } : fail(result.error);
 }

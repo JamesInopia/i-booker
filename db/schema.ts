@@ -137,6 +137,30 @@ export const reservationSlotRooms = pgTable(
   (t) => [primaryKey({ columns: [t.slotId, t.roomId] })],
 );
 
+export const notifications = pgTable(
+  "notification",
+  {
+    notificationId: integer("notification_id")
+      .primaryKey()
+      .generatedByDefaultAsIdentity(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    message: text("message").notNull(),
+    href: text("href").notNull(),
+    requestId: integer("request_id"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("notification_user_created_idx").on(t.userId, t.createdAt),
+    index("notification_request_type_idx").on(t.requestId, t.type),
+  ],
+);
+
 export const terms = pgTable(
   "term",
   {

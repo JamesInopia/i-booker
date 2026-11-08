@@ -1,6 +1,7 @@
 "use server";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
+import { notifyBookingSubmitted } from "@/lib/notifications";
 import { readDraft, clearDraft, writeDraft } from "./draft";
 import { requireStep, STEPS } from "./flow";
 import {
@@ -259,6 +260,8 @@ export async function submitBooking(_prev: FormState): Promise<FormState> {
   const email = user.email.toLowerCase();
   const requestor = user.name || email;
 
+  let createdId: number | null = null;
+
   try {
     if (draft.requestId) {
       await updateRequest({
@@ -269,7 +272,7 @@ export async function submitBooking(_prev: FormState): Promise<FormState> {
         roomId: room.roomId,
       });
     } else {
-      await createRequest({
+      createdId = await createRequest({
         email,
         requestor,
         draft,
@@ -282,6 +285,10 @@ export async function submitBooking(_prev: FormState): Promise<FormState> {
     console.error("submitBooking failed:", err);
     return { error: "We couldn't submit your request. Please try again." };
   }
+
+  // Liaisons are told about new bookings so they can review them. The requestor
+  // is deliberately not notified of their own submission.
+  if (createdId !== null) await notifyBookingSubmitted(createdId, user);
 
   return { error: null, submitted: true };
 }
