@@ -4,9 +4,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { roleAssignments } from "@/db/schema";
+import { roleAssignments, session as sessionTable } from "@/db/schema";
 import { auth } from "@/lib/better-auth";
 import { ROLE_HOME, type Role } from "@/lib/session";
+
+const MAX_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export type CurrentUser = {
   id: string;
@@ -18,6 +20,11 @@ export type CurrentUser = {
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
   if (!session) return null;
+
+  if (Date.now() - new Date(session.session.createdAt).getTime() > MAX_SESSION_MS) {
+    await db.delete(sessionTable).where(eq(sessionTable.id, session.session.id)).catch(() => {});
+    return null;
+  }
 
   const email = session.user.email.toLowerCase();
   const [row] = await db

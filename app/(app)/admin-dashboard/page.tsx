@@ -1,5 +1,6 @@
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { resolveTab } from "@/lib/nav";
+import { ADMIN_ROLES } from "@/lib/session";
 import { listAllRooms } from "../booking/queries";
 import { Legend } from "../calendar/calendar-parts";
 import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO } from "../calendar/dates";
@@ -29,7 +30,7 @@ const first = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
 
 export default async function AdminDashboardPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
-  const user = await requireUser();
+  const user = await requireRole(...ADMIN_ROLES);
   const tab = resolveTab("/admin-dashboard", user.role, first(params.tab));
 
   const inReviewDetail = tab.id === "review" && Boolean(first(params.request));
