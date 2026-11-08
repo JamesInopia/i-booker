@@ -169,7 +169,7 @@ export function ReviewTable({
             disabled={printableChosen.length === 0}
             title={
               printableChosen.length === 0
-                ? "Only approved, rejected and cancelled requests can be printed"
+                ? "Only approved requests can be printed"
                 : undefined
             }
             onClick={() => printRequests(printableChosen.map((b) => b.id))}
@@ -186,7 +186,7 @@ export function ReviewTable({
             disabled={printableChosen.length === 0}
             title={
               printableChosen.length === 0
-                ? "Only approved, rejected and cancelled requests can be downloaded"
+                ? "Only approved requests can be downloaded"
                 : undefined
             }
             onClick={() => setDownloadIds(printableChosen.map((b) => b.id))}

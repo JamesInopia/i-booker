@@ -21,10 +21,15 @@ const formatDate = (value: string | Date) =>
 
 const formatTime = (t: string) => {
   const [h, m] = t.split(":").map(Number);
-  return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-PH", { hour: "numeric", minute: "2-digit" });
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString("en-PH", {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 };
 
-export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]> {
+export async function getReviewBookings(
+  ids?: number[],
+): Promise<ReviewBooking[]> {
   if (ids && ids.length === 0) return [];
 
   const requests = await db
@@ -45,7 +50,10 @@ export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]
     })
     .from(reservationRequests)
     .innerJoin(authUsers, eq(authUsers.id, reservationRequests.userId))
-    .innerJoin(activityTypes, eq(activityTypes.activityTypeId, reservationRequests.activityTypeId))
+    .innerJoin(
+      activityTypes,
+      eq(activityTypes.activityTypeId, reservationRequests.activityTypeId),
+    )
     .where(ids ? inArray(reservationRequests.requestId, ids) : undefined)
     .orderBy(desc(reservationRequests.requestDate));
 
@@ -63,7 +71,10 @@ export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]
       room: rooms.name,
     })
     .from(reservationSlots)
-    .leftJoin(reservationSlotRooms, eq(reservationSlotRooms.slotId, reservationSlots.slotId))
+    .leftJoin(
+      reservationSlotRooms,
+      eq(reservationSlotRooms.slotId, reservationSlots.slotId),
+    )
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
     .where(
       inArray(
@@ -75,7 +86,8 @@ export async function getReviewBookings(ids?: number[]): Promise<ReviewBooking[]
 
   const slotsByRequest = new Map<number, Map<number, ReviewSlot>>();
   for (const r of slotRows) {
-    const bySlot = slotsByRequest.get(r.requestId) ?? new Map<number, ReviewSlot>();
+    const bySlot =
+      slotsByRequest.get(r.requestId) ?? new Map<number, ReviewSlot>();
     const slot = bySlot.get(r.slotId) ?? {
       dateISO: r.date,
       date: formatDate(`${r.date}T00:00:00+08:00`),
