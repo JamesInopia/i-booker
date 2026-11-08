@@ -94,6 +94,8 @@ export default function RowActions({
     });
   }
 
+  if (!canCancel && !canEdit && !canReview) return null;
+
   return (
     <>
       <button
