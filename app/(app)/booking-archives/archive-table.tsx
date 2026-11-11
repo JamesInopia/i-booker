@@ -9,6 +9,12 @@ import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 import { STATUS_LABEL, STATUS_TEXT, canPrint } from "@/lib/booking-status";
+import {
+  ARCHIVE_SORTS,
+  ListFilters,
+  filterRows,
+  type SortKey,
+} from "@/app/components/list-filters";
 
 const BTN =
   "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
@@ -22,13 +28,29 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
     ids: number[];
   } | null>(null);
 
-  const chosen = useMemo(
-    () => rows.filter((r) => selected.has(r.id)).map((r) => r.id),
-    [rows, selected],
+  const [q, setQ] = useState("");
+  const [show, setShow] = useState("all");
+  const [sort, setSort] = useState<SortKey>("requested_desc");
+
+  const shown = useMemo(
+    () =>
+      filterRows(rows, q, show, sort, {
+        id: (r) => r.id,
+        status: (r) => r.status,
+        scheduled: (r) => r.scheduledDate,
+        requestor: (r) => r.requestor,
+        text: (r) => [String(r.id), r.requestor, r.purpose, r.room],
+      }),
+    [rows, q, show, sort],
   );
-  const allSelected = rows.length > 0 && chosen.length === rows.length;
+
+  const chosen = useMemo(
+    () => shown.filter((r) => selected.has(r.id)).map((r) => r.id),
+    [shown, selected],
+  );
+  const allSelected = shown.length > 0 && chosen.length === shown.length;
   const allPrintable = chosen.every((id) => {
-    const row = rows.find((r) => r.id === id);
+    const row = shown.find((r) => r.id === id);
     return !!row && canPrint(row.status);
   });
 
@@ -42,7 +64,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
   }
 
   function toggleAll() {
-    setSelected(allSelected ? new Set() : new Set(rows.map((r) => r.id)));
+    setSelected(allSelected ? new Set() : new Set(shown.map((r) => r.id)));
   }
 
   async function confirmDelete() {
@@ -55,6 +77,24 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
 
   return (
     <>
+      <div className="mb-3">
+        <ListFilters
+          q={q}
+          onQ={setQ}
+          placeholder="Search Requests"
+          show={show}
+          onShow={setShow}
+          showOptions={[
+            { value: "approved", label: "Approved" },
+            { value: "rejected", label: "Rejected" },
+            { value: "cancelled", label: "Cancelled" },
+          ]}
+          sort={sort}
+          onSort={setSort}
+          sortOptions={ARCHIVE_SORTS}
+        />
+      </div>
+
       <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
         <table className="min-w-full border-collapse text-center">
           <thead>
@@ -78,7 +118,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
+            {shown.map((r) => (
               <tr key={r.id}>
                 <td className="px-3 py-2">
                   <input
@@ -110,10 +150,12 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 </td>
               </tr>
             ))}
-            {rows.length === 0 && (
+            {shown.length === 0 && (
               <tr>
                 <td colSpan={9} className="py-10 text-gray-500">
-                  No archived requests at the moment...
+                  {rows.length === 0
+                    ? "No archived requests at the moment..."
+                    : "No requests match your search"}
                 </td>
               </tr>
             )}
@@ -138,7 +180,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 title={
                   allPrintable
                     ? undefined
-                    : "Only unapproved requests can be downloaded or printed."
+                    : "Only approved, rejected or cancelled requests can be downloaded or printed."
                 }
                 className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
@@ -151,7 +193,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 title={
                   allPrintable
                     ? undefined
-                    : "Only approved requests can be downloaded or printed."
+                    : "Only approved, rejected or cancelled requests can be downloaded or printed."
                 }
                 className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
