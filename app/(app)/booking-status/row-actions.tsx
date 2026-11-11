@@ -28,7 +28,8 @@ export default function RowActions({
 
   const canCancel = status === "pending" || status === "reviewed";
   const canEdit = status === "pending";
-  const canReview = status === "approved" || status === "rejected";
+  const canReview =
+    status === "approved" || status === "rejected" || status === "cancelled";
 
   useEffect(() => {
     if (!open) return;
@@ -93,8 +94,6 @@ export default function RowActions({
       await startEdit(id);
     });
   }
-
-  if (!canCancel && !canEdit && !canReview) return null;
 
   return (
     <>
