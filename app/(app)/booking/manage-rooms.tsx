@@ -125,8 +125,8 @@ function ImageField({
       setError("Choose a PNG, JPEG, WebP, or GIF image.");
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be 2 MB or less. Try compressing it?");
+    if (file.size > 4.5 * 1024 * 1024) {
+      setError("Image must be 4.5 MB or less. Try compressing it?");
       return;
     }
     setError("");
@@ -449,9 +449,9 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
           "image/webp": "webp",
           "image/gif": "gif",
         }[blob.type];
-        if (!ext || blob.size > 2 * 1024 * 1024)
+        if (!ext || blob.size > 4.5 * 1024 * 1024)
           throw new Error(
-            "Each image must be PNG, JPEG, WebP, or GIF and at most 2 MB.",
+            "Each image must be PNG, JPEG, WebP, or GIF and at most 4.5 MB.",
           );
         payload.set(
           field,

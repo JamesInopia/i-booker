@@ -10,6 +10,7 @@ export function LoginCarousel() {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
+    setIndex(Math.floor(Math.random() * COUNT));
     const id = setInterval(() => setIndex((i) => (i + 1) % COUNT), INTERVAL_MS);
     return () => clearInterval(id);
   }, []);

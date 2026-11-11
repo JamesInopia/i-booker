@@ -26,7 +26,7 @@ export type RoomResult =
 export type DeleteRoomResult = { ok: true } | { ok: false; error: string };
 
 const BUCKET = "room-images";
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 4.5 * 1024 * 1024;
 const IMAGE_TYPES: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",

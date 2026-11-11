@@ -1,6 +1,7 @@
+import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { safeNext } from "@/lib/session";
-import { signOut } from "./actions";
+import { ROLE_HOME, safeNext } from "@/lib/session";
+import { Greeting } from "./greeting";
 import { LoginCarousel } from "./login-carousel";
 import { LoginForm } from "./login-form";
 
@@ -11,6 +12,7 @@ type SearchParams = Promise<{ next?: string | string[]; error?: string | string[
 export default async function LoginPage({ searchParams }: { searchParams: SearchParams }) {
   const { next, error } = await searchParams;
   const user = await getCurrentUser();
+  if (user) redirect(safeNext(Array.isArray(next) ? next[0] : next) ?? ROLE_HOME[user.role]);
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-linear-to-br from-carousel-from to-carousel-to">
@@ -25,12 +27,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
           <strong className="font-bold">iBooker</strong>!
         </h1>
 
-        {user && (
-          <form action={signOut} className="mt-3 text-sm">
-            <span className="mr-3 text-accent-3">Signed in as {user.email}</span>
-            <button className="underline">Sign out</button>
-          </form>
-        )}
+        <Greeting />
 
         <LoginForm next={safeNext(Array.isArray(next) ? next[0] : next) ?? ""} failed={Boolean(error)} />
       </section>
