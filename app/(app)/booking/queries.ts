@@ -209,9 +209,9 @@ export async function createRequest(input: {
   draft: Draft;
   nature: Nature;
   roomId: string;
-}): Promise<void> {
+}): Promise<number> {
   const { email, requestor, draft, nature, roomId } = input;
-  await db.transaction(async (tx) => {
+  return await db.transaction(async (tx) => {
     const [owner] = await tx
       .select({
         userId: authUsers.id,
@@ -259,6 +259,8 @@ export async function createRequest(input: {
     await tx
       .insert(reservationSlotRooms)
       .values({ slotId: slot.slotId, roomId: Number(roomId) });
+
+    return request.requestId;
   });
 }
 

@@ -5,6 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/login/actions";
 import type { PageTabGroup } from "@/lib/nav";
+import type { NotificationsPayload } from "@/lib/notification-types";
+import { NotificationBell } from "./notification-bell";
 
 function Tabs({ groups }: { groups: PageTabGroup[] }) {
   const pathname = usePathname();
@@ -59,7 +61,7 @@ function ProfileMenu({ name }: { name: string }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative ml-auto flex items-center gap-4">
+    <div ref={ref} className="relative flex items-center gap-4">
       <span className="text-lg font-bold uppercase">{name}</span>
       <button
         type="button"
@@ -89,13 +91,24 @@ function ProfileMenu({ name }: { name: string }) {
   );
 }
 
-export function Header({ tabGroups, name }: { tabGroups: PageTabGroup[]; name: string }) {
+export function Header({
+  tabGroups,
+  name,
+  notifications,
+}: {
+  tabGroups: PageTabGroup[];
+  name: string;
+  notifications: NotificationsPayload;
+}) {
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-8 bg-container px-10">
       <Suspense fallback={<div />}>
         <Tabs groups={tabGroups} />
       </Suspense>
-      <ProfileMenu name={name} />
+      <div className="relative ml-auto flex items-center gap-5">
+        <NotificationBell initial={notifications} />
+        <ProfileMenu name={name} />
+      </div>
     </header>
   );
 }
