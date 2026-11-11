@@ -39,11 +39,11 @@ const actorName = (a: Actor) => a.name || a.email;
 // Links: where each notification takes the person
 // ---------------------------------------------------------------------------
 const adminReviewHref = (requestId: number) => `/admin-dashboard?tab=review&request=${requestId}`;
-const myBookingHref = (requestId: number) => `/booking-status/${requestId}`; // approved/rejected detail page
-const myBookingsListHref = "/booking-status"; // rejected/cancelled rows are deleted, so link to the list
+const myBookingHref = (requestId: number) => `/booking-status/${requestId}`; // detail page: approved + rejected only
+const myBookingsListHref = "/booking-status"; // cancelled bookings have no detail page, so link to the list
 
 // ---------------------------------------------------------------------------
-// Request lookup (must be called BEFORE a reject/cancel deletes the row)
+// Request lookup
 // ---------------------------------------------------------------------------
 export type RequestInfo = {
   requestId: number;
@@ -204,7 +204,7 @@ export function notifyBookingApproved(requestId: number, actor: Actor, remarks: 
   });
 }
 
-/** Pass infos captured BEFORE the delete; the rows no longer exist afterwards. */
+/** Reject / admin-cancel. Rejected -> detail page (it shows the reason); cancelled -> list. */
 export function notifyBookingRemoved(
   infos: RequestInfo[],
   kind: "rejected" | "cancelled",
@@ -222,7 +222,7 @@ export function notifyBookingRemoved(
             kind === "rejected"
               ? `Your booking for ${describe(i)} was rejected. Reason: ${clip(reason)}`
               : `Your approved booking for ${describe(i)} was cancelled. Reason: ${clip(reason)}`,
-          href: myBookingsListHref,
+          href: kind === "rejected" ? myBookingHref(i.requestId) : myBookingsListHref,
           requestId: i.requestId,
         })),
     );

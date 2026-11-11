@@ -78,6 +78,7 @@ export async function sendForApproval(
 
   if (updated.length === 0)
     return fail("This request is no longer in review. Refresh the page.");
+  await notifyBookingReviewed(requestId, user);
   return done();
 }
 
@@ -107,17 +108,15 @@ export async function approveRequest(
     .returning({ id: reservationRequests.requestId });
 
   if (updated.length === 0) return fail("This request can no longer be approved. Refresh the page.");
+  await notifyBookingApproved(requestId, user, clean.text);
   return done();
 }
 
 export async function rejectRequest(requestId: number, reason: string): Promise<ActionResult> {
-  await requireRole(...ADMIN_ROLES);
+  const user = await requireRole(...ADMIN_ROLES);
   if (!validId(requestId)) return fail("Invalid request.");
   const clean = cleanText(reason, { required: true });
   if ("error" in clean) return fail(clean.error);
-
-  // The row is deleted below, so capture what the notification needs first.
-  const info = (await getRequestInfo([requestId])).get(requestId);
 
   const updated = await db
     .update(reservationRequests)
@@ -136,19 +135,18 @@ export async function rejectRequest(requestId: number, reason: string): Promise<
     .returning({ id: reservationRequests.requestId });
 
   if (updated.length === 0) return fail("This request can no longer be rejected. Refresh the page.");
+  const info = (await getRequestInfo([requestId])).get(requestId);
+  if (info) await notifyBookingRemoved([info], "rejected", user, clean.text);
   return done();
 }
 
 export async function cancelApprovedRequests(requestIds: number[], reason: string): Promise<ActionResult> {
-  await requireRole(...ADMIN_ROLES);
+  const user = await requireRole(...ADMIN_ROLES);
   const ids = [...new Set(requestIds)];
   if (ids.length === 0 || ids.length > MAX_BULK || !ids.every(validId))
     return fail("Invalid selection.");
   const clean = cleanText(reason, { required: true });
   if ("error" in clean) return fail(clean.error);
-
-  // Rows are deleted below, so capture what the notifications need first.
-  const infos = [...(await getRequestInfo(ids)).values()];
 
   try {
     await db.transaction(async (tx) => {
@@ -176,6 +174,7 @@ export async function cancelApprovedRequests(requestIds: number[], reason: strin
     }
     throw err;
   }
+  const infos = [...(await getRequestInfo(ids)).values()];
   await notifyBookingRemoved(infos, "cancelled", user, clean.text);
   return done();
 }
