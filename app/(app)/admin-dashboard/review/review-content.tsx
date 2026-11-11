@@ -6,15 +6,31 @@ import { ReviewFilters } from "./review-filters";
 import { ReviewTable } from "./review-table";
 import { roomSummary, scheduleSummary } from "./types";
 
-export type ReviewParams = { sort?: string; show?: string; q?: string; request?: string };
+const CLOSED = new Set<string>(["rejected", "cancelled"]);
 
-export async function ReviewContent({ params, role }: { params: ReviewParams; role: Role }) {
+export type ReviewParams = {
+  sort?: string;
+  show?: string;
+  q?: string;
+  request?: string;
+};
+
+export async function ReviewContent({
+  params,
+  role,
+}: {
+  params: ReviewParams;
+  role: Role;
+}) {
   const query = parseQuery(params);
-  const all = await getReviewBookings();
+  const all = (await getReviewBookings()).filter((b) => !CLOSED.has(b.status));
   const visible = applyQuery(all, query);
 
-  const requestId = /^\d+$/.test(params.request ?? "") ? Number(params.request) : null;
-  const current = requestId === null ? null : all.find((b) => b.id === requestId);
+  const requestId = /^\d+$/.test(params.request ?? "")
+    ? Number(params.request)
+    : null;
+  const current =
+    requestId === null ? null : all.find((b) => b.id === requestId);
 
   if (current) {
     const list = visible.some((b) => b.id === current.id)
@@ -27,7 +43,15 @@ export async function ReviewContent({ params, role }: { params: ReviewParams; ro
       label: `${b.purpose} · ${scheduleSummary(b)} · ${roomSummary(b)}`,
     }));
 
-    return <ReviewDetail key={current.id} booking={current} role={role} backHref={reviewHref(query)} options={options} />;
+    return (
+      <ReviewDetail
+        key={current.id}
+        booking={current}
+        role={role}
+        backHref={reviewHref(query)}
+        options={options}
+      />
+    );
   }
 
   return (

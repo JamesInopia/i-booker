@@ -10,7 +10,7 @@ export const SORT_OPTIONS = [
 ] as const;
 export type SortKey = (typeof SORT_OPTIONS)[number]["value"];
 
-const STATUSES: BookingStatus[] = ["pending", "reviewed", "approved", "rejected", "cancelled"];
+const STATUSES: BookingStatus[] = ["pending", "reviewed", "approved"];
 export const SHOW_OPTIONS: { value: "all" | BookingStatus; label: string }[] = [
   { value: "all", label: "All" },
   ...STATUSES.map((s) => ({ value: s, label: STATUS_LABEL[s] })),
@@ -19,17 +19,31 @@ export type ShowKey = "all" | BookingStatus;
 
 export type ReviewQuery = { sort: SortKey; show: ShowKey; q: string };
 
-export const DEFAULT_QUERY: ReviewQuery = { sort: "requested_desc", show: "all", q: "" };
+export const DEFAULT_QUERY: ReviewQuery = {
+  sort: "requested_desc",
+  show: "all",
+  q: "",
+};
 
-export function parseQuery(p: { sort?: string; show?: string; q?: string }): ReviewQuery {
-  const sort = SORT_OPTIONS.find((o) => o.value === p.sort)?.value ?? DEFAULT_QUERY.sort;
-  const show = SHOW_OPTIONS.find((o) => o.value === p.show)?.value ?? DEFAULT_QUERY.show;
+export function parseQuery(p: {
+  sort?: string;
+  show?: string;
+  q?: string;
+}): ReviewQuery {
+  const sort =
+    SORT_OPTIONS.find((o) => o.value === p.sort)?.value ?? DEFAULT_QUERY.sort;
+  const show =
+    SHOW_OPTIONS.find((o) => o.value === p.show)?.value ?? DEFAULT_QUERY.show;
   return { sort, show, q: (p.q ?? "").trim().slice(0, 100) };
 }
 
-const scheduledKey = (b: ReviewBooking) => (b.slots[0] ? `${b.slots[0].dateISO} ${b.slots[0].time}` : "");
+const scheduledKey = (b: ReviewBooking) =>
+  b.slots[0] ? `${b.slots[0].dateISO} ${b.slots[0].time}` : "";
 
-export function applyQuery(list: ReviewBooking[], query: ReviewQuery): ReviewBooking[] {
+export function applyQuery(
+  list: ReviewBooking[],
+  query: ReviewQuery,
+): ReviewBooking[] {
   const needle = query.q.toLowerCase();
   const filtered = list.filter((b) => {
     if (query.show !== "all" && b.status !== query.show) return false;

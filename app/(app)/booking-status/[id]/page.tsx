@@ -114,7 +114,11 @@ export default async function ReservationReviewPage({
       and(
         eq(reservationRequests.requestId, requestId),
         eq(sql`lower(${authUsers.email})`, user.email.toLowerCase()),
-        inArray(reservationRequests.status, ["approved", "rejected"]),
+        inArray(reservationRequests.status, [
+          "approved",
+          "rejected",
+          "cancelled",
+        ]),
       ),
     )
     .orderBy(asc(reservationSlots.slotId))
@@ -126,7 +130,11 @@ export default async function ReservationReviewPage({
     notFound();
   }
 
-  const isApproved = booking.status === "approved";
+  const heading = {
+    approved: { label: "Approved", color: "text-green-600" },
+    rejected: { label: "Rejected", color: "text-red-600" },
+    cancelled: { label: "Cancelled", color: "text-gray-600" },
+  }[booking.status as "approved" | "rejected" | "cancelled"];
 
   return (
     <main className="min-h-screen bg-[#f0f4f8] px-6 py-8 md:px-10">
@@ -141,12 +149,8 @@ export default async function ReservationReviewPage({
       {/* White reservation details container */}
       <section className="rounded-xl bg-white p-6 shadow-sm md:p-8">
         {/* Reservation status */}
-        <h1
-          className={`mb-5 text-4xl font-bold ${
-            isApproved ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {isApproved ? "Approved" : "Rejected"}
+        <h1 className={`mb-5 text-4xl font-bold ${heading.color}`}>
+          {heading.label}
         </h1>
 
         {/* Two-column booking details */}
