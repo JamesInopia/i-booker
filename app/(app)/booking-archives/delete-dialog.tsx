@@ -24,7 +24,7 @@ export default function DeleteDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-      onClick={() => pending && onClose()}
+      onClick={() => !pending && onClose()}
     >
       <div
         role="dialog"
@@ -48,13 +48,15 @@ export default function DeleteDialog({
           <button
             type="button"
             onClick={onClose}
+            disabled={pending}
             className="rounded-full px-5 py-2 font-semibold hover:bg-gray-100"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={onConfirm}
+            onClick={confirm}
+            disabled={pending}
             className="rounded-full bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700"
           >
             {pending ? "Deleting..." : "Delete"}

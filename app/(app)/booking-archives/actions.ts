@@ -19,15 +19,20 @@ export async function deleteArchived(ids: number[]) {
     const done = await db
       .delete(reservationRequests)
       .where(
-        or(
-          inArray(reservationRequests.status, ["rejected", "cancelled"]),
-          and(
-            eq(reservationRequests.status, "approved"),
-            sql`exists (
-              select 1 from reservation_slot s
-              where s.request_id = ${reservationRequests.requestId}
-                and s.date_of_activity < ${today}
-            )`,
+        and(
+          // Only the requests that were actually selected.
+          inArray(reservationRequests.requestId, clean),
+          // ...and only if they are still archived (safety check).
+          or(
+            inArray(reservationRequests.status, ["rejected", "cancelled"]),
+            and(
+              eq(reservationRequests.status, "approved"),
+              sql`exists (
+                select 1 from reservation_slot s
+                where s.request_id = ${reservationRequests.requestId}
+                  and s.date_of_activity < ${today}
+              )`,
+            ),
           ),
         ),
       )
