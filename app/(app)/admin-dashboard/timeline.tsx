@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatTime, toMinutes, type RoomListing } from "../booking/rules";
 import { DayContent, MonthGrid, TODAY_FILL } from "../calendar/calendar-parts";
+import type { DaySymbols } from "../calendar/day-symbols";
 import { MARK_STYLE, cancelsClasses, markFor, type DayMarks } from "../calendar/day-marks";
 import {
   DAY_NAMES,
@@ -16,7 +17,7 @@ import {
 } from "../calendar/dates";
 import { MonthPicker } from "../calendar/month-picker";
 import { DayMenu } from "./day-menu";
-import type { WeekClass } from "./schedule/types";
+import type { WeekBooking, WeekClass } from "./schedule/types";
 
 const TIME_SLOTS = [
   { label: "7:30 AM - 11:00 AM", from: 7 * 60 + 30, to: 11 * 60 },
@@ -32,7 +33,7 @@ const navLink = "px-2 py-1 hover:underline";
 const STICKY_TH = "sticky top-[calc(6.5rem-2px)] z-[8] shadow-[inset_-1px_0_0_var(--color-neutral-300),0_1px_0_0_var(--color-neutral-300)]";
 
 
-export function CalendarView({ month, marks }: { month: string; marks: DayMarks }) {
+export function CalendarView({ month, marks, symbols }: { month: string; marks: DayMarks; symbols: DaySymbols }) {
   const today = todayISO();
 
   return (
@@ -59,7 +60,7 @@ export function CalendarView({ month, marks }: { month: string; marks: DayMarks 
             className={className}
           >
             <span aria-current={isToday ? "date" : undefined}>
-              <DayContent day={day} mark={mark} />
+              <DayContent day={day} mark={mark} symbols={symbols[day]} />
             </span>
           </DayMenu>
         )}
@@ -74,11 +75,13 @@ export function TimetableView({
   rooms,
   marks,
   classes,
+  bookings,
 }: {
   sunday: string;
   rooms: RoomListing[];
   marks: DayMarks;
   classes: WeekClass[];
+  bookings: WeekBooking[];
 }) {
   const today = todayISO();
   const days = weekDays(sunday);
@@ -90,6 +93,13 @@ export function TimetableView({
     if (!runningDays.has(c.date)) continue;
     const key = `${c.roomId}|${c.date}`;
     byCell.set(key, [...(byCell.get(key) ?? []), c]);
+  }
+
+  // Not filtered by runningDays: a "Class Cancelled" day still allows bookings.
+  const bookedByCell = new Map<string, WeekBooking[]>();
+  for (const b of bookings) {
+    const key = `${b.roomId}|${b.date}`;
+    bookedByCell.set(key, [...(bookedByCell.get(key) ?? []), b]);
   }
 
   return (
@@ -158,6 +168,9 @@ export function TimetableView({
                     const inSlot = (byCell.get(`${room.roomId}|${day}`) ?? []).filter(
                       (c) => toMinutes(c.start) < slot.to && toMinutes(c.end) > slot.from,
                     );
+                    const bookedInSlot = (bookedByCell.get(`${room.roomId}|${day}`) ?? []).filter(
+                      (b) => toMinutes(b.start) < slot.to && toMinutes(b.end) > slot.from,
+                    );
                     return (
                       <td key={day} className={`h-24 border border-neutral-300 p-1 align-top ${mark ? MARK_STYLE[mark.kind].tint : ""}`}>
                         <div className="flex h-full flex-col gap-1">
@@ -169,6 +182,16 @@ export function TimetableView({
                             >
                               <div className="break-words text-base font-bold uppercase">{c.title}</div>
                               {c.adviser && <div className="break-words text-sm">{c.adviser}</div>}
+                            </div>
+                          ))}
+                          {bookedInSlot.map((b) => (
+                            <div
+                              key={`b-${b.id}`}
+                              title={`${b.activity} — ${b.requestor}\n${formatTime(b.start)} – ${formatTime(b.end)}`}
+                              className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-md bg-emerald-100 px-2 py-1 text-center leading-tight text-emerald-950"
+                            >
+                              <div className="break-words text-base font-bold uppercase">{b.activity}</div>
+                              <div className="break-words text-sm">{b.requestor}</div>
                             </div>
                           ))}
                         </div>

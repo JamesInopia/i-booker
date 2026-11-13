@@ -23,6 +23,16 @@ export type WeekClass = {
   adviser: string;
 };
 
+export type WeekBooking = {
+  id: number;
+  roomId: string;
+  date: string;
+  start: string;
+  end: string;
+  activity: string;
+  requestor: string;
+};
+
 export type DraftClass = Omit<ClassRow, "termId">;
 
 export type ClassPayload = {

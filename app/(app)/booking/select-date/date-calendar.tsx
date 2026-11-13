@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DayContent, MonthGrid } from "../../calendar/calendar-parts";
 import type { DayMarks } from "../../calendar/day-marks";
+import type { DaySymbols } from "../../calendar/day-symbols";
 import { addMonths, monthKey } from "../../calendar/dates";
 import { MonthPicker } from "../../calendar/month-picker";
 
@@ -12,6 +13,7 @@ export function DateCalendar({
   today,
   max,
   closed,
+  daySymbols,
   initialMonth,
 }: {
   selected: string;
@@ -19,6 +21,7 @@ export function DateCalendar({
   today: string;
   max: string;
   closed: DayMarks;
+  daySymbols: DaySymbols;
   initialMonth: string; // YYYY-MM-01
 }) {
   const [month, setMonth] = useState(initialMonth);
@@ -80,7 +83,7 @@ export function DateCalendar({
             title={mark ? `${mark.label} (bookings closed)` : undefined}
             className={`${className} !h-[64px] !min-h-0 !p-2`}
           >
-            <DayContent day={day} mark={mark} />
+            <DayContent day={day} mark={mark} symbols={daySymbols[day]} />
           </button>
         )}
       />

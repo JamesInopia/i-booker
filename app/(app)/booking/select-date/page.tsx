@@ -1,6 +1,7 @@
 import { blocksBooking, type DayMarks } from "../../calendar/day-marks";
 
 import { getDayMarks } from "../../calendar/day-marks-queries";
+import { getDaySymbols } from "../../calendar/day-symbols-queries";
 
 import { requireStep } from "../flow";
 import { getBusySlots } from "../queries";
@@ -16,7 +17,7 @@ export default async function SelectDatePage() {
   const today = manilaNow().date;
   const max = addDays(today, MAX_ADVANCE_DAYS);
 
-  const marks = await getDayMarks(today, max);
+  const [marks, daySymbols] = await Promise.all([getDayMarks(today, max), getDaySymbols(today, max)]);
 
   const closed: DayMarks = Object.fromEntries(
     Object.entries(marks).filter(([, mark]) => blocksBooking(mark.kind)),
@@ -41,6 +42,7 @@ export default async function SelectDatePage() {
         min={today}
         max={max}
         closed={closed}
+        daySymbols={daySymbols}
       />
     </StepFrame>
   );

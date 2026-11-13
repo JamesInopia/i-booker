@@ -1,9 +1,16 @@
 import "server-only";
 import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { classSchedules, terms } from "@/db/schema";
+import {
+  activityTypes,
+  classSchedules,
+  reservationRequests,
+  reservationSlotRooms,
+  reservationSlots,
+  terms,
+} from "@/db/schema";
 import { addDays } from "../../calendar/dates";
-import type { ClassRow, TermRow, WeekClass } from "./types";
+import type { ClassRow, TermRow, WeekBooking, WeekClass } from "./types";
 
 /**
  * Classes that actually occur in the week starting on `sunday`, resolved to calendar dates.
@@ -43,6 +50,43 @@ export async function listWeekClasses(sunday: string): Promise<WeekClass[]> {
     });
   }
   return out;
+}
+
+/** Approved bookings in the week starting on `sunday` (same rule getBusySlots uses to block time). */
+export async function listWeekBookings(sunday: string): Promise<WeekBooking[]> {
+  const rows = await db
+    .select({
+      id: reservationSlots.slotId,
+      roomId: reservationSlotRooms.roomId,
+      date: reservationSlots.dateOfActivity,
+      start: reservationSlots.startTime,
+      end: reservationSlots.endTime,
+      activity: activityTypes.name,
+      natureOther: reservationRequests.natureOther,
+      requestor: reservationRequests.requestor,
+    })
+    .from(reservationSlots)
+    .innerJoin(reservationRequests, eq(reservationRequests.requestId, reservationSlots.requestId))
+    .innerJoin(reservationSlotRooms, eq(reservationSlotRooms.slotId, reservationSlots.slotId))
+    .innerJoin(activityTypes, eq(activityTypes.activityTypeId, reservationRequests.activityTypeId))
+    .where(
+      and(
+        gte(reservationSlots.dateOfActivity, sunday),
+        lte(reservationSlots.dateOfActivity, addDays(sunday, 6)),
+        eq(reservationRequests.status, "approved"),
+      ),
+    )
+    .orderBy(asc(reservationSlots.startTime));
+
+  return rows.map((r) => ({
+    id: r.id,
+    roomId: String(r.roomId),
+    date: r.date,
+    start: r.start.slice(0, 5),
+    end: r.end.slice(0, 5),
+    activity: r.natureOther?.trim() || r.activity,
+    requestor: r.requestor,
+  }));
 }
 
 export async function listTerms(): Promise<TermRow[]> {

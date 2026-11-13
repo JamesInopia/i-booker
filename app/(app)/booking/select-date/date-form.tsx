@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Legend } from "../../calendar/calendar-parts";
 import { longDateLabel } from "../../calendar/dates";
 import type { DayMarks } from "../../calendar/day-marks";
+import type { DaySymbols } from "../../calendar/day-symbols";
 
 import { getDateAvailability, saveDateTime } from "../actions";
 
@@ -40,6 +41,7 @@ type DateFormProps = {
   min: string;
   max: string;
   closed: DayMarks;
+  daySymbols: DaySymbols;
 };
 
 export function DateForm({
@@ -50,6 +52,7 @@ export function DateForm({
   min,
   max,
   closed,
+  daySymbols,
 }: DateFormProps) {
   const validInitialDate =
     initialDate >= min && initialDate <= max && !closed[initialDate];
@@ -211,6 +214,7 @@ export function DateForm({
             today={min}
             max={max}
             closed={closed}
+            daySymbols={daySymbols}
             initialMonth={`${(date || min).slice(0, 7)}-01`}
           />
 

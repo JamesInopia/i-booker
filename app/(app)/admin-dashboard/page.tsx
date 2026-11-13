@@ -5,9 +5,10 @@ import { listAllRooms } from "../booking/queries";
 import { Legend } from "../calendar/calendar-parts";
 import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO } from "../calendar/dates";
 import { getDayMarks } from "../calendar/day-marks-queries";
+import { getDaySymbols } from "../calendar/day-symbols-queries";
 import { AccountsContent } from "./accounts/accounts-content";
 import { ReviewContent } from "./review/review-content";
-import { listWeekClasses } from "./schedule/queries";
+import { listWeekBookings, listWeekClasses } from "./schedule/queries";
 import { ScheduleContent } from "./schedule/schedule-content";
 import { SummaryCounts } from "./summary-counts";
 import { CalendarView, TimetableView } from "./timeline";
@@ -63,16 +64,19 @@ async function TimelineContent({ params }: { params: Params }) {
 
   const month = parseMonth(first(params.month)) ?? `${today.slice(0, 7)}-01`;
   const sunday = startOfWeek(parseDate(first(params.week)) ?? today);
-  const [rooms, classes] = isTimetable ? await Promise.all([listAllRooms(), listWeekClasses(sunday)]) : [[], []];
+  const [rooms, classes, bookings] = isTimetable
+    ? await Promise.all([listAllRooms(), listWeekClasses(sunday), listWeekBookings(sunday)])
+    : [[], [], []];
 
   const grid = monthGrid(month);
   const marks = isTimetable ? await getDayMarks(sunday, addDays(sunday, 6)) : await getDayMarks(grid[0], grid[grid.length - 1]);
+  const symbols = isTimetable ? {} : await getDaySymbols(grid[0], grid[grid.length - 1]);
 
   if (isTimetable) {
     return (
       <div className="flex flex-col gap-3">
         <Legend compact />
-        <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} />
+        <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} bookings={bookings} />
       </div>
     );
   }
@@ -80,7 +84,7 @@ async function TimelineContent({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1">
-        <CalendarView month={month} marks={marks} />
+        <CalendarView month={month} marks={marks} symbols={symbols} />
       </div>
       <Legend />
     </div>

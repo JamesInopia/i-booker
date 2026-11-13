@@ -1,4 +1,5 @@
 import { DAY_SHORT, dayOfMonth, monthGrid, monthKey } from "./dates";
+import type { DaySymbol } from "./day-symbols";
 import {
   MARK_OPTIONS,
   MARK_STYLE,
@@ -88,17 +89,40 @@ export function MonthGrid({
   );
 }
 
+const MAX_DOTS = 3;
+
+export function SymbolDots({ symbols }: { symbols?: DaySymbol[] }) {
+  if (!symbols?.length) return null;
+  const shown = symbols.slice(0, MAX_DOTS);
+  const extra = symbols.length - shown.length;
+  return (
+    <span className="absolute right-1 top-1 flex gap-0.5" title={symbols.map((s) => s.name).join(", ")}>
+      {shown.map((s) => (
+        <span key={s.id} aria-hidden className="h-3.5 w-3.5 rounded-full ring-1 ring-white" style={{ backgroundColor: s.color }} />
+      ))}
+      {extra > 0 && (
+        <span aria-hidden className="grid h-3.5 min-w-3.5 place-items-center rounded-full bg-neutral-500 px-0.5 text-[9px] font-bold leading-none text-white">
+          +{extra}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function DayContent({
   day,
   mark,
+  symbols,
 }: {
   day: string;
   mark: DayMark | null;
+  symbols?: DaySymbol[];
 }) {
   const showLabel = mark && !mark.implicit && showsLabelOnCalendar(mark.kind);
   return (
     <>
       <span className="block">{dayOfMonth(day)}</span>
+      <SymbolDots symbols={symbols} />
       {showLabel && (
         <span
           title={mark.label}
