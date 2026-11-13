@@ -53,7 +53,7 @@ function DetailField({
     <div>
       <label className="mb-1 block text-sm font-bold text-black">{label}</label>
 
-      <div className="flex min-h-[49px] items-center rounded-md border border-gray-300 bg-white px-5 py-3 text-base text-black break-words">
+      <div className="flex min-h-12.25 items-center rounded-md border border-gray-300 bg-white px-5 py-3 text-base text-black wrap-break-word">
         {value === null || value === undefined || value === "" ? "—" : value}
       </div>
     </div>
@@ -92,6 +92,10 @@ export default async function ReservationReviewPage({
       endTime: reservationSlots.endTime,
       occupants: reservationSlots.occupantQuantity,
       description: reservationSlots.detailsOfActivity,
+      supervisorRemarks: reservationRequests.supervisorRemarks,
+      cancelledAt: reservationRequests.cancelledAt,
+      cancelReason: reservationRequests.cancelReason,
+      decidedAt: reservationRequests.decidedAt,
 
       room: rooms.name,
     })
@@ -136,8 +140,11 @@ export default async function ReservationReviewPage({
     cancelled: { label: "Cancelled", color: "text-gray-600" },
   }[booking.status as "approved" | "rejected" | "cancelled"];
 
+  const isCancelled = booking.status === "cancelled";
+  const closedAt = isCancelled ? booking.cancelledAt : booking.decidedAt;
+
   return (
-    <main className="min-h-screen bg-[#f0f4f8] px-6 py-8 md:px-10">
+    <main className="min-h-screen bg-background px-6 py-8 md:px-10">
       {/* Back navigation */}
       <Link
         href="/booking-status"
@@ -189,10 +196,40 @@ export default async function ReservationReviewPage({
             Booking Description
           </label>
 
-          <div className="min-h-[160px] whitespace-pre-wrap break-words rounded-md border border-gray-300 bg-white px-5 py-4 text-base">
+          <div className="min-h-40 whitespace-pre-wrap wrap-break-word rounded-md border border-gray-300 bg-white px-5 py-4 text-base">
             {booking.description || "—"}
           </div>
         </div>
+
+        {booking.status === "approved" && booking.supervisorRemarks && (
+          <div className="mt-5">
+            {booking.supervisorRemarks && (
+              <div>
+                <label className="mb-1 block text-sm font-bold">
+                  Supervisor&apos;s Remarks
+                </label>
+                <div className="whitespace-pre-wrap wrap-break-word rounded-md border border-gray-300 bg-white px-5 py-4 text-base">
+                  {booking.supervisorRemarks}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(booking.status === "rejected" || isCancelled) && (
+          <div className="mt-5 space-y-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <DetailField
+                label={isCancelled ? "Date Cancelled" : "Date Rejected"}
+                value={closedAt ? formatDate(closedAt) : null}
+              />
+              <DetailField
+                label={isCancelled ? "Cancellation Reason" : "Rejection Reason"}
+                value={booking.cancelReason}
+              />
+            </div>
+          </div>
+        )}
       </section>
     </main>
   );
