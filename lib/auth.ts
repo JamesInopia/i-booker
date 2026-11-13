@@ -61,7 +61,7 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
       .delete(sessionTable)
       .where(eq(sessionTable.userId, session.user.id))
       .catch(() => {});
-    return { kind: "anonymous" };
+    return { kind: "suspended" };
   }
 
   const email = session.user.email.toLowerCase();
