@@ -36,7 +36,10 @@ function Shell({
   }, [onClose, pending]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => !pending && onClose()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={() => !pending && onClose()}
+    >
       <div
         role="dialog"
         aria-modal="true"
@@ -47,7 +50,9 @@ function Shell({
         <h2 id={titleId} className="text-xl font-bold">
           {title}
         </h2>
-        {description && <p className="mt-1 text-sm text-gray-600">{description}</p>}
+        {description && (
+          <p className="mt-1 text-sm text-gray-600">{description}</p>
+        )}
         {children}
       </div>
     </div>
@@ -138,7 +143,12 @@ export function ConfirmDialog({
 }) {
   const { pending, error, run } = useRun(onClose);
   return (
-    <Shell title={title} description={description} pending={pending} onClose={onClose}>
+    <Shell
+      title={title}
+      description={description}
+      pending={pending}
+      onClose={onClose}
+    >
       <ErrorText message={error} />
       <Buttons
         pending={pending}
@@ -152,7 +162,13 @@ export function ConfirmDialog({
   );
 }
 
-export function SuspendDialog({ account, onClose }: { account: AccountRow; onClose: () => void }) {
+export function SuspendDialog({
+  account,
+  onClose,
+}: {
+  account: AccountRow;
+  onClose: () => void;
+}) {
   const { pending, error, setError, run } = useRun(onClose);
   const [days, setDays] = useState("7");
   const [indefinite, setIndefinite] = useState(false);
@@ -162,8 +178,13 @@ export function SuspendDialog({ account, onClose }: { account: AccountRow; onClo
 
   function submit() {
     const n = Number(days);
-    if (!indefinite && (!Number.isInteger(n) || n < 1 || n > MAX_SUSPENSION_DAYS)) {
-      setError(`Enter a whole number of days between 1 and ${MAX_SUSPENSION_DAYS}.`);
+    if (
+      !indefinite &&
+      (!Number.isInteger(n) || n < 1 || n > MAX_SUSPENSION_DAYS)
+    ) {
+      setError(
+        `Enter a whole number of days between 1 and ${MAX_SUSPENSION_DAYS}.`,
+      );
       return;
     }
     if (reason.trim().length < 3) {
@@ -176,7 +197,7 @@ export function SuspendDialog({ account, onClose }: { account: AccountRow; onClo
   return (
     <Shell
       title={`Suspend ${account.name}?`}
-      description="They won't be able to submit new booking requests while suspended. Existing requests aren't affected."
+      description="They''ll be signed out and won't be able to sign in while suspended. Existing requests aren't affected."
       pending={pending}
       onClose={onClose}
     >
@@ -203,7 +224,9 @@ export function SuspendDialog({ account, onClose }: { account: AccountRow; onClo
             disabled={indefinite}
             onClick={() => setDays(String(d))}
             className={`rounded-full border px-3 py-1 text-xs font-semibold disabled:opacity-40 ${
-              !indefinite && days === String(d) ? "border-accent-1 bg-accent-1 text-white" : "border-gray-300 hover:bg-gray-100"
+              !indefinite && days === String(d)
+                ? "border-accent-1 bg-accent-1 text-white"
+                : "border-gray-300 hover:bg-gray-100"
             }`}
           >
             {d} {d === 1 ? "day" : "days"}
@@ -211,7 +234,11 @@ export function SuspendDialog({ account, onClose }: { account: AccountRow; onClo
         ))}
       </div>
       <label className="mt-3 flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={indefinite} onChange={(e) => setIndefinite(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={indefinite}
+          onChange={(e) => setIndefinite(e.target.checked)}
+        />
         Suspend indefinitely (until lifted manually)
       </label>
 
