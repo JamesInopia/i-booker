@@ -4,7 +4,11 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { db } from "@/db";
-import { roleAssignments, session as sessionTable } from "@/db/schema";
+import {
+  roleAssignments,
+  session as sessionTable,
+  user as authUsers,
+} from "@/db/schema";
 import { auth } from "@/lib/better-auth";
 import { ROLE_HOME, type Role } from "@/lib/session";
 
@@ -17,13 +21,47 @@ export type CurrentUser = {
   role: Role;
 };
 
-export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
-  const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  if (!session) return null;
+export type AuthState =
+  | { kind: "anonymous" }
+  | { kind: "suspended" }
+  | { kind: "ok"; user: CurrentUser };
 
-  if (Date.now() - new Date(session.session.createdAt).getTime() > MAX_SESSION_MS) {
-    await db.delete(sessionTable).where(eq(sessionTable.id, session.session.id)).catch(() => {});
-    return null;
+export const getAuthState = cache(async (): Promise<AuthState> => {
+  const session = await auth.api
+    .getSession({ headers: await headers() })
+    .catch(() => null);
+  if (!session) return { kind: "anonymous" };
+
+  if (
+    Date.now() - new Date(session.session.createdAt).getTime() >
+    MAX_SESSION_MS
+  ) {
+    await db
+      .delete(sessionTable)
+      .where(eq(sessionTable.id, session.session.id))
+      .catch(() => {});
+    return { kind: "anonymous" };
+  }
+
+  const [account] = await db
+    .select({
+      status: authUsers.status,
+      suspendedUntil: authUsers.suspendedUntil,
+    })
+    .from(authUsers)
+    .where(eq(authUsers.id, session.user.id))
+    .limit(1);
+  if (!account) return { kind: "anonymous" };
+
+  const suspended =
+    account.status === "suspended" &&
+    (!account.suspendedUntil || account.suspendedUntil > new Date());
+  if (suspended) {
+    await db
+      .delete(sessionTable)
+      .where(eq(sessionTable.userId, session.user.id))
+      .catch(() => {});
+    return { kind: "anonymous" };
   }
 
   const email = session.user.email.toLowerCase();
@@ -33,13 +71,27 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     .where(eq(roleAssignments.email, email))
     .limit(1);
 
-  return { id: session.user.id, email, name: session.user.name, role: row?.role ?? "requestor" };
+  return {
+    kind: "ok",
+    user: {
+      id: session.user.id,
+      email,
+      name: session.user.name,
+      role: row?.role ?? "requestor",
+    },
+  };
+});
+
+export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  const state = await getAuthState();
+  return state.kind === "ok" ? state.user : null;
 });
 
 export async function requireUser(): Promise<CurrentUser> {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  return user;
+  const state = await getAuthState();
+  if (state.kind === "suspended") redirect("/login?suspended=1");
+  if (state.kind !== "ok") redirect("/login");
+  return state.user;
 }
 
 export async function requireRole(...roles: Role[]): Promise<CurrentUser> {

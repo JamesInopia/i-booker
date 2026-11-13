@@ -9,14 +9,30 @@ const HINT = 'Please sign in with your "@iacademy.edu.ph" account';
 const INPUT =
   "mt-1 block h-10 w-full rounded-md border border-accent-4 bg-container px-3 font-normal outline-none focus:border-accent-1";
 
-export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
+export function LoginForm({
+  next,
+  failed,
+  suspended,
+}: {
+  next: string;
+  failed: boolean;
+  suspended: boolean;
+}) {
   const [askEmail, setAskEmail] = useState(false);
   const [email, setEmail] = useState("");
   const [pending, setPending] = useState(false);
-  const [message, setMessage] = useState(failed ? 'Sign-in failed. Use your "@iacademy.edu.ph" account.' : "");
+  const [message, setMessage] = useState(
+    suspended
+      ? "Your account has been suspended. Please contact an administrator."
+      : failed
+        ? 'Sign-in failed. Use your "@iacademy.edu.ph" account.'
+        : "",
+  );
   const emailRef = useRef<HTMLInputElement>(null);
 
-  const callbackURL = next ? `/auth/continue?next=${encodeURIComponent(next)}` : "/auth/continue";
+  const callbackURL = next
+    ? `/auth/continue?next=${encodeURIComponent(next)}`
+    : "/auth/continue";
 
   async function goToGoogle(loginHint: string) {
     setPending(true);
@@ -51,7 +67,11 @@ export function LoginForm({ next, failed }: { next: string; failed: boolean }) {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mt-12 flex w-[21.5rem] flex-col items-center gap-6">
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      className="mt-12 flex w-86 flex-col items-center gap-6"
+    >
       {askEmail && (
         <label className="w-full text-sm font-semibold">
           iACADEMY Cebu Email
