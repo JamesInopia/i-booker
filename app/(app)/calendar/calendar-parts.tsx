@@ -1,5 +1,5 @@
 import { DAY_SHORT, dayOfMonth, monthGrid, monthKey } from "./dates";
-import type { DaySymbol } from "./day-symbols";
+import { BOOKING_SYMBOLS, type DaySymbol } from "./day-symbols";
 import {
   MARK_OPTIONS,
   MARK_STYLE,
@@ -97,9 +97,14 @@ export function SymbolDots({ symbols }: { symbols?: DaySymbol[] }) {
   const extra = symbols.length - shown.length;
   return (
     <span className="absolute right-1 top-1 flex gap-0.5" title={symbols.map((s) => s.name).join(", ")}>
-      {shown.map((s) => (
-        <span key={s.id} aria-hidden className="h-3.5 w-3.5 rounded-full ring-1 ring-white" style={{ backgroundColor: s.color }} />
-      ))}
+      {shown.map((s) =>
+        s.icon ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={`${s.id}-${s.icon}`} src={s.icon} alt="" aria-hidden className="h-4 w-4 rounded-full" />
+        ) : (
+          <span key={s.id} aria-hidden className="h-3.5 w-3.5 rounded-full ring-1 ring-white" style={{ backgroundColor: s.color }} />
+        ),
+      )}
       {extra > 0 && (
         <span aria-hidden className="grid h-3.5 min-w-3.5 place-items-center rounded-full bg-neutral-500 px-0.5 text-[9px] font-bold leading-none text-white">
           +{extra}
@@ -137,17 +142,48 @@ export function DayContent({
   );
 }
 
+function BookingSymbolIcon({ src }: { src: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" aria-hidden className="h-4 w-4 shrink-0 rounded-full" />;
+}
+
 export function Legend({ compact = false, horizontal = false,}: { compact?: boolean; horizontal?: boolean;}) {
   if (compact) {
     return (
-      <aside aria-label="Legend" className="flex flex-wrap items-center gap-x-5 gap-y-1 rounded-lg bg-container px-4 py-2 text-sm shadow-sm">
-        <h3 className="font-bold">Legend</h3>
-        {MARK_OPTIONS.map((o) => (
-          <span key={o.kind} className="flex items-center gap-2">
-            <span aria-hidden className={`h-3 w-3 shrink-0 rounded-full ${MARK_STYLE[o.kind].dot}`} />
-            {o.label}
-          </span>
-        ))}
+      <aside
+        aria-label="Legend"
+        className="flex flex-col gap-2 rounded-lg bg-container px-5 py-3 text-sm leading-5 shadow-sm sm:flex-row sm:items-start sm:gap-6"
+      >
+        <h3 className="shrink-0 font-bold">Legend</h3>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <ul className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            {MARK_OPTIONS.map((o) => (
+              <li key={o.kind} className="flex items-center gap-2 whitespace-nowrap">
+                <span className="grid h-4 w-4 shrink-0 place-items-center">
+                  <span aria-hidden className={`h-3 w-3 rounded-full ${MARK_STYLE[o.kind].dot}`} />
+                </span>
+                {o.label}
+              </li>
+            ))}
+          </ul>
+
+          <ul
+            aria-label="Approved bookings"
+            className="flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-neutral-200 pt-2"
+          >
+            {BOOKING_SYMBOLS.map((g) => (
+              <li
+                key={g.key}
+                className="flex items-center gap-2 whitespace-nowrap"
+                title={g.activities.join(", ")}
+              >
+                <BookingSymbolIcon src={g.icon} />
+                {g.label}
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
     );
   }
@@ -193,6 +229,22 @@ export function Legend({ compact = false, horizontal = false,}: { compact?: bool
                 }`}
               />
               {o.label}
+            </li>
+          ))}
+        </ul>
+
+        <ul
+          aria-label="Approved bookings"
+          className={
+            horizontal
+              ? "flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"
+              : "mt-4 space-y-2 border-t border-neutral-200 pt-4 text-sm"
+          }
+        >
+          {BOOKING_SYMBOLS.map((g) => (
+            <li key={g.key} className="flex items-center gap-2" title={g.activities.join(", ")}>
+              <BookingSymbolIcon src={g.icon} />
+              {g.label}
             </li>
           ))}
         </ul>

@@ -1,22 +1,16 @@
-import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
-import { getArchiveDetails } from "@/lib/request-details";
-import DetailViewer from "./detail-viewer";
+import ArchiveTable from "./archive-table";
+import { getArchiveRows } from "./queries";
 
-export default async function ViewBookingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ ids?: string }>;
-}) {
+export default async function BookingArchivesPage() {
   await requireRole("admin_liaison", "admin_supervisor");
+  const rows = await getArchiveRows();
 
-  const { ids = "" } = await searchParams;
-  const wanted = [...new Set(ids.split(",").map(Number))]
-    .filter(Number.isInteger)
-    .slice(0, 50);
+  return (
+    <main className="box-border flex flex-col h-screen px-8 py-5">
+      <h1 className="text-4xl font-bold pb-5">Booking Archives</h1>
 
-  const items = await getArchiveDetails(wanted);
-  if (items.length === 0) notFound();
-
-  return <DetailViewer initial={items} />;
+      <ArchiveTable rows={rows} />
+    </main>
+  );
 }
