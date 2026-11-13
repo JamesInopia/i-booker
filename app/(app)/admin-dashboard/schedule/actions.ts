@@ -105,7 +105,6 @@ export async function saveTermChanges(raw: TermChanges): Promise<ScheduleResult>
       start: str(item?.start, 5),
       end: str(item?.end, 5),
       title: str(item?.title, 200).trim(),
-      adviser: str(item?.adviser, 200).trim(),
     };
     const problem = validateClassFields({ ...c, days: [c.dayOfWeek] });
     if (problem) return fail(problem);
@@ -189,7 +188,6 @@ export async function saveTermChanges(raw: TermChanges): Promise<ScheduleResult>
             startTime: c.start,
             endTime: c.end,
             courseTitle: c.title,
-            courseAdviser: c.adviser,
           })
           .where(and(eq(classSchedules.classId, c.id), eq(classSchedules.termId, termId)));
       }
@@ -205,7 +203,6 @@ export async function saveTermChanges(raw: TermChanges): Promise<ScheduleResult>
             startTime: c.start,
             endTime: c.end,
             courseTitle: c.title,
-            courseAdviser: c.adviser,
           })),
         );
       }

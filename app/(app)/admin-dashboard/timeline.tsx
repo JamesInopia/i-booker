@@ -177,11 +177,10 @@ export function TimetableView({
                           {inSlot.map((c) => (
                             <div
                               key={c.id}
-                              title={`${c.title}${c.adviser ? ` — ${c.adviser}` : ""}\n${formatTime(c.start)} – ${formatTime(c.end)}`}
+                              title={`${c.title}\n${formatTime(c.start)} – ${formatTime(c.end)}`}
                               className="flex min-h-0 flex-1 flex-col items-center justify-center rounded-md bg-blue-100 px-2 py-1 text-center leading-tight text-blue-950"
                             >
                               <div className="break-words text-base font-bold uppercase">{c.title}</div>
-                              {c.adviser && <div className="break-words text-sm">{c.adviser}</div>}
                             </div>
                           ))}
                           {bookedInSlot.map((b) => (

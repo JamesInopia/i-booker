@@ -183,7 +183,6 @@ export const classSchedules = pgTable(
     startTime: time("start_time").notNull(),
     endTime: time("end_time").notNull(),
     courseTitle: text("section_code"),
-    courseAdviser: text("instructor"),
   },
   (t) => [
     index("class_schedule_term_id_idx").on(t.termId),

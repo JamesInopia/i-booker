@@ -172,10 +172,9 @@ export async function getBusySlots(
     start: string;
     end: string;
     title: string | null;
-    adviser: string | null;
   }>(sql`
     select cs.start_time as start, cs.end_time as "end",
-           cs.section_code as title, cs.instructor as adviser
+           cs.section_code as title
     from class_schedule cs join term t on t.term_id = cs.term_id
     where cs.room_id = ${Number(roomId)}
       and ${date}::date between t.start_date and t.end_date

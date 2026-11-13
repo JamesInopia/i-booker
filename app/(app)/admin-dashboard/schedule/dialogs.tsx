@@ -6,7 +6,6 @@ import { createPortal } from "react-dom";
 import { createTerm, deleteTerm } from "./actions";
 import {
   END_OPTIONS,
-  MAX_ADVISER,
   MAX_COURSE_TITLE,
   MAX_TERM_NAME,
   START_OPTIONS,
@@ -187,9 +186,8 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
   const [start, setStart] = useState(existing?.start ?? "");
   const [end, setEnd] = useState(existing?.end ?? "");
   const [title, setTitle] = useState(existing?.title ?? "");
-  const [adviser, setAdviser] = useState(existing?.adviser ?? "");
   const [error, setError] = useState("");
-  const ids = [useId(), useId(), useId(), useId(), useId()];
+  const ids = [useId(), useId(), useId(), useId()];
 
   // A time is "taken" when it would clash with another class in this room on any of the chosen days.
   const clashes = (from: string, to: string) =>
@@ -215,7 +213,7 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
-          const values = { roomId, days, start: startValue, end: endValue, title: title.trim(), adviser: adviser.trim() };
+          const values = { roomId, days, start: startValue, end: endValue, title: title.trim() };
           const problem = validateClassFields(values);
           if (problem) return setError(problem);
 
@@ -278,9 +276,6 @@ export function ClassDialog({ state, rooms, classes, termEnd, onSave, onDelete, 
 
         <label htmlFor={ids[3]} className="mt-4 block text-sm font-semibold">Course title</label>
         <input id={ids[3]} className={input} value={title} maxLength={MAX_COURSE_TITLE} placeholder="e.g. FUNDPROG" onChange={(e) => setTitle(e.target.value)} />
-
-        <label htmlFor={ids[4]} className="mt-4 block text-sm font-semibold">Course adviser</label>
-        <input id={ids[4]} className={input} value={adviser} maxLength={MAX_ADVISER} placeholder="e.g. John Doe" onChange={(e) => setAdviser(e.target.value)} />
 
         <Footer
           pending={false}

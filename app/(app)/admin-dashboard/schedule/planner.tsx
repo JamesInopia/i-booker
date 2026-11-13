@@ -27,14 +27,13 @@ const toDraft = (c: ClassRow): DraftClass => ({
   start: c.start,
   end: c.end,
   title: c.title,
-  adviser: c.adviser,
 });
 
 const sameClass = (a: DraftClass, b: DraftClass) =>
-  a.roomId === b.roomId && a.dayOfWeek === b.dayOfWeek && a.start === b.start && a.end === b.end && a.title === b.title && a.adviser === b.adviser;
+  a.roomId === b.roomId && a.dayOfWeek === b.dayOfWeek && a.start === b.start && a.end === b.end && a.title === b.title;
 
 const signature = (term: TermRow, classes: ClassRow[]) =>
-  JSON.stringify([term.name, term.startDate, term.endDate, classes.map((c) => [c.id, c.roomId, c.dayOfWeek, c.start, c.end, c.title, c.adviser])]);
+  JSON.stringify([term.name, term.startDate, term.endDate, classes.map((c) => [c.id, c.roomId, c.dayOfWeek, c.start, c.end, c.title])]);
 
 export function Planner({ term, rooms, classes, onDirtyChange }: {
   term: TermRow;
@@ -121,7 +120,6 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
           start: c.start,
           end: c.end,
           title: c.title,
-          adviser: c.adviser,
         })),
       });
       if (res.ok) {
@@ -152,7 +150,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
       setDraft((d) =>
         d.map((c) =>
           c.id === existingId
-            ? { ...c, roomId: values.roomId, dayOfWeek: values.days[0], start: values.start, end: values.end, title: values.title, adviser: values.adviser }
+            ? { ...c, roomId: values.roomId, dayOfWeek: values.days[0], start: values.start, end: values.end, title: values.title }
             : c,
         ),
       );
@@ -164,7 +162,6 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
         start: values.start,
         end: values.end,
         title: values.title,
-        adviser: values.adviser,
       }));
       setDraft((d) => [...d, ...created]);
     }
@@ -382,12 +379,11 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                       if (first < 0 || last < first) return null;
                       const span = last - first + 1;
                       const unsaved = diff.changedIds.has(c.id);
-                      // Use the whole block: titles and advisers wrap instead of truncating,
+                      // Use the whole block: titles wrap instead of truncating,
                       // and only clamp once they would run out of height.
                       const inner = span * ROW_H - 2 - 8;
                       const showTime = span >= 2;
-                      const adviserLines = span >= 3 ? 2 : 1;
-                      const reserved = (c.adviser ? adviserLines * 14 + 2 : 0) + (showTime ? 14 + 2 : 0);
+                      const reserved = showTime ? 14 + 2 : 0;
                       const titleLines = Math.max(1, Math.floor((inner - reserved) / 20));
                       const clamp = (lines: number) =>
                         ({ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden" }) as const;
@@ -396,7 +392,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                           key={c.id}
                           type="button"
                           onClick={() => setDialog({ existing: c, defaultRoomId: c.roomId })}
-                          title={`${c.title} · ${c.adviser} · ${c.start}–${c.end}${unsaved ? " (unsaved)" : ""}`}
+                          title={`${c.title} · ${c.start}–${c.end}${unsaved ? " (unsaved)" : ""}`}
                           aria-label={`Edit ${c.title}, ${d.label} ${c.start} to ${c.end}`}
                           style={{ top: first * ROW_H + 1, height: span * ROW_H - 2 }}
                           className={`absolute inset-x-px flex cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 text-center ${
@@ -406,9 +402,6 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                           }`}
                         >
                           <span style={clamp(titleLines)} className="w-full break-words text-sm font-bold uppercase leading-5 [overflow-wrap:anywhere]">{c.title}</span>
-                          {c.adviser && (
-                            <span style={clamp(adviserLines)} className="w-full break-words text-[11px] leading-[14px] text-gray-600 [overflow-wrap:anywhere]">{c.adviser}</span>
-                          )}
                           {showTime && <span className="text-[10px] leading-[14px] text-gray-500">{c.start} – {c.end}</span>}
                         </button>
                       );

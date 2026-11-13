@@ -26,7 +26,6 @@ export async function listWeekClasses(sunday: string): Promise<WeekClass[]> {
       start: classSchedules.startTime,
       end: classSchedules.endTime,
       title: classSchedules.courseTitle,
-      adviser: classSchedules.courseAdviser,
       termStart: terms.startDate,
       termEnd: terms.endDate,
     })
@@ -46,7 +45,6 @@ export async function listWeekClasses(sunday: string): Promise<WeekClass[]> {
       start: r.start.slice(0, 5),
       end: r.end.slice(0, 5),
       title: r.title ?? "",
-      adviser: r.adviser ?? "",
     });
   }
   return out;
@@ -111,6 +109,5 @@ export async function listClasses(termId: number): Promise<ClassRow[]> {
     start: r.startTime.slice(0, 5),
     end: r.endTime.slice(0, 5),
     title: r.courseTitle ?? "",
-    adviser: r.courseAdviser ?? "",
   }));
 }

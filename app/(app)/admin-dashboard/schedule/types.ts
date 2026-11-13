@@ -10,7 +10,6 @@ export type ClassRow = {
   start: string;
   end: string;
   title: string;
-  adviser: string;
 };
 
 export type WeekClass = {
@@ -20,7 +19,6 @@ export type WeekClass = {
   start: string;
   end: string;
   title: string;
-  adviser: string;
 };
 
 export type WeekBooking = {
@@ -42,7 +40,6 @@ export type ClassPayload = {
   start: string;
   end: string;
   title: string;
-  adviser: string;
 };
 
 export type TermChanges = {
@@ -60,7 +57,6 @@ export type ClassFormFields = {
   start: string;
   end: string;
   title: string;
-  adviser: string;
 };
 
 type Slot = { id: number; roomId: string; dayOfWeek: number; start: string; end: string };
@@ -88,7 +84,6 @@ export type ScheduleResult = { ok: true; id?: number } | { ok: false; error: str
 
 export const MAX_TERM_NAME = 60;
 export const MAX_COURSE_TITLE = 60;
-export const MAX_ADVISER = 80;
 
 export const WEEK_COLUMNS = [
   { iso: 7, label: "Sunday" },
@@ -147,8 +142,6 @@ export function validateClassFields(c: ClassFormFields): string | null {
   if (c.end <= c.start) return "The end time must be after the start time.";
   if (!c.title.trim()) return "Enter the course title.";
   if (c.title.trim().length > MAX_COURSE_TITLE) return `Keep the course title under ${MAX_COURSE_TITLE} characters.`;
-  if (!c.adviser.trim()) return "Enter the course adviser.";
-  if (c.adviser.trim().length > MAX_ADVISER) return `Keep the adviser name under ${MAX_ADVISER} characters.`;
   return null;
 }
 
