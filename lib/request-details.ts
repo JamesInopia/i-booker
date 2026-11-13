@@ -58,11 +58,23 @@ export async function getArchiveDetails(
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
     .where(inArray(reservationRequests.requestId, ids));
 
-  const byId = new Map(rows.map((r) => [r.id, r]));
+  // A request can have several slots; collect all of its times.
+  const byId = new Map<number, (typeof rows)[number]>();
+  const timesById = new Map<number, { start: string; end: string }[]>();
+  for (const r of [...rows].sort((a, b) => a.startTime.localeCompare(b.startTime))) {
+    if (!byId.has(r.id)) byId.set(r.id, r);
+    const list = timesById.get(r.id) ?? [];
+    const start = r.startTime.slice(0, 5);
+    const end = r.endTime.slice(0, 5);
+    if (!list.some((t) => t.start === start && t.end === end))
+      list.push({ start, end });
+    timesById.set(r.id, list);
+  }
 
   return ids.flatMap((id) => {
     const r = byId.get(id);
     if (!r) return [];
+    const times = timesById.get(id) ?? [];
     return [
       {
         id: r.id,
@@ -75,8 +87,11 @@ export async function getArchiveDetails(
         program: r.program ?? "",
         dateFiled: formatDate(manilaIso(r.requestDate)),
         dateOfActivity: formatDate(r.dateOfActivity),
-        startTime: formatTime(r.startTime.slice(0, 5)),
-        endTime: formatTime(r.endTime.slice(0, 5)),
+        startTime: times.map((t) => formatTime(t.start)).join(", "),
+        endTime: times.map((t) => formatTime(t.end)).join(", "),
+        time: times
+          .map((t) => `${formatTime(t.start)} - ${formatTime(t.end)}`)
+          .join(", "),
         venue: r.room ?? "—",
         participants: r.occupants,
         details: r.details ?? "",

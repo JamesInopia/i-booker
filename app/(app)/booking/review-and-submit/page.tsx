@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { requireStep } from "../flow";
-import { formatDate, formatTime, manilaNow } from "../rules";
+import { formatBlocks, formatDate, manilaNow } from "../rules";
 import { StepFrame } from "../step-page";
 import { SubmitForm } from "./submit-form";
 
@@ -101,15 +101,14 @@ export default async function ReviewAndSubmitPage() {
         <Value label="Date Filed">{formatDate(manilaNow().date)}</Value>
       </dl>
 
-      <dl className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+      <dl className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
         <Value label="Date of Activity">{formatDate(draft.date)}</Value>
-        <Value label="Start Time">{formatTime(draft.startTime)}</Value>
-        <Value label="End Time">{formatTime(draft.endTime)}</Value>
+        <Value label="Time">{formatBlocks(draft.blocks)}</Value>
         <Value label="Venue">{room.name}</Value>
         <Value label="# of Participants">{draft.occupants}</Value>
         <Value
           label="Details of the Activity"
-          className="min-w-0 sm:col-span-2 lg:col-span-5"
+          className="min-w-0 sm:col-span-2 lg:col-span-4"
         >
           {draft.description}
         </Value>

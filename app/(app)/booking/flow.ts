@@ -8,7 +8,7 @@ import {
   getRoom,
   type Room,
 } from "./queries";
-import { findOverlap, furthestStep, type Draft, type Nature } from "./rules";
+import { findBlocksOverlap, furthestStep, type Draft, type Nature } from "./rules";
 import { STEPS } from "./steps";
 
 export { STEPS };
@@ -38,7 +38,7 @@ export async function requireStep(step: 1 | 2 | 3): Promise<{
   if (allowed >= 2) {
     const busy = await getBusySlots(room.roomId, draft.date);
 
-    if (findOverlap(busy, draft.startTime, draft.endTime)) {
+    if (findBlocksOverlap(busy, draft.blocks)) {
       allowed = 1;
     }
   }

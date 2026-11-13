@@ -37,7 +37,7 @@ export default function RequestDetails({ d }: { d: ArchiveDetail }) {
       <Field label="Room">{d.venue}</Field>
 
       <Field label="Time">
-        {d.startTime} - {d.endTime}
+        {d.time}
       </Field>
       <Field label="No. of Occupants">{d.participants}</Field>
 

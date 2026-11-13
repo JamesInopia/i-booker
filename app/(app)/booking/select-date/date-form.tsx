@@ -10,14 +10,17 @@ import type { DaySymbols } from "../../calendar/day-symbols";
 import { getDateAvailability, saveDateTime } from "../actions";
 
 import {
-  findOverlap,
-  formatDuration,
+  blocksToRanges,
+  findBlocksOverlap,
+  formatBlocksDuration,
+  formatRange,
   formatTime,
   manilaNow,
   overlapMessage,
+  sortBlocks,
   TIME_BLOCKS,
+  validateBlocks,
   validateDate,
-  validateTime,
   type Slot,
 } from "../rules";
 
@@ -35,8 +38,7 @@ type Availability = {
 
 type DateFormProps = {
   initialDate: string;
-  initialStart: string;
-  initialEnd: string;
+  initialBlocks: string[];
   initialBooked: Slot[];
   min: string;
   max: string;
@@ -46,8 +48,7 @@ type DateFormProps = {
 
 export function DateForm({
   initialDate,
-  initialStart,
-  initialEnd,
+  initialBlocks,
   initialBooked,
   min,
   max,
@@ -59,9 +60,10 @@ export function DateForm({
 
   const [date, setDate] = useState(validInitialDate ? initialDate : "");
 
-  const [start, setStart] = useState(validInitialDate ? initialStart : "");
-
-  const [end, setEnd] = useState(validInitialDate ? initialEnd : "");
+  // Start times of the blocks the person picked. They don't have to touch.
+  const [blocks, setBlocks] = useState<string[]>(
+    validInitialDate ? initialBlocks : [],
+  );
 
   const [availability, setAvailability] = useState<Availability | null>(
     validInitialDate
@@ -112,8 +114,7 @@ export function DateForm({
     if (nextDate === date) return;
 
     setDate(nextDate);
-    setStart("");
-    setEnd("");
+    setBlocks([]);
     setAvailability(null);
     setLoading(true);
   }
@@ -139,44 +140,27 @@ export function DateForm({
     return occupants(slot).length > 0 || isPast(slot);
   }
 
+  // Clicking a block toggles only that block: it is added if it isn't
+  // selected yet, and removed if it is. Blocks in between are never touched.
   function selectSlot(slot: { start: string; end: string }) {
     if (!ready || isUnavailable(slot)) return;
 
-    // 1. Deselect if the first selected slot is clicked again.
-    if (start === slot.start) {
-      setStart("");
-      setEnd("");
-      return;
-    }
-
-    // 2. Select a new starting slot.
-    if (!start || !end || slot.start < start) {
-      setStart(slot.start);
-      setEnd(slot.end);
-      return;
-    }
-
-    // 3. Check if extending the selection causes a conflict.
-    const conflict = findOverlap(booked, start, slot.end);
-
-    // 4. If the range crosses an occupied period,
-    // restart selection at the clicked slot.
-    if (conflict) {
-      setStart(slot.start);
-      setEnd(slot.end);
-      return;
-    }
-
-    // 5. Extend the selected booking period.
-    setEnd(slot.end);
+    setBlocks((current) =>
+      current.includes(slot.start)
+        ? current.filter((b) => b !== slot.start)
+        : sortBlocks([...current, slot.start]),
+    );
   }
+
+  const hasBlocks = blocks.length > 0;
+  const ranges = blocksToRanges(blocks);
 
   // G. Validate the selected date and time
   const dateError = validateDate(date);
 
-  const timeError = start && end ? validateTime(date, start, end) : null;
+  const timeError = hasBlocks ? validateBlocks(date, blocks) : null;
 
-  const clash = ready && start && end ? findOverlap(booked, start, end) : null;
+  const clash = ready && hasBlocks ? findBlocksOverlap(booked, blocks) : null;
 
   const error =
     dateError ??
@@ -184,7 +168,7 @@ export function DateForm({
     (clash ? overlapMessage(clash) : null) ??
     (availability?.date === date ? availability.error : null);
 
-  const canConfirm = Boolean(ready && start && end && !error);
+  const canConfirm = Boolean(ready && hasBlocks && !error);
 
   // H. Render the complete booking interface
   return (
@@ -196,8 +180,7 @@ export function DateForm({
       buttonsLayout="under-calendar"
     >
       <input type="hidden" name="date" value={date} />
-      <input type="hidden" name="startTime" value={start} />
-      <input type="hidden" name="endTime" value={end} />
+      <input type="hidden" name="blocks" value={blocks.join(",")} />
 
       {/* LEGEND: Above calendar and time panel */}
       <div className="mt-2 w-full">
@@ -237,7 +220,7 @@ export function DateForm({
           <h2 className="text-center text-lg font-bold">Select a Time</h2>
 
           <p className="mt-1 text-center text-xs text-accent-3">
-            Select a slot, then a later slot to extend your booking.
+            Select one or more slots. Click a selected slot again to remove it.
           </p>
 
           {!date ? (
@@ -262,9 +245,7 @@ export function DateForm({
                   const taken = occupants(slot);
                   const unavailable = taken.length > 0 || isPast(slot);
 
-                  const selected = Boolean(
-                    start && end && slot.start >= start && slot.end <= end,
-                  );
+                  const selected = blocks.includes(slot.start);
 
                   return (
                     <button
@@ -307,13 +288,15 @@ export function DateForm({
                 aria-live="polite"
                 className="mt-4 rounded-md border border-accent-6 bg-accent-5/30 p-3 text-sm"
               >
-                {start && end ? (
+                {hasBlocks ? (
                   <>
-                    <p className="font-semibold">
-                      {formatTime(start)} – {formatTime(end)}
-                    </p>
+                    {ranges.map((r) => (
+                      <p key={r.start} className="font-semibold">
+                        {formatRange(r)}
+                      </p>
+                    ))}
                     <p className="mt-1 text-accent-3">
-                      Duration: {formatDuration(start, end)}
+                      Duration: {formatBlocksDuration(blocks)}
                     </p>
                   </>
                 ) : (

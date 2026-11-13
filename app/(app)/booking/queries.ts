@@ -11,6 +11,7 @@ import {
   roomPictures,
 } from "@/db/schema";
 import {
+  blocksToRanges,
   isId,
   isOtherName,
   type Draft,
@@ -244,28 +245,31 @@ export async function createRequest(input: {
       })
       .returning({ requestId: reservationRequests.requestId });
 
-    const [slot] = await tx
-      .insert(reservationSlots)
-      .values({
-        requestId: request.requestId,
-        dateOfActivity: draft.date,
-        startTime: draft.startTime,
-        endTime: draft.endTime,
-        occupantQuantity: Number(draft.occupants),
-        detailsOfActivity: draft.description,
-      })
-      .returning({ slotId: reservationSlots.slotId });
+    // One slot per separate stretch of time (blocks that touch are merged).
+    for (const range of blocksToRanges(draft.blocks)) {
+      const [slot] = await tx
+        .insert(reservationSlots)
+        .values({
+          requestId: request.requestId,
+          dateOfActivity: draft.date,
+          startTime: range.start,
+          endTime: range.end,
+          occupantQuantity: Number(draft.occupants),
+          detailsOfActivity: draft.description,
+        })
+        .returning({ slotId: reservationSlots.slotId });
 
-    await tx
-      .insert(reservationSlotRooms)
-      .values({ slotId: slot.slotId, roomId: Number(roomId) });
+      await tx
+        .insert(reservationSlotRooms)
+        .values({ slotId: slot.slotId, roomId: Number(roomId) });
+    }
 
     return request.requestId;
   });
 }
 
 export async function getEditableRequest(requestId: number, email: string) {
-  const [row] = await db
+  const rows = await db
     .select({
       roomId: reservationSlotRooms.roomId,
       date: reservationSlots.dateOfActivity,
@@ -295,8 +299,16 @@ export async function getEditableRequest(requestId: number, email: string) {
         sql`lower(${authUsers.email}) = ${email}`,
       ),
     )
-    .limit(1);
-  return row ?? null;
+    .orderBy(asc(reservationSlots.startTime));
+  if (rows.length === 0) return null;
+
+  return {
+    ...rows[0],
+    slots: rows.map((r) => ({
+      start: r.startTime.slice(0, 5),
+      end: r.endTime.slice(0, 5),
+    })),
+  };
 }
 
 export async function updateRequest(input: {
@@ -334,29 +346,35 @@ export async function updateRequest(input: {
     if (updated.length === 0)
       throw new BookingError("This request can no longer be edited.");
 
-    const [slot] = await tx
+    const existing = await tx
       .select({ slotId: reservationSlots.slotId })
       .from(reservationSlots)
       .where(eq(reservationSlots.requestId, requestId))
       .limit(1);
-    if (!slot) throw new BookingError("This request has no schedule to edit.");
+    if (existing.length === 0)
+      throw new BookingError("This request has no schedule to edit.");
 
+    // Replace the old schedule with the new one (slot rooms go with it).
     await tx
-      .update(reservationSlots)
-      .set({
-        dateOfActivity: draft.date,
-        startTime: draft.startTime,
-        endTime: draft.endTime,
-        occupantQuantity: Number(draft.occupants),
-        detailsOfActivity: draft.description,
-      })
-      .where(eq(reservationSlots.slotId, slot.slotId));
+      .delete(reservationSlots)
+      .where(eq(reservationSlots.requestId, requestId));
 
-    await tx
-      .delete(reservationSlotRooms)
-      .where(eq(reservationSlotRooms.slotId, slot.slotId));
-    await tx
-      .insert(reservationSlotRooms)
-      .values({ slotId: slot.slotId, roomId: Number(roomId) });
+    for (const range of blocksToRanges(draft.blocks)) {
+      const [slot] = await tx
+        .insert(reservationSlots)
+        .values({
+          requestId,
+          dateOfActivity: draft.date,
+          startTime: range.start,
+          endTime: range.end,
+          occupantQuantity: Number(draft.occupants),
+          detailsOfActivity: draft.description,
+        })
+        .returning({ slotId: reservationSlots.slotId });
+
+      await tx
+        .insert(reservationSlotRooms)
+        .values({ slotId: slot.slotId, roomId: Number(roomId) });
+    }
   });
 }

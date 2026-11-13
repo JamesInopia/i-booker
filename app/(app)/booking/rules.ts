@@ -19,8 +19,8 @@ export type Draft = {
   requestId: string;
   roomId: string;
   date: string;
-  startTime: string;
-  endTime: string;
+  // Start times of the chosen TIME_BLOCKS, in order. Blocks need not touch.
+  blocks: string[];
   contactNo: string;
   nature: string;
   natureOther: string;
@@ -33,8 +33,7 @@ export const EMPTY_DRAFT: Draft = {
   requestId: "",
   roomId: "",
   date: "",
-  startTime: "",
-  endTime: "",
+  blocks: [],
   contactNo: "",
   nature: "",
   natureOther: "",
@@ -58,13 +57,44 @@ export type Slot = {
   label?: string;
 };
 
-// Bookings are made in these four fixed blocks (one or more, back to back).
+// Bookings are made in these four fixed blocks. Any combination can be picked.
 export const TIME_BLOCKS = [
   { start: "07:30", end: "11:00" },
   { start: "11:00", end: "14:30" },
   { start: "14:30", end: "18:00" },
   { start: "18:00", end: "21:30" },
 ] as const;
+
+const BLOCK_STARTS: string[] = TIME_BLOCKS.map((b) => b.start);
+
+// Keeps only real block start times, without duplicates, in time order.
+export function sortBlocks(blocks: readonly string[]): string[] {
+  return BLOCK_STARTS.filter((s) => blocks.includes(s));
+}
+
+export const parseBlocks = (value: string) => sortBlocks(value.split(","));
+
+export type Range = { start: string; end: string };
+
+// Blocks that sit back to back are merged, so 7:30 + 11:00 becomes one
+// 7:30 - 14:30 range while 7:30 + 14:30 stays two separate ranges.
+export function blocksToRanges(blocks: readonly string[]): Range[] {
+  const ranges: Range[] = [];
+  for (const b of TIME_BLOCKS) {
+    if (!blocks.includes(b.start)) continue;
+    const last = ranges[ranges.length - 1];
+    if (last && last.end === b.start) last.end = b.end;
+    else ranges.push({ start: b.start, end: b.end });
+  }
+  return ranges;
+}
+
+// Every block that a saved range touches (used when editing a request).
+export function rangesToBlocks(ranges: readonly Range[]): string[] {
+  return TIME_BLOCKS.filter((b) =>
+    ranges.some((r) => r.start < b.end && r.end > b.start),
+  ).map((b) => b.start);
+}
 
 export type RoomListing = {
   roomId: string;
@@ -153,12 +183,32 @@ export function formatDate(value: string): string {
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
-export function formatDuration(start: string, end: string): string {
-  const total = toMinutes(end) - toMinutes(start);
+function formatMinutes(total: number): string {
   if (!Number.isFinite(total) || total <= 0) return "";
   const h = Math.floor(total / 60);
   const m = total % 60;
   return [h ? `${h} hr` : "", m ? `${m} min` : ""].filter(Boolean).join(" ");
+}
+
+export function formatDuration(start: string, end: string): string {
+  return formatMinutes(toMinutes(end) - toMinutes(start));
+}
+
+export function formatBlocksDuration(blocks: readonly string[]): string {
+  return formatMinutes(
+    blocksToRanges(blocks).reduce(
+      (sum, r) => sum + toMinutes(r.end) - toMinutes(r.start),
+      0,
+    ),
+  );
+}
+
+export function formatRange(r: Range): string {
+  return `${formatTime(r.start)} – ${formatTime(r.end)}`;
+}
+
+export function formatBlocks(blocks: readonly string[]): string {
+  return blocksToRanges(blocks).map(formatRange).join(", ");
 }
 
 export function timeOptions(): { value: string; label: string }[] {
@@ -195,32 +245,37 @@ export function findOverlap(
   return slots.find((s) => start < s.end && end > s.start) ?? null;
 }
 
+export function findBlocksOverlap(
+  slots: Slot[],
+  blocks: readonly string[],
+): Slot | null {
+  for (const r of blocksToRanges(blocks)) {
+    const clash = findOverlap(slots, r.start, r.end);
+    if (clash) return clash;
+  }
+  return null;
+}
+
 export function overlapMessage(slot: Slot): string {
   const by = slot.label ? ` by ${slot.label}` : " (a class or an approved booking)";
   return `${formatTime(slot.start)} – ${formatTime(slot.end)} is already taken${by}. Choose a different time.`;
 }
 
-export function validateTime(
+export function validateBlocks(
   date: string,
-  start: string,
-  end: string,
+  blocks: readonly string[],
   now: Date = new Date(),
 ): string | null {
-  if (!start || !end) return "Select a start time and an end time.";
-  if (!TIME_RE.test(start) || !TIME_RE.test(end)) return "Enter a valid time.";
+  if (blocks.length === 0) return "Select at least one time block.";
   if (
-    !TIME_BLOCKS.some((b) => b.start === start) ||
-    !TIME_BLOCKS.some((b) => b.end === end)
+    new Set(blocks).size !== blocks.length ||
+    blocks.some((b) => !BLOCK_STARTS.includes(b))
   ) {
     return "Choose one or more of the available time blocks.";
   }
-  if (start < OPEN_TIME || end > CLOSE_TIME) {
-    return `Bookings must be between ${formatTime(OPEN_TIME)} and ${formatTime(CLOSE_TIME)}.`;
-  }
-  if (end <= start) return "The end time must be after the start time.";
   const current = manilaNow(now);
-  if (date === current.date && start <= current.time)
-    return "The start time has already passed.";
+  if (date === current.date && blocks.some((b) => b <= current.time))
+    return "A selected start time has already passed.";
   return null;
 }
 
@@ -282,7 +337,7 @@ export function furthestStep(
     return 1;
   }
 
-  if (validateTime(draft.date, draft.startTime, draft.endTime)) {
+  if (validateBlocks(draft.date, draft.blocks)) {
     return 1;
   }
 
@@ -316,8 +371,11 @@ export function parseDraft(raw: string | undefined): Draft | null {
       : "",
     roomId,
     date: clip(r.date, 10),
-    startTime: clip(r.startTime, 5),
-    endTime: clip(r.endTime, 5),
+    blocks: sortBlocks(
+      Array.isArray(r.blocks)
+        ? r.blocks.filter((b): b is string => typeof b === "string")
+        : [],
+    ),
     contactNo: clip(r.contactNo, 30),
     nature: /^\d{1,9}$/.test(clip(r.nature, 9)) ? clip(r.nature, 9) : "",
     natureOther: clip(r.natureOther, MAX_NATURE_OTHER),

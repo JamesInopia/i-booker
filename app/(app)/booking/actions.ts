@@ -16,13 +16,15 @@ import {
 } from "./queries";
 import {
   EMPTY_DRAFT,
-  findOverlap,
+  findBlocksOverlap,
   hasErrors,
   isId,
   overlapMessage,
+  parseBlocks,
+  rangesToBlocks,
+  validateBlocks,
   validateDate,
   validateDetails,
-  validateTime,
   type Draft,
   type FormState,
   type Slot,
@@ -52,55 +54,43 @@ export async function saveAndGo(targetPath: string, formData: FormData) {
     const date = text(formData, "date");
 
     if (validateDate(date) === null && !(await getDayBlock(date))) {
-      const startTime = formData.has("startTime")
-        ? text(formData, "startTime")
-        : draft.startTime;
-
-      const endTime = formData.has("endTime")
-        ? text(formData, "endTime")
-        : draft.endTime;
+      const blocks = formData.has("blocks")
+        ? parseBlocks(text(formData, "blocks"))
+        : draft.blocks;
 
       const room = await getRoom(draft.roomId);
 
       if (
         room &&
-        validateTime(date, startTime, endTime) === null &&
-        !findOverlap(await getBusySlots(room.roomId, date), startTime, endTime)
+        validateBlocks(date, blocks) === null &&
+        !findBlocksOverlap(await getBusySlots(room.roomId, date), blocks)
       ) {
         next = {
           ...draft,
           date,
-          startTime,
-          endTime,
+          blocks,
         };
       } else if (date !== draft.date) {
         next = {
           ...draft,
           date,
-          startTime: "",
-          endTime: "",
+          blocks: [],
         };
       }
     }
-  } else if (formData.has("startTime") || formData.has("endTime")) {
-    const startTime = text(formData, "startTime");
-    const endTime = text(formData, "endTime");
+  } else if (formData.has("blocks")) {
+    const blocks = parseBlocks(text(formData, "blocks"));
 
     const room = await getRoom(draft.roomId);
 
     if (
       room &&
-      validateTime(draft.date, startTime, endTime) === null &&
-      !findOverlap(
-        await getBusySlots(room.roomId, draft.date),
-        startTime,
-        endTime,
-      )
+      validateBlocks(draft.date, blocks) === null &&
+      !findBlocksOverlap(await getBusySlots(room.roomId, draft.date), blocks)
     ) {
       next = {
         ...draft,
-        startTime,
-        endTime,
+        blocks,
       };
     }
   } else if (formData.has("contactNo")) {
@@ -144,8 +134,7 @@ export async function startEdit(requestId: number) {
     requestId: String(requestId),
     roomId: String(req.roomId),
     date: req.date,
-    startTime: req.startTime.slice(0, 5),
-    endTime: req.endTime.slice(0, 5),
+    blocks: rangesToBlocks(req.slots),
     contactNo: req.contactDetails,
     nature: String(req.activityTypeId),
     natureOther: req.natureOther ?? "",
@@ -186,13 +175,12 @@ export async function saveDateTime(
   const { draft, room } = await requireStep(1);
 
   const date = text(formData, "date");
-  const startTime = text(formData, "startTime");
-  const endTime = text(formData, "endTime");
+  const blocks = parseBlocks(text(formData, "blocks"));
 
   const error =
     validateDate(date) ??
     (await getDayBlock(date)) ??
-    validateTime(date, startTime, endTime);
+    validateBlocks(date, blocks);
 
   if (error) {
     return { error };
@@ -200,7 +188,7 @@ export async function saveDateTime(
 
   const booked = await getBusySlots(room.roomId, date);
 
-  const clash = findOverlap(booked, startTime, endTime);
+  const clash = findBlocksOverlap(booked, blocks);
 
   if (clash) {
     return { error: overlapMessage(clash) };
@@ -209,8 +197,7 @@ export async function saveDateTime(
   const next = {
     ...draft,
     date,
-    startTime,
-    endTime,
+    blocks,
   };
 
   if (!(await writeDraft(next))) {

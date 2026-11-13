@@ -57,7 +57,9 @@ export async function getArchiveRows(): Promise<ArchiveRow[]> {
     )
     .orderBy(desc(reservationRequests.requestDate));
 
-  return rows.map((r) => ({
+  const unique = [...new Map(rows.map((r) => [r.id, r])).values()];
+
+  return unique.map((r) => ({
     id: r.id,
     requestor: r.requestor,
     purpose: r.natureOther || r.activityName,

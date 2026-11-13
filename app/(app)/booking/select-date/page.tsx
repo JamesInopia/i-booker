@@ -36,8 +36,7 @@ export default async function SelectDatePage() {
     <StepFrame step={1} subtitle={<>Room: {room.name}</>}>
       <DateForm
         initialDate={initialDate}
-        initialStart={initialDate ? draft.startTime : ""}
-        initialEnd={initialDate ? draft.endTime : ""}
+        initialBlocks={initialDate ? draft.blocks : []}
         initialBooked={initialBooked}
         min={today}
         max={max}

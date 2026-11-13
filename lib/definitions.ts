@@ -65,6 +65,8 @@ export type ArchiveDetail = {
   dateOfActivity: string;
   startTime: string;
   endTime: string;
+  // Every time slot, e.g. "7:30 AM - 11:00 AM, 2:30 PM - 6:00 PM".
+  time: string;
   venue: string;
   participants: number;
   details: string;

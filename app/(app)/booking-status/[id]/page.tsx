@@ -121,10 +121,16 @@ export default async function ReservationReviewPage({
         ]),
       ),
     )
-    .orderBy(asc(reservationSlots.slotId))
-    .limit(1);
+    .orderBy(asc(reservationSlots.startTime));
 
   const booking = results[0];
+  const timeLabel = [
+    ...new Set(
+      results.map(
+        (r) => `${formatTime(r.startTime)} - ${formatTime(r.endTime)}`,
+      ),
+    ),
+  ].join(", ");
 
   if (!booking) {
     notFound();
@@ -168,7 +174,7 @@ export default async function ReservationReviewPage({
 
           <DetailField
             label="Time"
-            value={`${formatTime(booking.startTime)} - ${formatTime(booking.endTime)}`}
+            value={timeLabel}
           />
 
           <DetailField label="No. of Occupants" value={booking.occupants} />

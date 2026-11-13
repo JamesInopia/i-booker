@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   activityTypes,
@@ -59,9 +59,21 @@ export default async function BookingStatusPage() {
     )
     .leftJoin(rooms, eq(rooms.roomId, reservationSlotRooms.roomId))
     .where(eq(sql`lower(${authUsers.email})`, user.email))
-    .orderBy(desc(reservationRequests.requestDate));
+    .orderBy(
+      desc(reservationRequests.requestDate),
+      asc(reservationSlots.startTime),
+    );
 
-  const bookings: Booking[] = rows.map((r) => ({
+  // A request can have several time slots; show it once with every time.
+  const grouped = new Map<number, (typeof rows)[number] & { times: string[] }>();
+  for (const r of rows) {
+    const time = `${formatTime(r.startTime)} - ${formatTime(r.endTime)}`;
+    const existing = grouped.get(r.id);
+    if (!existing) grouped.set(r.id, { ...r, times: [time] });
+    else if (!existing.times.includes(time)) existing.times.push(time);
+  }
+
+  const bookings: Booking[] = [...grouped.values()].map((r) => ({
     id: r.id,
     room: r.room ?? "—",
     purpose: r.natureOther || r.activityName,
@@ -69,7 +81,7 @@ export default async function BookingStatusPage() {
     status: r.status,
     schedule: {
       date: formatDate(r.dateOfActivity),
-      time: `${formatTime(r.startTime)} - ${formatTime(r.endTime)}`,
+      time: r.times.join(", "),
     },
   }));
 
