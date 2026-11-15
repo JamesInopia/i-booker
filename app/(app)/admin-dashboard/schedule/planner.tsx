@@ -14,6 +14,7 @@ import {
   type DraftClass,
   type TermRow,
 } from "./types";
+import { FitText } from "../fit-text";
 
 type Room = { roomId: string; name: string };
 
@@ -30,12 +31,26 @@ const toDraft = (c: ClassRow): DraftClass => ({
 });
 
 const sameClass = (a: DraftClass, b: DraftClass) =>
-  a.roomId === b.roomId && a.dayOfWeek === b.dayOfWeek && a.start === b.start && a.end === b.end && a.title === b.title;
+  a.roomId === b.roomId &&
+  a.dayOfWeek === b.dayOfWeek &&
+  a.start === b.start &&
+  a.end === b.end &&
+  a.title === b.title;
 
 const signature = (term: TermRow, classes: ClassRow[]) =>
-  JSON.stringify([term.name, term.startDate, term.endDate, classes.map((c) => [c.id, c.roomId, c.dayOfWeek, c.start, c.end, c.title])]);
+  JSON.stringify([
+    term.name,
+    term.startDate,
+    term.endDate,
+    classes.map((c) => [c.id, c.roomId, c.dayOfWeek, c.start, c.end, c.title]),
+  ]);
 
-export function Planner({ term, rooms, classes, onDirtyChange }: {
+export function Planner({
+  term,
+  rooms,
+  classes,
+  onDirtyChange,
+}: {
   term: TermRow;
   rooms: Room[];
   classes: ClassRow[];
@@ -78,13 +93,26 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
       return c.id > 0 && o !== undefined && !sameClass(o, c);
     });
     const deleted = classes.filter((c) => !draftIds.has(c.id));
-    const touchedRooms = new Set<string>([...added, ...edited, ...deleted].map((c) => c.roomId));
+    const touchedRooms = new Set<string>(
+      [...added, ...edited, ...deleted].map((c) => c.roomId),
+    );
     for (const c of edited) touchedRooms.add(original.get(c.id)!.roomId);
-    return { added, edited, deleted, changedIds: new Set([...added, ...edited].map((c) => c.id)), touchedRooms };
+    return {
+      added,
+      edited,
+      deleted,
+      changedIds: new Set([...added, ...edited].map((c) => c.id)),
+      touchedRooms,
+    };
   }, [classes, draft]);
 
-  const termChanged = name !== term.name || start !== term.startDate || end !== term.endDate;
-  const changeCount = diff.added.length + diff.edited.length + diff.deleted.length + (termChanged ? 1 : 0);
+  const termChanged =
+    name !== term.name || start !== term.startDate || end !== term.endDate;
+  const changeCount =
+    diff.added.length +
+    diff.edited.length +
+    diff.deleted.length +
+    (termChanged ? 1 : 0);
   const dirty = changeCount > 0;
 
   useEffect(() => {
@@ -94,7 +122,12 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
 
   const roomKey = room?.roomId;
   useEffect(() => {
-    if (roomKey) chipRefs.current.get(roomKey)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    if (roomKey)
+      chipRefs.current.get(roomKey)?.scrollIntoView({
+        inline: "center",
+        block: "nearest",
+        behavior: "smooth",
+      });
   }, [roomKey]);
 
   const touch = () => {
@@ -150,19 +183,28 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
       setDraft((d) =>
         d.map((c) =>
           c.id === existingId
-            ? { ...c, roomId: values.roomId, dayOfWeek: values.days[0], start: values.start, end: values.end, title: values.title }
+            ? {
+                ...c,
+                roomId: values.roomId,
+                dayOfWeek: values.days[0],
+                start: values.start,
+                end: values.end,
+                title: values.title,
+              }
             : c,
         ),
       );
     } else {
-      const created = values.days.map((day): DraftClass => ({
-        id: nextTempId.current--,
-        roomId: values.roomId,
-        dayOfWeek: day,
-        start: values.start,
-        end: values.end,
-        title: values.title,
-      }));
+      const created = values.days.map(
+        (day): DraftClass => ({
+          id: nextTempId.current--,
+          roomId: values.roomId,
+          dayOfWeek: day,
+          start: values.start,
+          end: values.end,
+          title: values.title,
+        }),
+      );
       setDraft((d) => [...d, ...created]);
     }
     setRoomId(values.roomId);
@@ -189,81 +231,110 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
     return m;
   }, [draft]);
 
-  const input = "rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm outline-none focus:border-accent-1";
+  const input =
+    "rounded-md border border-gray-300 px-2 py-1 text-sm shadow-sm outline-none focus:border-accent-1";
   const gridHeight = ROW_H * TIME_ROWS.length;
 
   return (
     <div className="min-w-0 flex-1 overflow-clip rounded-lg bg-container shadow-sm">
-      <div className="sticky top-[calc(4rem-1px)] z-[9] bg-container shadow-sm">
-      <div className="bg-linear-to-r from-heading-from to-heading-to px-3 py-2 text-sm font-bold text-white">
-        {name.trim() || "Untitled term"}
-        {dirty && <span className="ml-2 rounded bg-white/20 px-1.5 py-0.5 text-xs font-semibold">Unsaved changes</span>}
-      </div>
-
-      <div className="space-y-2 border-b border-neutral-300 p-3">
-       <div className="flex flex-wrap items-end gap-3 md:flex-nowrap">
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          Term name
-          <input
-            value={name}
-            maxLength={MAX_TERM_NAME}
-            onChange={(e) => {
-              setName(e.target.value);
-              touch();
-            }}
-            className={`${input} w-44`}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          Start term
-          <input
-            type="date"
-            value={start}
-            max={end || undefined}
-            onChange={(e) => {
-              setStart(e.target.value);
-              touch();
-            }}
-            className={input}
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-xs font-semibold">
-          End term
-          <input
-            type="date"
-            value={end}
-            min={start || undefined}
-            onChange={(e) => {
-              setEnd(e.target.value);
-              touch();
-            }}
-            className={input}
-          />
-        </label>
-        <div className="ml-auto flex shrink-0 gap-2">
-          <button
-            type="button"
-            onClick={() => room && setDialog({ defaultRoomId: room.roomId })}
-            disabled={rooms.length === 0 || busy}
-            className="whitespace-nowrap rounded-md border border-accent-1 px-3 py-1.5 text-sm font-bold text-accent-1 hover:bg-blue-50 disabled:opacity-50"
-          >
-            + Add class
-          </button>
-          <button type="button" onClick={save} disabled={!dirty || busy} className="whitespace-nowrap rounded-md bg-accent-1 px-3 py-1.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50">
-            {busy ? "Saving..." : "Save Changes"}
-          </button>
-          <button type="button" onClick={discard} disabled={!dirty || busy} className="whitespace-nowrap rounded-md bg-accent-2 px-3 py-1.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50">
-            Discard Changes
-          </button>
+      <div className="sticky top-15.75 z-9 bg-container shadow-sm">
+        <div className="bg-linear-to-r from-heading-from to-heading-to px-3 py-2 text-sm font-bold text-white">
+          {name.trim() || "Untitled term"}
+          {dirty && (
+            <span className="ml-2 rounded bg-white/20 px-1.5 py-0.5 text-xs font-semibold">
+              Unsaved changes
+            </span>
+          )}
         </div>
-       </div>
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-        {notice && !error && <p role="status" className="text-sm text-green-700">{notice}</p>}
-        <p className="text-xs text-gray-500">
-          Classes repeat weekly from {formatLongDate(start)} to {formatLongDate(end)}. Use <b>+ Add class</b> to add one, or click a class to edit it.
-          {dirty ? ` ${changeCount} unsaved change${changeCount === 1 ? "" : "s"}. Nothing is stored until you press Save Changes.` : ""}
-        </p>
-      </div>
+
+        <div className="space-y-2 border-b border-neutral-300 p-3">
+          <div className="flex flex-wrap items-end gap-3 md:flex-nowrap">
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              Term name
+              <input
+                value={name}
+                maxLength={MAX_TERM_NAME}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  touch();
+                }}
+                className={`${input} w-44`}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              Start term
+              <input
+                type="date"
+                value={start}
+                max={end || undefined}
+                onChange={(e) => {
+                  setStart(e.target.value);
+                  touch();
+                }}
+                className={input}
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-xs font-semibold">
+              End term
+              <input
+                type="date"
+                value={end}
+                min={start || undefined}
+                onChange={(e) => {
+                  setEnd(e.target.value);
+                  touch();
+                }}
+                className={input}
+              />
+            </label>
+            <div className="ml-auto flex shrink-0 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  room && setDialog({ defaultRoomId: room.roomId })
+                }
+                disabled={rooms.length === 0 || busy}
+                className="whitespace-nowrap rounded-md border border-accent-1 px-3 py-1.5 text-sm font-bold text-accent-1 hover:bg-blue-50 disabled:opacity-50"
+              >
+                + Add class
+              </button>
+              <button
+                type="button"
+                onClick={save}
+                disabled={!dirty || busy}
+                className="whitespace-nowrap rounded-md bg-accent-1 px-3 py-1.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {busy ? "Saving..." : "Save Changes"}
+              </button>
+              <button
+                type="button"
+                onClick={discard}
+                disabled={!dirty || busy}
+                className="whitespace-nowrap rounded-md bg-accent-2 px-3 py-1.5 text-sm font-bold text-white hover:opacity-90 disabled:opacity-50"
+              >
+                Discard Changes
+              </button>
+            </div>
+          </div>
+          {error && (
+            <p role="alert" className="text-sm text-red-600">
+              {error}
+            </p>
+          )}
+          {notice && !error && (
+            <p role="status" className="text-sm text-green-700">
+              {notice}
+            </p>
+          )}
+          <p className="text-xs text-gray-500">
+            Classes repeat weekly from {formatLongDate(start)} to{" "}
+            {formatLongDate(end)}. Use <b>+ Add class</b> to add one, or click a
+            class to edit it.
+            {dirty
+              ? ` ${changeCount} unsaved change${changeCount === 1 ? "" : "s"}. Nothing is stored until you press Save Changes.`
+              : ""}
+          </p>
+        </div>
 
         {rooms.length > 0 && (
           <div className="flex items-center gap-2 border-b border-neutral-300 bg-white px-2 py-2">
@@ -303,15 +374,25 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
                     tabIndex={active ? 0 : -1}
                     onClick={() => setRoomId(r.roomId)}
                     className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm font-semibold ${
-                      active ? "border-accent-1 bg-accent-1 text-white" : "border-gray-300 hover:bg-gray-50"
+                      active
+                        ? "border-accent-1 bg-accent-1 text-white"
+                        : "border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     {r.name}
                     {count > 0 && (
-                      <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-gray-200 text-gray-700"}`}>{count}</span>
+                      <span
+                        className={`rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-gray-200 text-gray-700"}`}
+                      >
+                        {count}
+                      </span>
                     )}
                     {diff.touchedRooms.has(r.roomId) && (
-                      <span aria-label="Unsaved changes in this room" title="Unsaved changes in this room" className="size-2 rounded-full bg-accent-7" />
+                      <span
+                        aria-label="Unsaved changes in this room"
+                        title="Unsaved changes in this room"
+                        className="size-2 rounded-full bg-accent-7"
+                      />
                     )}
                   </button>
                 );
@@ -331,12 +412,22 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
 
         {rooms.length > 0 && (
           <>
-            <p className="bg-white p-1 text-center text-sm font-semibold">Course planner · {room?.name}</p>
+            <p className="bg-white p-1 text-center text-sm font-semibold">
+              Course planner · {room?.name}
+            </p>
             <div ref={headRef} className="overflow-hidden">
-              <div className="min-w-[56rem] select-none text-xs" style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}>
-                <div className="border border-neutral-300 bg-blue-100 p-1.5 text-center font-bold">TIME</div>
+              <div
+                className="min-w-4xl select-none text-xs"
+                style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}
+              >
+                <div className="border border-neutral-300 bg-blue-100 p-1.5 text-center font-bold">
+                  TIME
+                </div>
                 {WEEK_COLUMNS.map((d) => (
-                  <div key={d.iso} className="border border-l-0 border-neutral-300 bg-blue-100 p-1.5 text-center font-bold uppercase">
+                  <div
+                    key={d.iso}
+                    className="border border-l-0 border-neutral-300 bg-blue-100 p-1.5 text-center font-bold uppercase"
+                  >
                     {d.label}
                   </div>
                 ))}
@@ -347,11 +438,22 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
       </div>
 
       {rooms.length === 0 ? (
-        <p className="p-6 text-center text-sm text-neutral-500">No rooms yet. Add rooms in Booking → Manage Rooms first.</p>
+        <p className="p-6 text-center text-sm text-neutral-500">
+          No rooms yet. Add rooms in Booking → Manage Rooms first.
+        </p>
       ) : (
         <>
-          <div className="overflow-x-auto" onScroll={(e) => headRef.current && (headRef.current.scrollLeft = e.currentTarget.scrollLeft)}>
-            <div className="min-w-[56rem] select-none text-xs" style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}>
+          <div
+            className="overflow-x-auto"
+            onScroll={(e) =>
+              headRef.current &&
+              (headRef.current.scrollLeft = e.currentTarget.scrollLeft)
+            }
+          >
+            <div
+              className="min-w-4xl select-none text-xs"
+              style={{ display: "grid", gridTemplateColumns: GRID_COLUMNS }}
+            >
               <div className="border-x border-neutral-300">
                 {TIME_ROWS.map((row) => (
                   <div
@@ -365,44 +467,60 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
               </div>
 
               {WEEK_COLUMNS.map((d) => (
-                <div key={d.iso} className="relative border-r border-neutral-300" style={{ height: gridHeight }}>
+                <div
+                  key={d.iso}
+                  className="relative border-r border-neutral-300"
+                  style={{ height: gridHeight }}
+                >
                   {/* Empty cells are plain, non-interactive background rows. */}
                   {TIME_ROWS.map((row) => (
-                    <div key={row.start} style={{ height: ROW_H }} className="border-b border-neutral-200" />
+                    <div
+                      key={row.start}
+                      style={{ height: ROW_H }}
+                      className="border-b border-neutral-200"
+                    />
                   ))}
 
                   {roomClasses
                     .filter((c) => c.dayOfWeek === d.iso)
                     .map((c) => {
-                      const first = TIME_ROWS.findIndex((r) => r.start === c.start);
+                      const first = TIME_ROWS.findIndex(
+                        (r) => r.start === c.start,
+                      );
                       const last = TIME_ROWS.findIndex((r) => r.end === c.end);
                       if (first < 0 || last < first) return null;
                       const span = last - first + 1;
                       const unsaved = diff.changedIds.has(c.id);
                       // Use the whole block: titles wrap instead of truncating,
                       // and only clamp once they would run out of height.
-                      const inner = span * ROW_H - 2 - 8;
                       const showTime = span >= 2;
-                      const reserved = showTime ? 14 + 2 : 0;
-                      const titleLines = Math.max(1, Math.floor((inner - reserved) / 20));
-                      const clamp = (lines: number) =>
-                        ({ display: "-webkit-box", WebkitBoxOrient: "vertical", WebkitLineClamp: lines, overflow: "hidden" }) as const;
                       return (
                         <button
                           key={c.id}
                           type="button"
-                          onClick={() => setDialog({ existing: c, defaultRoomId: c.roomId })}
+                          onClick={() =>
+                            setDialog({ existing: c, defaultRoomId: c.roomId })
+                          }
                           title={`${c.title} · ${c.start}–${c.end}${unsaved ? " (unsaved)" : ""}`}
                           aria-label={`Edit ${c.title}, ${d.label} ${c.start} to ${c.end}`}
-                          style={{ top: first * ROW_H + 1, height: span * ROW_H - 2 }}
+                          style={{
+                            top: first * ROW_H + 1,
+                            height: span * ROW_H - 2,
+                          }}
                           className={`absolute inset-x-px flex cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-sm border px-1 text-center ${
                             unsaved
                               ? "border-dashed border-accent-7 bg-amber-50 hover:bg-amber-100"
                               : "border-blue-200 bg-blue-50 hover:bg-blue-100"
                           }`}
                         >
-                          <span style={clamp(titleLines)} className="w-full break-words text-sm font-bold uppercase leading-5 [overflow-wrap:anywhere]">{c.title}</span>
-                          {showTime && <span className="text-[10px] leading-[14px] text-gray-500">{c.start} – {c.end}</span>}
+                          <FitText max={14} min={8}>
+                            <div className="font-bold uppercase">{c.title}</div>
+                            {showTime && (
+                              <div className="text-[0.7em] font-normal text-gray-500">
+                                {c.start} – {c.end}
+                              </div>
+                            )}
+                          </FitText>
                         </button>
                       );
                     })}
