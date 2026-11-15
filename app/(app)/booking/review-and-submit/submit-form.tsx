@@ -15,7 +15,10 @@ export function SubmitForm({ editing }: { editing: boolean }) {
       action={submitBooking}
       backHref="/booking/booking-details"
       canConfirm
-      onSubmitted={() => complete(editing)}
+      onSubmitted={() => {
+        setSubmitted(true);
+        complete(editing);
+      }}
     >
       <UnsavedChangesGuard
         dirty={!submitted}
