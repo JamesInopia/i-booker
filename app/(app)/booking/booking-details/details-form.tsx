@@ -14,8 +14,17 @@ import {
   type Nature,
 } from "../rules";
 import { ERROR_TEXT, FIELD, LABEL, StepForm } from "../step-form";
+import { UnsavedChangesGuard } from "@/app/components/unsaved-changes-guard";
 
-type Values = Pick<Draft, "contactNo" | "nature" | "natureOther" | "occupants" | "program" | "description">;
+type Values = Pick<
+  Draft,
+  | "contactNo"
+  | "nature"
+  | "natureOther"
+  | "occupants"
+  | "program"
+  | "description"
+>;
 
 function Field({
   label,
@@ -34,7 +43,13 @@ function Field({
 }) {
   return (
     <label className={`${LABEL} text-xs ${className}`}>
-      {srOnlyLabel ? <span className="sr-only">{label}</span> : <>{label} {required && <span aria-hidden="true">*</span>}</>}
+      {srOnlyLabel ? (
+        <span className="sr-only">{label}</span>
+      ) : (
+        <>
+          {label} {required && <span aria-hidden="true">*</span>}
+        </>
+      )}
       {children}
       {error && (
         <span role="alert" className={`block font-normal ${ERROR_TEXT}`}>
@@ -57,24 +72,51 @@ export function DetailsForm({
   initial: Values;
 }) {
   const [values, setValues] = useState<Values>(initial);
-  const [touched, setTouched] = useState<Partial<Record<keyof Values, boolean>>>({});
+  const [touched, setTouched] = useState<
+    Partial<Record<keyof Values, boolean>>
+  >({});
 
-  const errors = validateDetails({ ...EMPTY_DRAFT, ...values }, { maxCapacity, natures });
-  const shown = (key: keyof DetailsErrors) => (touched[key] ? errors[key] : undefined);
+  const errors = validateDetails(
+    { ...EMPTY_DRAFT, ...values },
+    { maxCapacity, natures },
+  );
+  const shown = (key: keyof DetailsErrors) =>
+    touched[key] ? errors[key] : undefined;
   const set = (key: keyof Values) => (e: { target: { value: string } }) =>
     setValues((v) => ({ ...v, [key]: e.target.value }));
   const selectedNature = natures.find((n) => n.id === values.nature);
   const onNatureChange = (e: { target: { value: string } }) => {
     const next = natures.find((n) => n.id === e.target.value);
-    setValues((v) => ({ ...v, nature: e.target.value, natureOther: next?.other ? v.natureOther : "" }));
+    setValues((v) => ({
+      ...v,
+      nature: e.target.value,
+      natureOther: next?.other ? v.natureOther : "",
+    }));
   };
-  const touch = (key: keyof Values) => () => setTouched((t) => ({ ...t, [key]: true }));
+  const touch = (key: keyof Values) => () =>
+    setTouched((t) => ({ ...t, [key]: true }));
+  const dirty = (Object.keys(initial) as (keyof Values)[]).some(
+    (k) => values[k] !== initial[k],
+  );
 
   return (
-    <StepForm action={saveDetails} backHref="/booking/select-time" canConfirm={!hasErrors(errors)}>
+    <StepForm
+      action={saveDetails}
+      backHref="/booking/select-time"
+      canConfirm={!hasErrors(errors)}
+    >
+      <UnsavedChangesGuard
+        dirty={dirty}
+        message="You haven't confirmed your request details yet. if you leave now, these details will be lost."
+      />
       <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-3">
         <Field label="Requestor Name">
-          <input readOnly value={requestorName} placeholder="Name" className={FIELD} />
+          <input
+            readOnly
+            value={requestorName}
+            placeholder="Name"
+            className={FIELD}
+          />
         </Field>
 
         <Field label="Contact No." required error={shown("contactNo")}>
@@ -111,7 +153,11 @@ export function DetailsForm({
         </Field>
 
         <Field
-          label={maxCapacity ? `No. of Occupants (max ${maxCapacity})` : "No. of Occupants"}
+          label={
+            maxCapacity
+              ? `No. of Occupants (max ${maxCapacity})`
+              : "No. of Occupants"
+          }
           required
           error={shown("occupants")}
         >
@@ -150,7 +196,11 @@ export function DetailsForm({
         </Field>
 
         {selectedNature?.other && (
-          <Field label="Others; please specify" required error={shown("natureOther")}>
+          <Field
+            label="Others; please specify"
+            required
+            error={shown("natureOther")}
+          >
             <input
               name="natureOther"
               maxLength={MAX_NATURE_OTHER}
