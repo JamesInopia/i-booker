@@ -90,7 +90,12 @@ export function StepForm({
           role="alertdialog"
           aria-modal="true"
           aria-labelledby="confirm-warning-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          // Stays mounted while the action runs (so the submit isn't cancelled) but is hidden:
+          // the loading screen only covers the content area, so a visible backdrop would keep
+          // the sidebar and header dimmed.
+          className={`fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 ${
+            pending || submitted ? "invisible" : ""
+          }`}
         >
           <div className="w-full max-w-sm rounded-xl bg-container p-6 shadow-lg">
             <h2 id="confirm-warning-title" className="text-lg font-bold">

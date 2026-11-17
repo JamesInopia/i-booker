@@ -71,7 +71,7 @@ export function DetailsForm({
   const touch = (key: keyof Values) => () => setTouched((t) => ({ ...t, [key]: true }));
 
   return (
-    <StepForm action={saveDetails} backHref="/booking/select-time" canConfirm={!hasErrors(errors)}>
+    <StepForm action={saveDetails} backHref="/booking/select-date" canConfirm={!hasErrors(errors)}>
       <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-3">
         <Field label="Requestor Name">
           <input readOnly value={requestorName} placeholder="Name" className={FIELD} />

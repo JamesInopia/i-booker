@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { FormPendingSignal } from "../../components/loading-provider";
 import { startBooking } from "./actions";
 import type { RoomListing } from "./rules";
 
 const PILL =
   "w-full whitespace-nowrap rounded-full bg-accent-1 px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-6 disabled:text-accent-3/50 disabled:hover:brightness-100";
+
+const MORE_INFO =
+  "w-full whitespace-nowrap rounded-full bg-accent-8 px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110";
 
 const STATUS_LABEL: Record<string, string> = {
   maintenance: "Maintenance",
@@ -40,18 +44,30 @@ function Photo({ room, className }: { room: RoomListing; className: string }) {
   );
 }
 
+/** Reports the surrounding form's pending state, so the room modal can get out of the way. */
+function PendingReport({ onChange }: { onChange: (pending: boolean) => void }) {
+  const { pending } = useFormStatus();
+  useEffect(() => {
+    onChange(pending);
+  }, [pending, onChange]);
+  return null;
+}
+
 function BookRoom({
   room,
   className = PILL,
   formClassName,
+  onPendingChange,
 }: {
   room: RoomListing;
   className?: string;
   formClassName?: string;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   return (
     <form action={startBooking} className={formClassName}>
       <FormPendingSignal />
+      {onPendingChange && <PendingReport onChange={onPendingChange} />}
       <input type="hidden" name="roomId" value={room.roomId} />
       <button type="submit" disabled={!room.available} className={className}>
         {room.available
@@ -171,6 +187,96 @@ function RoomPhotoCarousel({ room }: { room: RoomWithGallery }) {
   );
 }
 
+function RoomDetailsModal({
+  room,
+  onClose,
+}: {
+  room: RoomWithGallery;
+  onClose: () => void;
+}) {
+  const [booking, setBooking] = useState(false);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="room-details-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      // Stays mounted while booking starts (so the form submit isn't cancelled) but is hidden:
+      // the loading screen only covers the content area, so a visible backdrop would keep the
+      // sidebar and header dimmed.
+      className={`fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4 ${
+        booking ? "invisible" : ""
+      }`}
+    >
+      <div className="relative my-auto w-full max-w-3xl rounded-xl bg-container p-6 shadow-lg sm:p-8">
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close room details"
+          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-2xl leading-none text-accent-3 hover:bg-accent-5"
+        >
+          &times;
+        </button>
+
+        <h2
+          id="room-details-title"
+          className="text-center text-3xl font-bold sm:text-4xl"
+        >
+          Room Details
+        </h2>
+
+        <div className="mt-4 grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <div>
+            <RoomPhotoCarousel key={room.roomId} room={room} />
+            <dl className="mt-4 text-sm">
+              <dt className="text-xs font-bold">Max Capacity:</dt>
+              <dd className="text-sm">{capacity(room)}</dd>
+              <dt className="mt-3 text-xs font-bold">Prohibitions:</dt>
+              <dd className="text-sm">{room.prohibitions || "None listed"}</dd>
+            </dl>
+          </div>
+
+          <div className="flex flex-col">
+            <h3 className="text-lg font-bold">{room.name}</h3>
+            <dl className="mt-3">
+              <dt className="text-xs font-bold">Description</dt>
+              <dd className="mt-1 text-sm">
+                {room.description || "No description yet."}
+              </dd>
+            </dl>
+            <div className="mt-auto pt-6">
+              <BookRoom
+                room={room}
+                className={`${PILL} py-2.5 text-base`}
+                onPendingChange={setBooking}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -180,8 +286,8 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
     return q ? rooms.filter((r) => r.name.toLowerCase().includes(q)) : rooms;
   }, [rooms, query]);
 
-  const selected =
-    visible.find((r) => r.roomId === selectedId) ?? visible[0] ?? null;
+  const selected = rooms.find((r) => r.roomId === selectedId) ?? null;
+  const closeModal = useMemo(() => () => setSelectedId(null), []);
 
   return (
     <div>
@@ -214,79 +320,33 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
           No rooms match &ldquo;{query.trim()}&rdquo;.
         </p>
       ) : (
-        <div className="mt-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          <ul className="grid content-start gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {visible.map((room) => (
-              <li
-                key={room.roomId}
-                className={`flex flex-col rounded-xl bg-container p-4 shadow-sm ${
-                  room.roomId === selected?.roomId ? "ring-2 ring-accent-1" : ""
-                }`}
-              >
-                <Photo room={room} className="aspect-[4/3] w-full rounded-md" />
-                <h2 className="mt-3 text-lg font-bold leading-tight">
-                  {room.name}
-                </h2>
-                <p className="mt-0.5 text-xs font-semibold">
-                  Max Capacity: {capacity(room)}
-                </p>
-                <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-                  <button
-                    type="button"
-                    aria-pressed={room.roomId === selected?.roomId}
-                    onClick={() => setSelectedId(room.roomId)}
-                    className={PILL}
-                  >
-                    More Info
-                  </button>
-                  <BookRoom room={room} />
-                </div>
-              </li>
-            ))}
-          </ul>
-
-          {selected && (
-            <aside
-              aria-label="Room details"
-              className="flex flex-col rounded-xl bg-container p-6 shadow-sm lg:sticky lg:top-4 lg:self-start"
+        <ul className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+          {visible.map((room) => (
+            <li
+              key={room.roomId}
+              className="flex flex-col rounded-xl bg-container p-3 shadow-sm"
             >
-              <h2 className="text-center text-3xl font-bold">Room Details</h2>
-              <RoomPhotoCarousel key={selected.roomId} room={selected} />
-              <h3 className="mt-4 text-center text-xl font-bold">
-                {selected.name}
-              </h3>
-
-              <dl className="mt-4 text-sm">
-                <dt className="text-xs font-bold">Description</dt>
-                <dd className="mt-1 text-base">
-                  {selected.description || "No description yet."}
-                </dd>
-
-                <div className="mt-5 grid grid-cols-2 gap-4">
-                  <div>
-                    <dt className="text-xs font-bold">Max Capacity:</dt>
-                    <dd className="text-xs">{capacity(selected)}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs font-bold">Prohibitions:</dt>
-                    <dd className="text-xs">
-                      {selected.prohibitions || "None listed"}
-                    </dd>
-                  </div>
-                </div>
-              </dl>
-
-              <div className="mt-6 flex justify-center">
-                <BookRoom
-                  room={selected}
-                  className={`${PILL} py-2.5 text-base`}
-                  formClassName="w-full max-w-60"
-                />
+              <Photo room={room} className="aspect-[4/3] w-full rounded-md" />
+              <h2 className="mt-2 text-base font-bold leading-tight">
+                {room.name}
+              </h2>
+              <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+                <button
+                  type="button"
+                  aria-haspopup="dialog"
+                  onClick={() => setSelectedId(room.roomId)}
+                  className={MORE_INFO}
+                >
+                  More Info
+                </button>
+                <BookRoom room={room} />
               </div>
-            </aside>
-          )}
-        </div>
+            </li>
+          ))}
+        </ul>
       )}
+
+      {selected && <RoomDetailsModal room={selected} onClose={closeModal} />}
     </div>
   );
 }
