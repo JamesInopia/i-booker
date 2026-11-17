@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
 import { useState } from "react";
 import { DeleteTermDialog, Footer, NewTermDialog, Shell } from "./dialogs";
 import type { TermRow } from "./types";
@@ -40,6 +40,7 @@ export function TermSidebar({ terms, selectedId, dirty = false }: { terms: TermR
               <Link
                 href={{ pathname: "/admin-dashboard", query: { tab: "schedule", term: t.id } }}
                 aria-current={active ? "true" : undefined}
+                data-loading={dirty && !active ? "off" : undefined} // a guard dialog may block this navigation
                 onClick={(e) => {
                   if (dirty && !active) {
                     e.preventDefault();

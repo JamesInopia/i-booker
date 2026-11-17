@@ -6,6 +6,7 @@ import { cancelRequest } from "./actions";
 import type { Booking, BookingStatus } from "@/lib/definitions";
 import { startEdit } from "../booking/actions";
 import Link from "next/link";
+import { usePendingScreen } from "../../components/loading-provider";
 
 export default function RowActions({
   id,
@@ -19,6 +20,7 @@ export default function RowActions({
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const [pending, startTransition] = useTransition();
+  usePendingScreen(pending);
   const [showCancel, setShowCancel] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [reason, setReason] = useState("");

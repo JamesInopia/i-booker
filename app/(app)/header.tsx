@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { signOut } from "@/app/login/actions";
 import type { PageTabGroup } from "@/lib/nav";
 import type { NotificationsPayload } from "@/lib/notification-types";
+import { FormPendingSignal } from "../components/loading-provider";
 import { NotificationBell } from "./notification-bell";
 
 function Tabs({ groups }: { groups: PageTabGroup[] }) {
@@ -81,6 +82,7 @@ function ProfileMenu({ name }: { name: string }) {
       {open && (
         <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-44 rounded-lg bg-container py-1 shadow-lg ring-1 ring-black/10">
           <form action={signOut}>
+            <FormPendingSignal />
             <button role="menuitem" className="block w-full px-4 py-2 text-left text-sm hover:bg-accent-4">
               Log out
             </button>

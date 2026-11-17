@@ -1,8 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FcGoogle } from "react-icons/fc";
 import { authClient } from "@/lib/auth-client";
+import { LoadingScreen } from "../components/loading-screen";
 
 const SCHOOL_EMAIL = /^[^\s@]+@iacademy\.edu\.ph$/i;
 const HINT = 'Please sign in with your "@iacademy.edu.ph" account';
@@ -29,6 +31,13 @@ export function LoginForm({
         : "",
   );
   const emailRef = useRef<HTMLInputElement>(null);
+
+  // Coming back with the browser's Back button restores this page from cache with `pending` still set.
+  useEffect(() => {
+    const reset = (e: PageTransitionEvent) => e.persisted && setPending(false);
+    window.addEventListener("pageshow", reset);
+    return () => window.removeEventListener("pageshow", reset);
+  }, []);
 
   const callbackURL = next
     ? `/auth/continue?next=${encodeURIComponent(next)}`
@@ -96,6 +105,9 @@ export function LoginForm({
         <FcGoogle size={18} />
         {pending ? "Please wait" : "Sign in with Google"}
       </button>
+
+      {/* Portal: the login panel is clip-pathed to a hexagon, which would clip a fixed overlay. */}
+      {pending && createPortal(<LoadingScreen fullScreen />, document.body)}
 
       <p
         className={`w-full border-b border-gray-300 pb-1 text-center text-xs ${message ? "text-accent-2" : "text-gray-400"}`}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FormPendingSignal } from "../../components/loading-provider";
 import { startBooking } from "./actions";
 import type { RoomListing } from "./rules";
 
@@ -50,6 +51,7 @@ function BookRoom({
 }) {
   return (
     <form action={startBooking} className={formClassName}>
+      <FormPendingSignal />
       <input type="hidden" name="roomId" value={room.roomId} />
       <button type="submit" disabled={!room.available} className={className}>
         {room.available

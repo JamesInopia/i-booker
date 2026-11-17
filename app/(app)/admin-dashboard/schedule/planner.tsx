@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { usePendingScreen } from "../../../components/loading-provider";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { saveTermChanges } from "./actions";
 import { ClassDialog, type ClassDialogState } from "./dialogs";
@@ -67,6 +68,7 @@ export function Planner({ term, rooms, classes, onDirtyChange }: {
   }
 
   const busy = saving || refreshing;
+  usePendingScreen(busy);
   const room = rooms.find((r) => r.roomId === roomId) ?? rooms[0];
 
   const diff = useMemo(() => {

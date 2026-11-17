@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
 import { useState } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import type { ArchiveDetail } from "@/lib/definitions";

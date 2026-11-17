@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
+import { usePendingScreen } from "../../../components/loading-provider";
 import {
   approveRequest,
   cancelApprovedRequests,
@@ -42,6 +43,7 @@ export function ReviewDetail({
   const [dialog, setDialog] = useState<DialogKind | null>(null);
   const [showDownload, setShowDownload] = useState(false);
   const [pinging, setPinging] = useState(false);
+  usePendingScreen(pinging);
   const [pingNote, setPingNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const approved = b.status === "approved";

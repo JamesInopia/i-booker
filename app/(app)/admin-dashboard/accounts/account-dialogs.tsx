@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { usePendingScreen } from "../../../components/loading-provider";
 import type { ActionResult } from "../review/types";
 import { suspendUser } from "./actions";
 import { MAX_SUSPENSION_DAYS, type AccountRow } from "./types";
@@ -98,6 +99,7 @@ function Buttons({
 
 function useRun(onClose: () => void) {
   const [pending, setPending] = useState(false);
+  usePendingScreen(pending);
   const [error, setError] = useState("");
 
   async function run(action: () => Promise<ActionResult>) {

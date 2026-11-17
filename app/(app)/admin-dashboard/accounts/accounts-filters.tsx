@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTrackedRouter } from "../../../components/loading-provider";
 import { accountsHref, SHOW_OPTIONS, type AccountsQuery, type ShowKey } from "./filters";
 
 const control =
   "h-8 rounded-full bg-container px-4 text-xs shadow-md outline-none focus:ring-2 focus:ring-accent-1";
 
 export function AccountsFilters({ query }: { query: AccountsQuery }) {
-  const router = useRouter();
+  const router = useRouter(); // plain: live search typing should not cover the page
+  const tracked = useTrackedRouter();
   const [search, setSearch] = useState(query.q);
 
   const go = (next: Partial<AccountsQuery>) =>
-    router.replace(accountsHref({ ...query, q: search.trim(), ...next }), { scroll: false });
+    tracked.replace(accountsHref({ ...query, q: search.trim(), ...next }), { scroll: false });
 
   useEffect(() => {
     if (search.trim() === query.q) return;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
 import { cancelApprovedRequests } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 import { reviewHref, type ReviewQuery } from "./filters";

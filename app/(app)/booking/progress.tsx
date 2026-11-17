@@ -3,12 +3,13 @@
 import { usePathname } from "next/navigation";
 import {
   createContext,
-  startTransition,
   useCallback,
   useContext,
   useEffect,
   useState,
+  useTransition,
 } from "react";
+import { usePendingScreen } from "../../components/loading-provider";
 import { finishBooking, saveAndGo } from "./actions";
 import { STEP_FORM_ID } from "./rules";
 import { STEPS } from "./steps";
@@ -136,6 +137,8 @@ export function BookingShell({
   const current = STEPS.findIndex((s) => s.path === pathname) + 1;
   const [done, setDone] = useState(false);
   const [edited, setEdited] = useState(false);
+  const [finishing, startFinish] = useTransition();
+  usePendingScreen(finishing);
   const complete = useCallback((wasEdit = false) => {
     setEdited(wasEdit);
     setDone(true);
@@ -144,7 +147,7 @@ export function BookingShell({
   useEffect(() => {
     if (!done) return;
     const timer = setTimeout(() => {
-      startTransition(async () => {
+      startFinish(async () => {
         await finishBooking();
       });
     }, FINISH_AFTER_MS);

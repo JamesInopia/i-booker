@@ -2,6 +2,7 @@
 
 import { saveAndGo } from "./actions";
 import { useActionState, useEffect, useState } from "react";
+import { FormPendingSignal } from "../../components/loading-provider";
 import { EMPTY_FORM_STATE, STEP_FORM_ID, type FormState } from "./rules";
 
 export const LABEL = "block text-sm font-semibold";
@@ -41,6 +42,7 @@ export function StepForm({
 
   return (
     <form id={STEP_FORM_ID} action={formAction} noValidate>
+      <FormPendingSignal />
       {children}
 
       {state.error && (

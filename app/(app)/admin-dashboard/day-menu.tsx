@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { longDateLabel } from "../calendar/dates";
 import { MARK_OPTIONS, needsNote, type DayMark, type MarkChoice } from "../calendar/day-marks";
+import { usePendingScreen } from "../../components/loading-provider";
 import { markDay } from "./actions";
 
 const POPOVER_WIDTH = 176;
@@ -45,6 +46,7 @@ export function DayMenu({
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
+  usePendingScreen(pending);
 
   const closePopover = () => setPos(null);
 

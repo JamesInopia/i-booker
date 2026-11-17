@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
+import { usePendingScreen } from "../../../components/loading-provider";
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { createTerm, deleteTerm } from "./actions";
@@ -87,6 +88,7 @@ export function Footer({ pending, error, onClose, confirmLabel, pendingLabel, to
 
 function useSubmit(onDone: (res: Extract<ScheduleResult, { ok: true }>) => void) {
   const [pending, setPending] = useState(false);
+  usePendingScreen(pending);
   const [error, setError] = useState("");
   async function run(action: () => Promise<ScheduleResult>) {
     setPending(true);

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingScreen } from "../../components/loading-provider";
 import {
   useEffect,
   useMemo,
@@ -223,6 +224,7 @@ function RoomEditor({
   );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  usePendingScreen(saving);
 
   const update = <K extends keyof RoomForm>(key: K, value: RoomForm[K]) => {
     setForm((current) => ({ ...current, [key]: value }));
@@ -392,6 +394,7 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
   const [modal, setModal] = useState<ModalState>(null);
   const [message, setMessage] = useState("");
   const [deleting, setDeleting] = useState(false);
+  usePendingScreen(deleting);
   const [deleteError, setDeleteError] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
 

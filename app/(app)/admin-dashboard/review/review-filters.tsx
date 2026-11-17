@@ -2,17 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useTrackedRouter } from "../../../components/loading-provider";
 import { reviewHref, SHOW_OPTIONS, SORT_OPTIONS, type ReviewQuery, type ShowKey, type SortKey } from "./filters";
 
 const control =
   "h-8 rounded-full border border-accent-6 bg-container px-3 text-xs outline-none focus:border-accent-1";
 
 export function ReviewFilters({ query }: { query: ReviewQuery }) {
-  const router = useRouter();
+  const router = useRouter(); // plain: live search typing should not cover the page
+  const tracked = useTrackedRouter();
   const [search, setSearch] = useState(query.q);
 
   const go = (next: Partial<ReviewQuery>) =>
-    router.replace(reviewHref({ ...query, q: search.trim(), ...next }), { scroll: false });
+    tracked.replace(reviewHref({ ...query, q: search.trim(), ...next }), { scroll: false });
 
   useEffect(() => {
     if (search.trim() === query.q) return;

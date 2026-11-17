@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePendingScreen } from "../../../components/loading-provider";
 import type { ActionResult } from "./types";
 
 const CONFIRM_TONE = {
@@ -37,6 +38,7 @@ export function ReasonDialog({
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
+  usePendingScreen(pending);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

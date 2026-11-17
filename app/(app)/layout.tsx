@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { NAV_ITEMS, tabGroupsFor } from "@/lib/nav";
 import { getNotifications } from "@/lib/notifications";
+import { LoadingProvider } from "../components/loading-provider";
 import { Header } from "./header";
 import { Sidebar } from "./sidebar";
 import { SessionWatcher } from "./session-watcher";
@@ -17,6 +18,7 @@ export default async function AppLayout({
   const notifications = await getNotifications(user.id);
 
   return (
+    <LoadingProvider>
     <div className="flex min-h-screen">
       <SessionWatcher />
       <Sidebar items={items} />
@@ -29,5 +31,6 @@ export default async function AppLayout({
         <div className="flex-1">{children}</div>
       </div>
     </div>
+    </LoadingProvider>
   );
 }

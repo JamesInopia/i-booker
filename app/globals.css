@@ -29,6 +29,55 @@ body {
   background: var(--color-background);
 }
 
+/* Hexagon loader*/
+:root {
+  --hex-loop: 1.2s; /* time for one full turn */
+  --hex-off: 0.15; /* opacity of the edges that are not lit */
+  --sidebar-w: 14rem;
+  --header-h: 4rem;
+}
+@keyframes hex-edge {
+  0% {
+    opacity: 1;
+  }
+  16.667% {
+    opacity: 0.8;
+  }
+  33.333% {
+    opacity: 0.6;
+  }
+  50%,
+  83.333% {
+    opacity: var(--hex-off);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+.hex-edge {
+  opacity: var(--hex-off);
+  animation: hex-edge var(--hex-loop) linear infinite;
+  animation-delay: calc(var(--hex-loop) * (var(--i) - 6) / 6);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hex-edge {
+    animation-duration: 2.4s;
+  }
+}
+.loading-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+}
+.loading-content {
+  position: fixed;
+  top: var(--header-h);
+  left: var(--sidebar-w);
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+}
+
 /* Booking progress bar + confirm animation */
 @keyframes booking-ring {
   from {

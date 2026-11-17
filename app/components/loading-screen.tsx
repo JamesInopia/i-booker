@@ -1,16 +1,17 @@
-export function Spinner({ className = "h-10 w-10" }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={`inline-block animate-spin rounded-full border-4 border-accent-6 border-t-accent-1 ${className}`}
-    />
-  );
-}
+import { HexLoader } from "./hex-loader";
 
-/** Centered spinner + message. `fullScreen` covers the whole viewport (first load, auth checks). */
+export const CONNECTING_MESSAGE = "Connecting to iBooker...";
+export const LOADING_MESSAGE = "Loading, please wait...";
+
+/**
+ * Hexagon loader + message on the app background.
+ * - `fullScreen`: whole viewport, no sidebar/header ("Connecting to iBooker...", login -> app).
+ * - default: covers only the content area, so the sidebar and header stay visible
+ *   ("Loading, please wait...", in-between processes).
+ */
 export function LoadingScreen({
   fullScreen = false,
-  message = "Loading…",
+  message = fullScreen ? CONNECTING_MESSAGE : LOADING_MESSAGE,
 }: {
   fullScreen?: boolean;
   message?: string;
@@ -19,18 +20,10 @@ export function LoadingScreen({
     <div
       role="status"
       aria-live="polite"
-      className={
-        fullScreen
-          ? "fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background"
-          : "flex min-h-[60vh] flex-col items-center justify-center gap-4"
-      }
+      className={`${fullScreen ? "loading-fullscreen" : "loading-content"} flex flex-col items-center justify-center gap-3 bg-background`}
     >
-      {fullScreen && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src="/iacademy-cebu-logo.png" alt="" className="h-16 w-auto" />
-      )}
-      <Spinner />
-      <p className="text-sm font-semibold text-accent-3">{message}</p>
+      <HexLoader />
+      <p className="text-lg font-bold text-black">{message}</p>
     </div>
   );
 }

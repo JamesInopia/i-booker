@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { usePendingScreen } from "../../components/loading-provider";
 
 export default function DeleteDialog({
   count,
@@ -13,6 +14,7 @@ export default function DeleteDialog({
 }) {
   const [error, setError] = useState("");
   const [pending, start] = useTransition();
+  usePendingScreen(pending);
 
   function confirm() {
     start(async () => {
