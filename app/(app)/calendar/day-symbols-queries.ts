@@ -2,6 +2,7 @@ import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { iconForActivity, type DaySymbols } from "./day-symbols";
+import { fixedHolidayName } from "./fixed-holidays";
 
 /**
  * Distinct activity-type symbols per date: classes (weekly, inside a term, skipping days
@@ -36,8 +37,10 @@ export async function getDaySymbols(from: string, to: string): Promise<DaySymbol
   const out: DaySymbols = {};
   const seen = new Set<string>();
   for (const r of res.rows) {
+    if (r.activity === null && fixedHolidayName(r.date)) continue; // no classes on fixed holidays
     const icon = iconForActivity(r.activity);
-    const key = `${r.date}|${icon ?? `dot-${r.id}`}`;
+    const source = r.activity === null ? "class" : "booking";
+    const key = `${r.date}|${source}|${icon ?? `dot-${r.id}`}`;
     if (seen.has(key)) continue;
     seen.add(key);
     (out[r.date] ??= []).push({
@@ -45,6 +48,7 @@ export async function getDaySymbols(from: string, to: string): Promise<DaySymbol
       name: icon && r.activity ? r.activity : r.name,
       color: r.color ?? "#9ca3af",
       icon,
+      source,
     });
   }
   return out;

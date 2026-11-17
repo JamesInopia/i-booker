@@ -7,6 +7,7 @@ import { requireRole } from "@/lib/auth";
 import { ADMIN_ROLES } from "@/lib/session";
 import { CLASS_CANCELLED_NAME, needsNote } from "../calendar/day-marks";
 import { parseDate } from "../calendar/dates";
+import { fixedHolidayName } from "../calendar/fixed-holidays";
 
 type DayTypeDef = { description: string; isClassDay: boolean; allowBooking: boolean; color: string; aliases?: string[] };
 const DAY_TYPES: Record<"holiday" | "class_cancelled" | "no_classes" | "no_booking", DayTypeDef> = {
@@ -26,6 +27,9 @@ export async function markDay(formData: FormData): Promise<{ error?: string }> {
   if (!date) return { error: "That date isn't valid." };
 
   const kind = String(formData.get("kind") ?? "");
+
+  const fixed = fixedHolidayName(date);
+  if (fixed) return { error: `${fixed} is a fixed holiday and can't be changed.` };
 
   try {
     if (kind === "clear") {

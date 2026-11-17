@@ -3,8 +3,10 @@ import { resolveTab } from "@/lib/nav";
 import { ADMIN_ROLES } from "@/lib/session";
 import { listAllRooms } from "../booking/queries";
 import { Legend } from "../calendar/calendar-parts";
-import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO } from "../calendar/dates";
+import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO, weekdayOf } from "../calendar/dates";
+import { blocksBooking } from "../calendar/day-marks";
 import { getDayMarks } from "../calendar/day-marks-queries";
+import { getDayAvailability } from "../calendar/day-availability-queries";
 import { getDaySymbols } from "../calendar/day-symbols-queries";
 import { AccountsContent } from "./accounts/accounts-content";
 import { ReviewContent } from "./review/review-content";
@@ -71,11 +73,19 @@ async function TimelineContent({ params }: { params: Params }) {
   const grid = monthGrid(month);
   const marks = isTimetable ? await getDayMarks(sunday, addDays(sunday, 6)) : await getDayMarks(grid[0], grid[grid.length - 1]);
   const symbols = isTimetable ? {} : await getDaySymbols(grid[0], grid[grid.length - 1]);
+  // Availability across all bookable rooms. No indicator on closed days (holidays, no-booking) or on
+  // Sundays unless an admin marked them.
+  const allAvailability = isTimetable ? {} : await getDayAvailability(grid[0], grid[grid.length - 1]);
+  const availability = Object.fromEntries(
+    Object.entries(allAvailability).filter(
+      ([day]) => !(marks[day] && blocksBooking(marks[day].kind)) && (weekdayOf(day) !== 0 || marks[day]),
+    ),
+  );
 
   if (isTimetable) {
     return (
       <div className="flex flex-col gap-3">
-        <Legend compact />
+        <Legend compact showAvailability />
         <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} bookings={bookings} />
       </div>
     );
@@ -84,9 +94,9 @@ async function TimelineContent({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1">
-        <CalendarView month={month} marks={marks} symbols={symbols} />
+        <CalendarView month={month} marks={marks} symbols={symbols} availability={availability} />
       </div>
-      <Legend />
+      <Legend showAvailability />
     </div>
   );
 }

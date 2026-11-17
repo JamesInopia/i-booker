@@ -10,6 +10,7 @@ import {
   rooms,
   roomPictures,
 } from "@/db/schema";
+import { fixedHolidayName } from "../calendar/fixed-holidays";
 import {
   blocksToRanges,
   isId,
@@ -129,6 +130,8 @@ export async function getNatures(): Promise<Nature[]> {
 
 export async function getDayBlock(date: string): Promise<string | null> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const fixed = fixedHolidayName(date);
+  if (fixed) return `Bookings are closed on this date (${fixed}). Choose another date.`;
   const res = await db.execute<{ description: string }>(sql`
     select dt.description
     from calendar_day cd join day_type dt on dt.day_type_id = cd.day_type_id
@@ -168,7 +171,10 @@ export async function getBusySlots(
       ),
     );
 
-  const classes = await db.execute<{
+  // No classes run on a fixed holiday.
+  const classes = fixedHolidayName(date)
+    ? { rows: [] as { start: string; end: string; title: string | null }[] }
+    : await db.execute<{
     start: string;
     end: string;
     title: string | null;

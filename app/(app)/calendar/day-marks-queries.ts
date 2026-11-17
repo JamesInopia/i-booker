@@ -1,7 +1,9 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { addDays } from "./dates";
 import { kindFromRow, MARK_LABEL, type DayMarks } from "./day-marks";
+import { fixedHolidayName } from "./fixed-holidays";
 
 export async function getDayMarks(from: string, to: string): Promise<DayMarks> {
   const res = await db.execute<{
@@ -21,6 +23,13 @@ export async function getDayMarks(from: string, to: string): Promise<DayMarks> {
     const kind = kindFromRow(r.description, r.is_class_day, r.allow_booking);
     const fixedLabel = kind === "no_classes" || kind === "no_booking";
     marks[r.date] = { kind, label: fixedLabel ? MARK_LABEL[kind] : (note ?? r.description), note: fixedLabel ? null : note };
+  }
+
+  // Fixed yearly holidays always show as a holiday. An admin-set holiday keeps its own name;
+  // any other mark on that date is replaced.
+  for (let day = from; day <= to; day = addDays(day, 1)) {
+    const name = fixedHolidayName(day);
+    if (name && marks[day]?.kind !== "holiday") marks[day] = { kind: "holiday", label: name, note: name };
   }
   return marks;
 }

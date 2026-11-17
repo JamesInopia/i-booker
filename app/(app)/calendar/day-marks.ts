@@ -26,7 +26,7 @@ export const cancelsClasses = (mark: DayMark | null) =>
 export const blocksBooking =(kind: MarkKind) => kind === "holiday" || kind === "no_booking";
 
 export const MARK_OPTIONS = [
-  { kind: "holiday", label: "Holiday", hint: "No classes and no bookings", noteLabel: "Holiday name", notePlaceholder: "e.g. Independence Day" },
+  { kind: "holiday", label: "Holiday/Special Non-Working Holiday", hint: "No classes and no bookings", noteLabel: "Holiday name", notePlaceholder: "e.g. Independence Day" },
   { kind: "class_cancelled", label: "Class Cancelled", hint: "Classes are cancelled; bookings are still allowed", noteLabel: "Reason for cancellation", notePlaceholder: "e.g. Typhoon" },
   { kind: "no_classes", label: "No Classes", hint: "Rooms can still be booked" },
   { kind: "no_booking", label: "No Booking", hint: "Classes are held, but requestors can't book" },

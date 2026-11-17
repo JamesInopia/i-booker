@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DayContent, MonthGrid } from "../../calendar/calendar-parts";
 import type { DayMarks } from "../../calendar/day-marks";
 import type { DaySymbols } from "../../calendar/day-symbols";
+import { AVAILABILITY_LABEL, type DayAvailabilities } from "../../calendar/day-availability";
 import { addMonths, monthKey } from "../../calendar/dates";
 import { MonthPicker } from "../../calendar/month-picker";
 
@@ -14,6 +15,7 @@ export function DateCalendar({
   max,
   closed,
   daySymbols,
+  availability,
   initialMonth,
 }: {
   selected: string;
@@ -22,6 +24,7 @@ export function DateCalendar({
   max: string;
   closed: DayMarks;
   daySymbols: DaySymbols;
+  availability: DayAvailabilities;
   initialMonth: string; // YYYY-MM-01
 }) {
   const [month, setMonth] = useState(initialMonth);
@@ -79,11 +82,19 @@ export function DateCalendar({
             onClick={() => onSelect(day)}
             aria-pressed={isSelected}
             aria-current={isToday ? "date" : undefined}
-            aria-label={mark ? `${day}: ${mark.label}` : day}
-            title={mark ? `${mark.label} (bookings closed)` : undefined}
+            aria-label={[day, mark?.label, availability[day] && AVAILABILITY_LABEL[availability[day]]]
+              .filter(Boolean)
+              .join(": ")}
+            title={
+              mark
+                ? `${mark.label} (bookings closed)`
+                : availability[day]
+                  ? AVAILABILITY_LABEL[availability[day]]
+                  : undefined
+            }
             className={`${className} !h-[64px] !min-h-0 !p-2`}
           >
-            <DayContent day={day} mark={mark} symbols={daySymbols[day]} />
+            <DayContent day={day} mark={mark} symbols={daySymbols[day]} availability={availability[day] ?? null} />
           </button>
         )}
       />

@@ -76,6 +76,47 @@ export const parseBlocks = (value: string) => sortBlocks(value.split(","));
 
 export type Range = { start: string; end: string };
 
+// Staff review requests during office hours; the evening block is discouraged.
+export const OFFICE_OPEN = "07:00";
+export const OFFICE_CLOSE = "16:00";
+export const EVENING_START = "18:00";
+
+export const OFFICE_HOURS_WARNING =
+  "Warning! Booking outside of office hours! Expect Request to be Reviewed";
+export const EVENING_WARNING =
+  "Warning! Booking within this time is not recommended! Please ensure you have a valid reason to book this room within this time period.";
+
+export type BookingWarning = { kind: "office-hours" | "evening"; title: string; detail?: string };
+
+/** The next moment the office is open, phrased for the person ("today", "tomorrow", or a date). */
+export function nextOfficeHours(now: { date: string; time: string }): string {
+  const hours = `${formatTime(OFFICE_OPEN)} – ${formatTime(OFFICE_CLOSE)}`;
+  if (now.time < OFFICE_OPEN) return `Next office hours: today, ${hours}.`;
+  if (now.time < OFFICE_CLOSE)
+    return `The office is open right now (${hours}); the request will be reviewed once staff get to it.`;
+  return `Next office hours: tomorrow, ${formatDate(addDays(now.date, 1))}, ${hours}.`;
+}
+
+/** Warnings for the chosen blocks; the evening block counts as outside office hours too. */
+export function bookingWarnings(
+  blocks: readonly string[],
+  now: { date: string; time: string },
+): BookingWarning[] {
+  const ranges = blocksToRanges(blocks);
+  const warnings: BookingWarning[] = [];
+  if (ranges.some((r) => r.end > OFFICE_CLOSE || r.start < OFFICE_OPEN)) {
+    warnings.push({
+      kind: "office-hours",
+      title: OFFICE_HOURS_WARNING,
+      detail: nextOfficeHours(now),
+    });
+  }
+  if (blocks.includes(EVENING_START)) {
+    warnings.push({ kind: "evening", title: EVENING_WARNING });
+  }
+  return warnings;
+}
+
 // Blocks that sit back to back are merged, so 7:30 + 11:00 becomes one
 // 7:30 - 14:30 range while 7:30 + 14:30 stays two separate ranges.
 export function blocksToRanges(blocks: readonly string[]): Range[] {

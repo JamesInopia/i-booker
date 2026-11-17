@@ -6,6 +6,7 @@ import { Legend } from "../../calendar/calendar-parts";
 import { longDateLabel } from "../../calendar/dates";
 import type { DayMarks } from "../../calendar/day-marks";
 import type { DaySymbols } from "../../calendar/day-symbols";
+import type { DayAvailabilities } from "../../calendar/day-availability";
 
 import { getDateAvailability, saveDateTime } from "../actions";
 
@@ -21,6 +22,7 @@ import {
   TIME_BLOCKS,
   validateBlocks,
   validateDate,
+  bookingWarnings,
   type Slot,
 } from "../rules";
 
@@ -44,6 +46,7 @@ type DateFormProps = {
   max: string;
   closed: DayMarks;
   daySymbols: DaySymbols;
+  dayAvailability: DayAvailabilities;
 };
 
 export function DateForm({
@@ -54,6 +57,7 @@ export function DateForm({
   max,
   closed,
   daySymbols,
+  dayAvailability,
 }: DateFormProps) {
   const validInitialDate =
     initialDate >= min && initialDate <= max && !closed[initialDate];
@@ -170,6 +174,8 @@ export function DateForm({
 
   const canConfirm = Boolean(ready && hasBlocks && !error);
 
+  const warnings = hasBlocks && !error ? bookingWarnings(blocks, now) : [];
+
   // H. Render the complete booking interface
   return (
     <StepForm
@@ -184,7 +190,7 @@ export function DateForm({
 
       {/* LEGEND: Above calendar and time panel */}
       <div className="mt-2 w-full">
-        <Legend horizontal />
+        <Legend horizontal showAvailability />
       </div>
 
       {/* MAIN: Wide calendar + narrow time panel */}
@@ -198,6 +204,7 @@ export function DateForm({
             max={max}
             closed={closed}
             daySymbols={daySymbols}
+            availability={dayAvailability}
             initialMonth={`${(date || min).slice(0, 7)}-01`}
           />
 
@@ -304,6 +311,25 @@ export function DateForm({
                 )}
               </div>
             </>
+          )}
+
+          {warnings.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {warnings.map((w) => (
+                <div
+                  key={w.kind}
+                  role="alert"
+                  className={`rounded-md border p-3 text-xs ${
+                    w.kind === "evening"
+                      ? "border-red-300 bg-red-50 text-red-900"
+                      : "border-amber-300 bg-amber-50 text-amber-900"
+                  }`}
+                >
+                  <p className="font-bold">{w.title}</p>
+                  {w.detail && <p className="mt-1">{w.detail}</p>}
+                </div>
+              ))}
+            </div>
           )}
 
           {date && error && (

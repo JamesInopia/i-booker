@@ -2,8 +2,8 @@ export type DaySymbol = {
   id: number;
   name: string;
   color: string;
-  /** Path under /public for approved-booking categories; null keeps the plain coloured dot. */
   icon: string | null;
+  source: "class" | "booking";
 };
 export type DaySymbols = Record<string, DaySymbol[]>;
 
@@ -41,10 +41,8 @@ const ICON_BY_ACTIVITY = new Map<string, string>(
   BOOKING_SYMBOLS.flatMap((g) => g.activities.map((a) => [normalise(a), g.icon] as const)),
 );
 
-/** Icon for an approved booking's activity type name, or null when it has no booking symbol. */
 export function iconForActivity(name: string | null | undefined): string | null {
   if (!name) return null;
   const key = normalise(name);
-  // Tolerate "Others (please specify)", "Others - please specify", plain "Others", etc.
   return ICON_BY_ACTIVITY.get(key) ?? (key.startsWith("others") ? "/symbols/others.png" : null);
 }

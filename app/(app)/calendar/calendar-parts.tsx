@@ -1,5 +1,6 @@
 import { DAY_SHORT, dayOfMonth, monthGrid, monthKey } from "./dates";
 import { BOOKING_SYMBOLS, type DaySymbol } from "./day-symbols";
+import { AVAILABILITY_DOT, AVAILABILITY_LABEL, type DayAvailability } from "./day-availability";
 import {
   MARK_OPTIONS,
   MARK_STYLE,
@@ -91,12 +92,31 @@ export function MonthGrid({
 
 const MAX_DOTS = 3;
 
-export function SymbolDots({ symbols }: { symbols?: DaySymbol[] }) {
-  if (!symbols?.length) return null;
-  const shown = symbols.slice(0, MAX_DOTS);
-  const extra = symbols.length - shown.length;
+export function SymbolDots({
+  symbols,
+  availability,
+}: {
+  symbols?: DaySymbol[];
+  /** When given (even as null), availability replaces the plain class-schedule dot. */
+  availability?: DayAvailability | null;
+}) {
+  const withAvailability = availability !== undefined;
+  const list = (withAvailability ? symbols?.filter((s) => s.source !== "class") : symbols) ?? [];
+  if (!list.length && !availability) return null;
+  const shown = list.slice(0, MAX_DOTS);
+  const extra = list.length - shown.length;
+  const title = [availability && AVAILABILITY_LABEL[availability], ...list.map((s) => s.name)]
+    .filter(Boolean)
+    .join(", ");
   return (
-    <span className="absolute right-1 top-1 flex gap-0.5" title={symbols.map((s) => s.name).join(", ")}>
+    <span className="absolute right-1 top-1 flex gap-0.5" title={title}>
+      {availability && (
+        <span
+          role="img"
+          aria-label={AVAILABILITY_LABEL[availability]}
+          className={`h-3.5 w-3.5 rounded-full ring-1 ring-white ${AVAILABILITY_DOT[availability]}`}
+        />
+      )}
       {shown.map((s) =>
         s.icon ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -118,16 +138,19 @@ export function DayContent({
   day,
   mark,
   symbols,
+  availability,
 }: {
   day: string;
   mark: DayMark | null;
   symbols?: DaySymbol[];
+  /** Pass on calendars that show availability; null means "nothing free" and still hides class dots. */
+  availability?: DayAvailability | null;
 }) {
   const showLabel = mark && !mark.implicit && showsLabelOnCalendar(mark.kind);
   return (
     <>
       <span className="block">{dayOfMonth(day)}</span>
-      <SymbolDots symbols={symbols} />
+      <SymbolDots symbols={symbols} availability={availability} />
       {showLabel && (
         <span
           title={mark.label}
@@ -147,7 +170,33 @@ function BookingSymbolIcon({ src }: { src: string }) {
   return <img src={src} alt="" aria-hidden className="h-4 w-4 shrink-0 rounded-full" />;
 }
 
-export function Legend({ compact = false, horizontal = false,}: { compact?: boolean; horizontal?: boolean;}) {
+/** Availability entries, rendered as extra items in the first legend list (after "No Booking"). */
+function AvailabilityItems({ dotBox = false, wrap = false }: { dotBox?: boolean; wrap?: boolean }) {
+  return (
+    <>
+      {(Object.keys(AVAILABILITY_LABEL) as DayAvailability[]).map((k) => {
+        const dot = <span aria-hidden className={`h-3 w-3 shrink-0 rounded-full ${AVAILABILITY_DOT[k]}`} />;
+        return (
+          <li key={k} className={`flex items-center gap-2 ${wrap ? "" : "whitespace-nowrap"}`}>
+            {dotBox ? <span className="grid h-4 w-4 shrink-0 place-items-center">{dot}</span> : dot}
+            {AVAILABILITY_LABEL[k]}
+          </li>
+        );
+      })}
+    </>
+  );
+}
+
+export function Legend({
+  compact = false,
+  horizontal = false,
+  showAvailability = false,
+}: {
+  compact?: boolean;
+  horizontal?: boolean;
+  /** Adds the room-availability entries (booking calendar only). */
+  showAvailability?: boolean;
+}) {
   if (compact) {
     return (
       <aside
@@ -166,6 +215,7 @@ export function Legend({ compact = false, horizontal = false,}: { compact?: bool
                 {o.label}
               </li>
             ))}
+            {showAvailability && <AvailabilityItems dotBox />}
           </ul>
 
           <ul
@@ -220,7 +270,7 @@ export function Legend({ compact = false, horizontal = false,}: { compact?: bool
           {MARK_OPTIONS.map((o) => (
             <li
               key={o.kind}
-              className="flex items-center gap-2 whitespace-nowrap"
+              className={`flex items-center gap-2 ${horizontal ? "whitespace-nowrap" : ""}`}
             >
               <span
                 aria-hidden
@@ -231,6 +281,7 @@ export function Legend({ compact = false, horizontal = false,}: { compact?: bool
               {o.label}
             </li>
           ))}
+          {showAvailability && <AvailabilityItems wrap={!horizontal} />}
         </ul>
 
         <ul
