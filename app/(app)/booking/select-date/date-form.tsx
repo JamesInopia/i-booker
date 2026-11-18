@@ -117,7 +117,7 @@ export function DateForm({
   }, [date, availability?.date]);
 
   function chooseDate(nextDate: string) {
-    if (nextDate === date) return;
+    if (loading || nextDate === date) return;
 
     setDate(nextDate);
     setBlocks([]);
@@ -213,6 +213,7 @@ export function DateForm({
           <DateCalendar
             selected={date}
             onSelect={chooseDate}
+            busy={loading}
             today={min}
             max={max}
             closed={closed}

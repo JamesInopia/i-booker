@@ -4,13 +4,17 @@ import { useState } from "react";
 import { DayContent, MonthGrid } from "../../calendar/calendar-parts";
 import type { DayMarks } from "../../calendar/day-marks";
 import type { DaySymbols } from "../../calendar/day-symbols";
-import { AVAILABILITY_LABEL, type DayAvailabilities } from "../../calendar/day-availability";
+import {
+  AVAILABILITY_LABEL,
+  type DayAvailabilities,
+} from "../../calendar/day-availability";
 import { addMonths, monthKey } from "../../calendar/dates";
 import { MonthPicker } from "../../calendar/month-picker";
 
 export function DateCalendar({
   selected,
   onSelect,
+  busy = false,
   today,
   max,
   closed,
@@ -20,6 +24,7 @@ export function DateCalendar({
 }: {
   selected: string;
   onSelect: (date: string) => void;
+  busy?: boolean;
   today: string;
   max: string;
   closed: DayMarks;
@@ -78,11 +83,15 @@ export function DateCalendar({
         ) => (
           <button
             type="button"
-            disabled={disabled}
+            disabled={disabled || busy}
             onClick={() => onSelect(day)}
             aria-pressed={isSelected}
             aria-current={isToday ? "date" : undefined}
-            aria-label={[day, mark?.label, availability[day] && AVAILABILITY_LABEL[availability[day]]]
+            aria-label={[
+              day,
+              mark?.label,
+              availability[day] && AVAILABILITY_LABEL[availability[day]],
+            ]
               .filter(Boolean)
               .join(": ")}
             title={
@@ -92,9 +101,14 @@ export function DateCalendar({
                   ? AVAILABILITY_LABEL[availability[day]]
                   : undefined
             }
-            className={`${className} !h-[64px] !min-h-0 !p-2`}
+            className={`${className} !h-[64px] !min-h-0 !p-2 ${busy && !disabled ? "cursor-progress" : ""}`}
           >
-            <DayContent day={day} mark={mark} symbols={daySymbols[day]} availability={availability[day] ?? null} />
+            <DayContent
+              day={day}
+              mark={mark}
+              symbols={daySymbols[day]}
+              availability={availability[day] ?? null}
+            />
           </button>
         )}
       />

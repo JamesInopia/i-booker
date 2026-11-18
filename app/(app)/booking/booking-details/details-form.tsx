@@ -95,6 +95,11 @@ export function DetailsForm({
   };
   const touch = (key: keyof Values) => () =>
     setTouched((t) => ({ ...t, [key]: true }));
+  const onContactChange = (e: { target: { value: string } }) =>
+    setValues((v) => ({
+      ...v,
+      contactNo: e.target.value.replace(/\D/g, "").slice(0, 15),
+    }));
   const dirty = (Object.keys(initial) as (keyof Values)[]).some(
     (k) => values[k] !== initial[k],
   );
@@ -123,11 +128,12 @@ export function DetailsForm({
           <input
             name="contactNo"
             type="tel"
-            inputMode="tel"
+            inputMode="numeric"
             autoComplete="tel"
+            maxLength={15}
             placeholder="Contact Number"
             value={values.contactNo}
-            onChange={set("contactNo")}
+            onChange={onContactChange}
             onBlur={touch("contactNo")}
             className={FIELD}
           />
