@@ -2,6 +2,7 @@ import { HexLoader } from "./hex-loader";
 
 export const CONNECTING_MESSAGE = "Connecting to iBooker...";
 export const LOADING_MESSAGE = "Loading, please wait...";
+export const DISPLACED_MESSAGE = "Logging in with different device";
 
 /**
  * Hexagon loader + message on the app background.

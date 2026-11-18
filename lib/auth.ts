@@ -10,9 +10,7 @@ import {
   user as authUsers,
 } from "@/db/schema";
 import { auth } from "@/lib/better-auth";
-import { ROLE_HOME, type Role } from "@/lib/session";
-
-const MAX_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
+import { ROLE_HOME, SESSION_MAX_MS, type Role } from "@/lib/session";
 
 export type CurrentUser = {
   id: string;
@@ -24,6 +22,7 @@ export type CurrentUser = {
 export type AuthState =
   | { kind: "anonymous" }
   | { kind: "suspended" }
+  | { kind: "displaced" }
   | { kind: "ok"; user: CurrentUser };
 
 export const getAuthState = cache(async (): Promise<AuthState> => {
@@ -32,13 +31,19 @@ export const getAuthState = cache(async (): Promise<AuthState> => {
     .catch(() => null);
   if (!session) return { kind: "anonymous" };
 
+  // Another device logged in after this one: this login is no longer valid.
+  if (session.session.revokedAt) return { kind: "displaced" };
+
   if (
-    Date.now() - new Date(session.session.createdAt).getTime() >
-    MAX_SESSION_MS
+    Date.now() -
+      new Date(
+        session.session.startedAt ?? session.session.createdAt,
+      ).getTime() >
+    SESSION_MAX_MS
   ) {
     await db
       .delete(sessionTable)
-      .where(eq(sessionTable.id, session.session.id))
+      .where(eq(sessionTable.familyId, session.session.familyId))
       .catch(() => {});
     return { kind: "anonymous" };
   }
@@ -90,6 +95,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
 export async function requireUser(): Promise<CurrentUser> {
   const state = await getAuthState();
   if (state.kind === "suspended") redirect("/login?suspended=1");
+  if (state.kind === "displaced") redirect("/login?displaced=1");
   if (state.kind !== "ok") redirect("/login");
   return state.user;
 }

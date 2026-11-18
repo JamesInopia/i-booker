@@ -15,10 +15,12 @@ export function LoginForm({
   next,
   failed,
   suspended,
+  displaced,
 }: {
   next: string;
   failed: boolean;
   suspended: boolean;
+  displaced: boolean;
 }) {
   const [askEmail, setAskEmail] = useState(false);
   const [email, setEmail] = useState("");
@@ -26,7 +28,9 @@ export function LoginForm({
   const [message, setMessage] = useState(
     suspended
       ? "Your account has been suspended. Please contact an administrator."
-      : failed
+      : displaced
+        ? "You were signed out because your account logged in on another device."
+        : failed
         ? 'Sign-in failed. Use your "@iacademy.edu.ph" account.'
         : "",
   );

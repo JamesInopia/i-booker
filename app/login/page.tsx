@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { ROLE_HOME, safeNext } from "@/lib/session";
+import { DisplacedOverlay } from "./displaced-overlay";
 import { Greeting } from "./greeting";
 import { LoginCarousel } from "./login-carousel";
 import { LoginForm } from "./login-form";
@@ -12,6 +13,7 @@ type SearchParams = Promise<{
   next?: string | string[];
   error?: string | string[];
   suspended?: string | string[];
+  displaced?: string | string[];
 }>;
 
 export default async function LoginPage({
@@ -19,7 +21,7 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const { next, error, suspended } = await searchParams;
+  const { next, error, suspended, displaced } = await searchParams;
   const user = await getCurrentUser();
   if (user)
     redirect(
@@ -28,6 +30,7 @@ export default async function LoginPage({
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-linear-to-br from-carousel-from to-carousel-to">
+      {displaced && <DisplacedOverlay />}
       <LoginCarousel />
 
       <section
@@ -45,6 +48,7 @@ export default async function LoginPage({
           next={safeNext(Array.isArray(next) ? next[0] : next) ?? ""}
           failed={Boolean(error)}
           suspended={Boolean(suspended)}
+          displaced={Boolean(displaced)}
         />
       </section>
     </main>
