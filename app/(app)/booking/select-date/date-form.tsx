@@ -29,6 +29,8 @@ import {
 import { ERROR_TEXT, StepForm } from "../step-form";
 import { DateCalendar } from "./date-calendar";
 
+import { UnsavedChangesGuard } from "@/app/components/unsaved-changes-guard";
+
 const SAME_DAY_WARNING =
   "Same day applications may not be accepted. Are you sure you want to continue?";
 
@@ -176,6 +178,12 @@ export function DateForm({
 
   const warnings = hasBlocks && !error ? bookingWarnings(blocks, now) : [];
 
+  const sameList = (a: string[], b: string[]) =>
+    [...a].sort().join(",") === [...b].sort().join(",");
+  const dirty =
+    date !== (validInitialDate ? initialDate : "") ||
+    !sameList(blocks, validInitialDate ? initialBlocks : []);
+
   // H. Render the complete booking interface
   return (
     <StepForm
@@ -187,6 +195,11 @@ export function DateForm({
     >
       <input type="hidden" name="date" value={date} />
       <input type="hidden" name="blocks" value={blocks.join(",")} />
+
+      <UnsavedChangesGuard
+        dirty={dirty}
+        message="You haven't confirmed your date and time yet. If you leave now, your selection will be lost."
+      />
 
       {/* LEGEND: Above calendar and time panel */}
       <div className="mt-2 w-full">
@@ -273,7 +286,7 @@ export function DateForm({
                         {formatTime(slot.start)} – {formatTime(slot.end)}
                       </span>
 
-                      <span className="text-center [overflow-wrap:anywhere]">
+                      <span className="text-center wrap-anywhere">
                         {taken.length > 0 ? (
                           <span className="font-semibold">
                             {taken.map((t) => t.label ?? "Taken").join(" · ")}
