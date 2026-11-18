@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTrackedRouter } from "./loading-provider";
 
 export function UnsavedChangesGuard({
   dirty,
@@ -10,7 +10,7 @@ export function UnsavedChangesGuard({
   dirty: boolean;
   message?: string;
 }) {
-  const router = useRouter();
+  const router = useTrackedRouter();
   const [target, setTarget] = useState<string | null>();
 
   useEffect(() => {
@@ -49,12 +49,16 @@ export function UnsavedChangesGuard({
       const here = window.location.pathname + window.location.search;
       if (url.pathname + url.search === here) return;
 
+      // Block the navigation completely. Listening on `window` in the capture phase runs before
+      // every document-level listener (including the loading overlay's link tracker) and before
+      // React/Next <Link> handlers, so nothing starts navigating or shows a loader behind the dialog.
       e.preventDefault();
       e.stopPropagation();
+      e.stopImmediatePropagation();
       setTarget(url.pathname + url.search + url.hash);
     };
-    document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+    window.addEventListener("click", onClick, true);
+    return () => window.removeEventListener("click", onClick, true);
   }, [dirty]);
 
   useEffect(() => {
@@ -76,7 +80,7 @@ export function UnsavedChangesGuard({
     >
       <div
         className="w-full max-w-sm rounded-xl bg-container p-6 shadow-lg"
-        onClick={(e) => e.stopPropagation}
+        onClick={(e) => e.stopPropagation()}
       >
         <h2 id="unsaved-title" className="text-lg font-bold">
           Leave without saving?

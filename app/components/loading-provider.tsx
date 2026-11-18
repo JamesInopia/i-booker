@@ -144,6 +144,7 @@ function NavigationTracker() {
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
+      if (e.defaultPrevented) return;
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const link = (e.target as Element | null)?.closest?.("a[href]") as HTMLAnchorElement | null;
       if (!link || link.dataset.loading === "off" || link.hasAttribute("download")) return;
