@@ -5,7 +5,12 @@ import { useState, type ReactNode } from "react";
 const exportUrl = (ids: number[], extra = "") =>
   `/api/requests/export?ids=${ids.join(",")}${extra}`;
 
+let lastPrint = 0;
+
 export function printRequests(ids: number[]) {
+  const now = Date.now();
+  if (now - lastPrint < 2000) return;
+  lastPrint = now;
   window.open(exportUrl(ids, "&inline=1"), "_blank");
 }
 
