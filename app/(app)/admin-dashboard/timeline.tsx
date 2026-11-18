@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { formatTime, toMinutes, type RoomListing } from "../booking/rules";
 import { DayContent, MonthGrid, TODAY_FILL } from "../calendar/calendar-parts";
+import type { DayAvailabilities } from "../calendar/day-availability";
 import type { DaySymbols } from "../calendar/day-symbols";
 import { MARK_STYLE, cancelsClasses, markFor, type DayMarks } from "../calendar/day-marks";
 import {
@@ -37,7 +38,17 @@ const navLink = "px-2 py-1 hover:underline";
 const STICKY_TH =
   "sticky top-[calc(6.5rem-2px)] z-[8] shadow-[inset_-1px_0_0_var(--color-neutral-300),0_1px_0_0_var(--color-neutral-300)]";
 
-export function CalendarView({ month, marks, symbols }: { month: string; marks: DayMarks; symbols: DaySymbols }) {
+export function CalendarView({
+  month,
+  marks,
+  symbols,
+  availability,
+}: {
+  month: string;
+  marks: DayMarks;
+  symbols: DaySymbols;
+  availability: DayAvailabilities;
+}) {
   const today = todayISO();
 
   return (
