@@ -25,10 +25,16 @@ import { LoadingScreen } from "./loading-screen";
  * - Once shown it stays at least MIN_VISIBLE, so it never flickers.
  * - While a route-level fallback (`(app)/loading.tsx`) is on screen the overlay stays hidden,
  *   so there are never two loaders on top of each other.
+ * - While anything is busy the whole app shell (sidebar, header, tabs, page) is locked with
+ *   `inert`, so nobody can navigate away or start a second action mid-process. The lock lifts
+ *   by itself after STALL_MS, so a request that never finishes cannot trap the person.
+ * - While the overlay is showing, modal backdrops are hidden (see `[data-busy]` in globals.css),
+ *   so the sidebar and header are not left dimmed behind a dialog.
  */
 const SHOW_DELAY = 120;
 const MIN_VISIBLE = 600;
 const NAV_TIMEOUT = 15_000;
+const STALL_MS = 30_000;
 
 type Holder = () => () => void;
 type LoadingContextValue = { hold: Holder; holdRoute: Holder };
@@ -66,11 +72,41 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(timer);
   }, [wanted, visible]);
 
+  // Lock the app while busy, but never for good.
+  const [stalled, setStalled] = useState(false);
+  useEffect(() => {
+    if (!wanted) {
+      setStalled(false);
+      return;
+    }
+    const timer = setTimeout(() => setStalled(true), STALL_MS);
+    return () => clearTimeout(timer);
+  }, [wanted]);
+  const locked = wanted && !stalled;
+
+  // `inert` drops keyboard focus from whatever was focused. Give it back when the lock lifts.
+  const focusBeforeLock = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (locked) {
+      const el = document.activeElement;
+      focusBeforeLock.current = el instanceof HTMLElement && el !== document.body ? el : null;
+      return;
+    }
+    const el = focusBeforeLock.current;
+    focusBeforeLock.current = null;
+    if (el?.isConnected && (!document.activeElement || document.activeElement === document.body)) {
+      el.focus({ preventScroll: true });
+    }
+  }, [locked]);
+
   const value = useMemo(() => ({ hold, holdRoute }), [hold, holdRoute]);
 
   return (
     <LoadingContext.Provider value={value}>
-      {children}
+      {/* `contents`: no box of its own, so the layout inside is unchanged. */}
+      <div className="contents" inert={locked} data-busy={visible ? "true" : undefined}>
+        {children}
+      </div>
       <Suspense fallback={null}>
         <NavigationTracker />
       </Suspense>

@@ -78,6 +78,15 @@ body {
   bottom: 0;
   z-index: 60;
 }
+/*
+ * While the loading overlay is showing, hide modal dialogs and their dimmed backdrops. The overlay
+ * only covers the content area, so a visible backdrop would leave the sidebar and header looking
+ * greyed out. They stay mounted (just invisible), so a save that is still running is not cancelled.
+ * Every dialog in the app is a `fixed inset-0 z-50` layer.
+ */
+[data-busy="true"] .fixed.inset-0.z-50 {
+  visibility: hidden;
+}
 
 /* Booking progress bar + confirm animation */
 @keyframes booking-ring {
