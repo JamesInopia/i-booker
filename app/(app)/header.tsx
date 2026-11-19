@@ -8,6 +8,8 @@ import type { PageTabGroup } from "@/lib/nav";
 import type { NotificationsPayload } from "@/lib/notification-types";
 import { FormPendingSignal } from "../components/loading-provider";
 import { NotificationBell } from "./notification-bell";
+import { createPortal } from "react-dom";
+import { ReportDialog } from "./report/report-dialog";
 
 function Tabs({ groups }: { groups: PageTabGroup[] }) {
   const pathname = usePathname();
@@ -16,7 +18,8 @@ function Tabs({ groups }: { groups: PageTabGroup[] }) {
   if (!group) return null;
 
   const requested = searchParams.get("tab");
-  const activeId = group.tabs.find((t) => t.id === requested)?.id ?? group.tabs[0].id;
+  const activeId =
+    group.tabs.find((t) => t.id === requested)?.id ?? group.tabs[0].id;
 
   return (
     <nav aria-label="Page tabs" className="flex gap-12">
@@ -43,6 +46,7 @@ function Tabs({ groups }: { groups: PageTabGroup[] }) {
 
 function ProfileMenu({ name }: { name: string }) {
   const [open, setOpen] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,20 +79,46 @@ function ProfileMenu({ name }: { name: string }) {
         <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden="true">
           <circle cx="12" cy="12" r="12" fill="currentColor" />
           <circle cx="12" cy="9.5" r="3.6" fill="white" />
-          <path d="M5.2 19.2c1.2-3.3 3.9-5 6.8-5s5.6 1.7 6.8 5A11.9 11.9 0 0 1 12 24a11.9 11.9 0 0 1-6.8-4.8Z" fill="white" />
+          <path
+            d="M5.2 19.2c1.2-3.3 3.9-5 6.8-5s5.6 1.7 6.8 5A11.9 11.9 0 0 1 12 24a11.9 11.9 0 0 1-6.8-4.8Z"
+            fill="white"
+          />
         </svg>
       </button>
 
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-20 mt-2 w-44 rounded-lg bg-container py-1 shadow-lg ring-1 ring-black/10">
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-20 mt-2 w-44 rounded-lg bg-container py-1 shadow-lg ring-1 ring-black/10"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              setReporting(true);
+            }}
+            className="block w-full px-4 py-2 text-left text-sm text-accent-2 hover:bg-accent-4"
+          >
+            Report a Problem
+          </button>
           <form action={signOut}>
             <FormPendingSignal />
-            <button role="menuitem" className="block w-full px-4 py-2 text-left text-sm hover:bg-accent-4">
+            <button
+              role="menuitem"
+              className="block w-full px-4 py-2 text-left text-sm hover:bg-accent-4"
+            >
               Log out
             </button>
           </form>
         </div>
       )}
+
+      {reporting &&
+        createPortal(
+          <ReportDialog onClose={() => setReporting(false)} />,
+          document.body,
+        )}
     </div>
   );
 }
@@ -103,7 +133,7 @@ export function Header({
   notifications: NotificationsPayload;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-8 bg-container px-10">
+    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-8 bg-container px-10">
       <Suspense fallback={<div />}>
         <Tabs groups={tabGroups} />
       </Suspense>
