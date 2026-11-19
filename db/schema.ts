@@ -175,10 +175,18 @@ export const terms = pgTable(
 export const classSchedules = pgTable(
   "class_schedule",
   {
-    classId: integer("class_schedule_id").primaryKey().generatedByDefaultAsIdentity(),
-    termId: integer("term_id").notNull().references(() => terms.termId, { onDelete: "cascade" }),
-    roomId: integer("room_id").notNull().references(() => rooms.roomId, { onDelete: "cascade" }),
-    activityTypeId: integer("activity_type_id").notNull().references(() => activityTypes.activityTypeId),
+    classId: integer("class_schedule_id")
+      .primaryKey()
+      .generatedByDefaultAsIdentity(),
+    termId: integer("term_id")
+      .notNull()
+      .references(() => terms.termId, { onDelete: "cascade" }),
+    roomId: integer("room_id")
+      .notNull()
+      .references(() => rooms.roomId, { onDelete: "cascade" }),
+    activityTypeId: integer("activity_type_id")
+      .notNull()
+      .references(() => activityTypes.activityTypeId),
     dayOfWeek: integer("day_of_week").notNull(),
     startTime: time("start_time").notNull(),
     endTime: time("end_time").notNull(),
@@ -187,7 +195,39 @@ export const classSchedules = pgTable(
   (t) => [
     index("class_schedule_term_id_idx").on(t.termId),
     index("class_schedule_room_id_day_of_week_idx").on(t.roomId, t.dayOfWeek),
-    check("class_schedule_day_of_week_check", sql`${t.dayOfWeek} between 1 and 7`),
+    check(
+      "class_schedule_day_of_week_check",
+      sql`${t.dayOfWeek} between 1 and 7`,
+    ),
     check("class_schedule_time_chk", sql`${t.endTime} > ${t.startTime}`),
+  ],
+);
+
+export const reports = pgTable(
+  "report",
+  {
+    reportId: integer("report_id").primaryKey().generatedByDefaultAsIdentity(),
+    userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+    nature: text("nature").notNull(),
+    description: text("description").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    attachments: text("attachments")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+  },
+  (t) => [
+    index("report_created_idx").on(t.createdAt),
+    check(
+      "report_nature_chk",
+      sql`${t.nature} in ('functionality', 'visual', 'performance', 'security', 'data_content', 'crash_error', 'usability', 'other')`,
+    ),
+    check(
+      "report_description_chk",
+      sql`char_length(${t.description}) between 1 and 500`,
+    ),
+    check("report_attachments_chk", sql`cardinality(${t.attachments}) <= 3`),
   ],
 );
