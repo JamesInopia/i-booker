@@ -24,6 +24,7 @@ export function AccountsFilters({ query }: { query: AccountsQuery }) {
 
   return (
     <form
+      data-tour="filters"
       className="flex flex-wrap items-end gap-6"
       onSubmit={(e) => {
         e.preventDefault();

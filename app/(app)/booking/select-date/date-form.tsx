@@ -209,7 +209,7 @@ export function DateForm({
       {/* MAIN: Wide calendar + narrow time panel */}
       <div className="mt-2 grid items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)]">
         {/* LEFT: Existing calendar */}
-        <section className="min-w-0">
+        <section data-tour="date-calendar" className="min-w-0">
           <DateCalendar
             selected={date}
             onSelect={chooseDate}

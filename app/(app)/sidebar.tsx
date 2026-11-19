@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { HelpButton } from "./help/help-tour";
 import { NavLink } from "./nav-link";
 
 export function Sidebar({ items }: { items: { href: string; label: string }[] }) {
@@ -21,6 +23,13 @@ export function Sidebar({ items }: { items: { href: string; label: string }[] })
           ))}
         </ul>
       </nav>
+
+      {/* Sits at the bottom of the sidebar. Suspense: it reads the URL to pick the right tour. */}
+      <div className="pb-8">
+        <Suspense fallback={null}>
+          <HelpButton />
+        </Suspense>
+      </div>
     </aside>
   );
 }

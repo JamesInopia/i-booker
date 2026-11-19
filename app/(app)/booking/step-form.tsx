@@ -55,6 +55,7 @@ export function StepForm({
       )}
 
       <div
+        data-tour="step-actions"
         className={
           buttonsLayout === "under-calendar"
             ? "mt-3 flex w-full items-center justify-between gap-4 lg:w-[69%]"

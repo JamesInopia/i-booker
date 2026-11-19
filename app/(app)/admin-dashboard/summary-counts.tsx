@@ -20,7 +20,7 @@ export async function SummaryCounts() {
   ];
 
   return (
-    <ul className="flex flex-wrap gap-4">
+    <ul data-tour="summary-counts" className="flex flex-wrap gap-4">
       {summary.map((s) => (
         <li key={s.label} className="flex w-28 flex-col items-center rounded-lg bg-container px-3 py-3 text-center shadow-sm">
           <span className="text-2xl font-bold">{s.value}</span>

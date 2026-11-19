@@ -52,7 +52,7 @@ export function CalendarView({
   const today = todayISO();
 
   return (
-    <div className="overflow-hidden rounded-lg bg-container shadow-sm">
+    <div data-tour="calendar" className="overflow-hidden rounded-lg bg-container shadow-sm">
       <div className="flex items-center justify-between bg-accent-1 px-3 py-2 text-white">
         <Link
           href={href({ view: "a", month: monthKey(addMonths(month, -1)) })}
@@ -133,7 +133,7 @@ export function TimetableView({
   }
 
   return (
-    <div className="overflow-clip rounded-lg bg-container shadow-sm">
+    <div data-tour="timetable" className="overflow-clip rounded-lg bg-container shadow-sm">
       <div className="sticky top-15.75 z-9 flex h-10 items-center justify-between bg-accent-1 px-3 text-sm font-semibold text-white">
         <Link
           href={href({ view: "a", month: monthKey(midWeek) })}

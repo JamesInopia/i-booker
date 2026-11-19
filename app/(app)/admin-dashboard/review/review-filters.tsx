@@ -24,6 +24,7 @@ export function ReviewFilters({ query }: { query: ReviewQuery }) {
 
   return (
     <form
+      data-tour="filters"
       className="flex flex-wrap items-end gap-6"
       onSubmit={(e) => {
         e.preventDefault();

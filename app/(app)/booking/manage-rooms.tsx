@@ -507,7 +507,7 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
   return (
     <div className="mx-auto max-w-7xl">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
-        <label className="relative block w-full max-w-md">
+        <label data-tour="search" className="relative block w-full max-w-md">
           <span className="sr-only">Search for a room</span>
           <input
             type="search"
@@ -528,6 +528,7 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
             setOpenActionsId(null);
             setModal({ kind: "editor", mode: "add" });
           }}
+          data-tour="add-room"
           className="inline-flex items-center gap-2 rounded-lg bg-accent-1 px-6 py-2.5 font-bold text-white hover:brightness-110"
         >
           <FiPlus aria-hidden="true" /> Add Room
@@ -551,7 +552,7 @@ export function ManageRooms({ initialRooms }: { initialRooms: ManagedRoom[] }) {
         </div>
       )}
 
-      <div className="min-h-80 overflow-x-auto rounded-md bg-white shadow-sm ring-1 ring-gray-200">
+      <div data-tour="table" className="min-h-80 overflow-x-auto rounded-md bg-white shadow-sm ring-1 ring-gray-200">
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="bg-white">
             <tr className="border-b border-gray-200">

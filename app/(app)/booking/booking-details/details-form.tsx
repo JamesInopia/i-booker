@@ -114,7 +114,7 @@ export function DetailsForm({
         dirty={dirty}
         message="You haven't confirmed your request details yet. if you leave now, these details will be lost."
       />
-      <div className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-3">
+      <div data-tour="details-fields" className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-3">
         <Field label="Requestor Name">
           <input
             readOnly

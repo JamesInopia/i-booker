@@ -65,7 +65,7 @@ export function ReviewTable({
     setSelected(allSelected ? new Set() : new Set(bookings.map((b) => b.id)));
 
   return (
-    <section className="rounded-lg bg-container p-4 shadow-sm">
+    <section data-tour="table" className="rounded-lg bg-container p-4 shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead>

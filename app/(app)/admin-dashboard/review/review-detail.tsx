@@ -91,7 +91,7 @@ export function ReviewDetail({
         <RequestScroller currentId={b.id} options={options} />
       </div>
 
-      <section className="flex min-h-112 flex-col rounded-lg bg-container p-6 shadow-sm">
+      <section data-tour="request-details" className="flex min-h-112 flex-col rounded-lg bg-container p-6 shadow-sm">
         <h2 className={`text-3xl font-bold ${STATUS_TEXT[b.status]}`}>
           {STATUS_LABEL[b.status]}
         </h2>

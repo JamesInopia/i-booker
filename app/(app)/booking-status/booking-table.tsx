@@ -37,7 +37,7 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
 
   return (
     <>
-      <div className="mb-3">
+      <div data-tour="filters" className="mb-3">
         <ListFilters
           q={q}
           onQ={setQ}
@@ -56,7 +56,7 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
         />
       </div>
 
-      <div className="flex-1 overflow-x-auto px-3 py-3 bg-white rounded-[15px]">
+      <div data-tour="table" className="flex-1 overflow-x-auto px-3 py-3 bg-white rounded-[15px]">
         <table className="min-w-full border-separate border-spacing-y-2 text-center text-sm">
           <thead>
             <tr>

@@ -77,7 +77,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
 
   return (
     <>
-      <div className="mb-3">
+      <div data-tour="filters" className="mb-3">
         <ListFilters
           q={q}
           onQ={setQ}
@@ -95,7 +95,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
         />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
+      <div data-tour="table" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
         <table className="min-w-full border-collapse text-center">
           <thead>
             <tr className="border-b border-black">

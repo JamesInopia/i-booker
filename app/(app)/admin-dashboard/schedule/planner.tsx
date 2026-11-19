@@ -238,7 +238,7 @@ export function Planner({
   const gridHeight = ROW_H * TIME_ROWS.length;
 
   return (
-    <div className="min-w-0 flex-1 overflow-clip rounded-lg bg-container shadow-sm">
+    <div data-tour="planner" className="min-w-0 flex-1 overflow-clip rounded-lg bg-container shadow-sm">
       <div className="sticky top-15.75 z-9 bg-container shadow-sm">
         <div className="bg-linear-to-r from-heading-from to-heading-to px-3 py-2 text-sm font-bold text-white">
           {name.trim() || "Untitled term"}

@@ -16,7 +16,7 @@ export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
   const close = () => setDialog(null);
 
   return (
-    <section className="min-h-[26rem] rounded-lg bg-container p-3 shadow-sm">
+    <section data-tour="table" className="min-h-[26rem] rounded-lg bg-container p-3 shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
           <thead>

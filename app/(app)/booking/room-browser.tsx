@@ -291,7 +291,7 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
 
   return (
     <div>
-      <label className="relative block max-w-xl">
+      <label data-tour="search" className="relative block max-w-xl">
         <span className="sr-only">Search for a room</span>
         <input
           type="search"
@@ -320,7 +320,7 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
           No rooms match &ldquo;{query.trim()}&rdquo;.
         </p>
       ) : (
-        <ul className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+        <ul data-tour="room-grid" className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
           {visible.map((room) => (
             <li
               key={room.roomId}
