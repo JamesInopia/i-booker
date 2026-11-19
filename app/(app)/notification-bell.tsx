@@ -11,6 +11,7 @@ import {
   FiPlusCircle,
   FiSend,
   FiSlash,
+  FiTrash2,
   FiXCircle,
 } from "react-icons/fi";
 import type {
@@ -18,7 +19,12 @@ import type {
   NotificationType,
   NotificationsPayload,
 } from "@/lib/notification-types";
-import { markAllNotificationsRead, markNotificationRead } from "./notifications/actions";
+import {
+  clearReadNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+  removeNotification,
+} from "./notifications/actions";
 
 const POLL_MS = 30_000;
 
@@ -46,6 +52,8 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>(initial.items);
   const [unread, setUnread] = useState(initial.unread);
+  // "Delete all read" asks for a second click, so a stray click cannot wipe the list.
+  const [confirmClear, setConfirmClear] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
@@ -104,6 +112,37 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
     void markAllNotificationsRead().catch(() => void refresh());
   }
 
+  function deleteOne(id: number) {
+    const target = items.find((n) => n.id === id);
+    if (!target) return;
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    if (!target.read) setUnread((c) => Math.max(0, c - 1));
+    void removeNotification(id).catch(() => void refresh());
+  }
+
+  const readCount = items.filter((n) => n.read).length;
+
+  function deleteAllRead() {
+    if (!confirmClear) {
+      setConfirmClear(true);
+      return;
+    }
+    setConfirmClear(false);
+    setItems((prev) => prev.filter((n) => !n.read));
+    // Reload afterwards: older read notifications beyond the visible list were deleted too.
+    void clearReadNotifications().then(refresh, refresh);
+  }
+
+  // Forget a half-made "are you sure" after a few seconds, or when the panel closes.
+  useEffect(() => {
+    if (!confirmClear) return;
+    const timer = setTimeout(() => setConfirmClear(false), 4000);
+    return () => clearTimeout(timer);
+  }, [confirmClear]);
+  useEffect(() => {
+    if (!open) setConfirmClear(false);
+  }, [open]);
+
   const badge = unread > 9 ? "9+" : String(unread);
 
   return (
@@ -135,14 +174,27 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
         >
           <div className="flex items-center justify-between border-b border-accent-6 px-4 py-3">
             <h2 className="text-base font-bold">Notifications</h2>
-            <button
-              type="button"
-              onClick={markAll}
-              disabled={unread === 0}
-              className="text-sm font-semibold text-accent-1 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
-            >
-              Mark all as read
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                type="button"
+                onClick={markAll}
+                disabled={unread === 0}
+                className="text-sm font-semibold text-accent-1 hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline"
+              >
+                Mark all as read
+              </button>
+              <button
+                type="button"
+                onClick={deleteAllRead}
+                disabled={readCount === 0}
+                title="Deletes only the notifications you have already read"
+                className={`text-sm font-semibold hover:underline disabled:cursor-not-allowed disabled:text-gray-400 disabled:no-underline ${
+                  confirmClear ? "text-red-600" : "text-accent-1"
+                }`}
+              >
+                {confirmClear ? "Click again to confirm" : "Delete all read"}
+              </button>
+            </div>
           </div>
 
           {items.length === 0 ? (
@@ -155,7 +207,7 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
               {items.map((n) => {
                 const style = TYPE_STYLE[n.type] ?? TYPE_STYLE.booking_reviewed;
                 return (
-                  <li key={n.id} className={`flex items-start ${n.read ? "" : "bg-accent-1/5"}`}>
+                  <li key={n.id} className={`flex items-stretch ${n.read ? "" : "bg-accent-1/5"}`}>
                     <Link
                       href={n.href}
                       onClick={() => {
@@ -182,19 +234,31 @@ export function NotificationBell({ initial }: { initial: NotificationsPayload })
                       </span>
                     </Link>
 
-                    {n.read ? (
-                      <span className="w-12 shrink-0" />
-                    ) : (
+                    {/* Mark-as-read on top (unread only), delete always at the bottom right. */}
+                    <div className="flex shrink-0 flex-col items-center justify-between gap-1 py-2 pr-2">
+                      {n.read ? (
+                        <span aria-hidden="true" className="h-8 w-8" />
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label="Mark as read"
+                          title="Mark as read"
+                          onClick={() => markOneRead(n.id)}
+                          className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-accent-6 hover:text-accent-1"
+                        >
+                          <FiCheck aria-hidden="true" />
+                        </button>
+                      )}
                       <button
                         type="button"
-                        aria-label="Mark as read"
-                        title="Mark as read"
-                        onClick={() => markOneRead(n.id)}
-                        className="mr-2 mt-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-accent-6 hover:text-accent-1"
+                        aria-label="Delete notification"
+                        title="Delete notification"
+                        onClick={() => deleteOne(n.id)}
+                        className="flex h-8 w-8 items-center justify-center rounded-full text-gray-500 hover:bg-red-100 hover:text-red-600"
                       >
-                        <FiCheck aria-hidden="true" />
+                        <FiTrash2 aria-hidden="true" />
                       </button>
-                    )}
+                    </div>
                   </li>
                 );
               })}

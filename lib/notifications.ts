@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gt, inArray, isNull, max, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, max, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   notifications,
@@ -318,6 +318,20 @@ export async function markRead(userId: string, id: number): Promise<void> {
         isNull(notifications.readAt),
       ),
     );
+}
+
+/** Delete one of the person's own notifications (read or unread). */
+export async function deleteOne(userId: string, id: number): Promise<void> {
+  await db
+    .delete(notifications)
+    .where(and(eq(notifications.notificationId, id), eq(notifications.userId, userId)));
+}
+
+/** Delete every notification the person has already read. Unread ones are never touched. */
+export async function deleteAllRead(userId: string): Promise<void> {
+  await db
+    .delete(notifications)
+    .where(and(eq(notifications.userId, userId), isNotNull(notifications.readAt)));
 }
 
 export async function markAllRead(userId: string): Promise<void> {
