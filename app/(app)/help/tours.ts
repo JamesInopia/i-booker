@@ -192,6 +192,40 @@ const TOURS = {
     },
   ),
 
+  reports: page(
+    "admin-reports",
+    {
+      title: "Reports",
+      body: "Problems with the website that people sent in through Report a Problem, such as bugs and things that look or work wrong.",
+    },
+    {
+      target: '[data-tour="filters"]',
+      placement: "bottom",
+      title: "Find a report",
+      body: "Narrow the list by priority or nature, change the order (you can put High priority first), or search the descriptions. New reports start as Unmarked.",
+    },
+    {
+      target: '[data-tour="table"]',
+      placement: "top",
+      title: "Reports",
+      body: "Click a report to read it in full and see any images. Tick the boxes to set the priority of several at once, or to mark them as resolved. Resolving removes the report for good and notifies the person who sent it.",
+    },
+  ),
+
+  reportDetail: page(
+    "admin-report-detail",
+    {
+      title: "Report details",
+      body: "One report in full, with the images the person attached.",
+    },
+    {
+      target: '[data-tour="report-details"]',
+      placement: "left",
+      title: "What was reported",
+      body: "Who sent it, when, and what went wrong. Click an image to open it full size. Set the priority with the buttons, and press Mark as Resolved when it's fixed. That removes the report and tells the person who sent it.",
+    },
+  ),
+
   rooms: page(
     "booking-rooms",
     {
@@ -372,6 +406,7 @@ export function tourFor(pathname: string, params: Params): Tour {
     if (tab === "schedule") return TOURS.schedule;
     if (tab === "review") return params.get("request") ? TOURS.reviewDetail : TOURS.review;
     if (tab === "accounts") return TOURS.accounts;
+    if (tab === "reports") return params.get("report") ? TOURS.reportDetail : TOURS.reports;
     return params.get("view") === "b" ? TOURS.timelineWeek : TOURS.timelineMonth;
   }
   if (pathname === "/booking") return tab === "manage-rooms" ? TOURS.manageRooms : TOURS.rooms;

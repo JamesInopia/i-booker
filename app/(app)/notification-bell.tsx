@@ -7,6 +7,7 @@ import {
   FiBell,
   FiCheck,
   FiCheckCircle,
+  FiFlag,
   FiInbox,
   FiPlusCircle,
   FiSend,
@@ -35,6 +36,8 @@ const TYPE_STYLE: Record<NotificationType, { icon: ReactNode; tone: string }> = 
   booking_rejected: { icon: <FiXCircle />, tone: "bg-red-100 text-red-600" },
   booking_cancelled: { icon: <FiSlash />, tone: "bg-gray-200 text-gray-600" },
   review_ping: { icon: <FiAlertCircle />, tone: "bg-yellow-100 text-yellow-700" },
+  report_submitted: { icon: <FiFlag />, tone: "bg-purple-100 text-purple-700" },
+  report_resolved: { icon: <FiCheckCircle />, tone: "bg-green-100 text-green-700" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

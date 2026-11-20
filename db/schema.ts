@@ -217,6 +217,7 @@ export const reports = pgTable(
       .array()
       .notNull()
       .default(sql`'{}'::text[]`),
+    priority: text("priority"),
   },
   (t) => [
     index("report_created_idx").on(t.createdAt),
@@ -229,5 +230,6 @@ export const reports = pgTable(
       sql`char_length(${t.description}) between 1 and 500`,
     ),
     check("report_attachments_chk", sql`cardinality(${t.attachments}) <= 3`),
+    check("report_priority_chk", sql`${t.priority} in ('high', 'medium', 'low')`),
   ],
 );

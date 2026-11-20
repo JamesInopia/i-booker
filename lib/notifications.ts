@@ -16,6 +16,7 @@ import type {
   NotificationType,
   NotificationsPayload,
 } from "./notification-types";
+import { REPORT_NATURES } from "./report";
 import type { Role } from "./session";
 
 type Actor = { id: string; name: string; email: string };
@@ -41,6 +42,8 @@ const actorName = (a: Actor) => a.name || a.email;
 const adminReviewHref = (requestId: number) => `/admin-dashboard?tab=review&request=${requestId}`;
 const myBookingHref = (requestId: number) => `/booking-status/${requestId}`; // detail page: approved + rejected only
 const myBookingsListHref = "/booking-status"; // cancelled bookings have no detail page, so link to the list
+const adminReportHref = (reportId: number) => `/admin-dashboard?tab=reports&report=${reportId}`;
+const reportLabel = (nature: string) => REPORT_NATURES.find((n) => n.value === nature)?.label ?? "problem";
 
 // ---------------------------------------------------------------------------
 // Request lookup
@@ -139,6 +142,39 @@ async function safely(label: string, fn: () => Promise<void>): Promise<void> {
   } catch (err) {
     console.error(`${label} failed:`, err);
   }
+}
+
+/** Someone reported a problem -> every developer (except the reporter) is told. Supervisors are not. */
+export function notifyReportSubmitted(report: { id: number; nature: string; description: string }, actor: Actor) {
+  return safely("notifyReportSubmitted", async () => {
+    const developers = (await userIdsWithRole("admin_developer")).filter((id) => id !== actor.id);
+    await insertAll(
+      developers.map((userId) => ({
+        userId,
+        type: "report_submitted" as const,
+        message: `${actorName(actor)} reported a problem (${reportLabel(report.nature)}): ${clip(report.description, 90)}`,
+        href: adminReportHref(report.id),
+        requestId: null,
+      })),
+    );
+  });
+}
+
+/** Reports were marked resolved -> each reporter hears about their own. */
+export function notifyReportsResolved(reports: { nature: string; userId: string | null }[]) {
+  return safely("notifyReportsResolved", async () => {
+    await insertAll(
+      reports
+        .filter((r): r is { nature: string; userId: string } => r.userId !== null)
+        .map((r) => ({
+          userId: r.userId,
+          type: "report_resolved" as const,
+          message: `Your report (${reportLabel(r.nature)}) was marked as resolved. Thank you for letting us know.`,
+          href: "/booking",
+          requestId: null,
+        })),
+    );
+  });
 }
 
 /** A booking was made -> every liaison (except the person who made it) can review it. */

@@ -5,6 +5,8 @@ export const NOTIFICATION_TYPES = [
   "booking_rejected", // requestor
   "booking_cancelled", // requestor (approved booking cancelled by an admin)
   "review_ping", // supervisor: liaison reminder
+  "report_submitted", // developer: someone reported a problem
+  "report_resolved", // the person who reported it
 ] as const;
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

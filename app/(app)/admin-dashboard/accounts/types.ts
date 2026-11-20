@@ -12,12 +12,14 @@ export type AccountRow = {
 
 export const LEVEL_LABEL: Record<Role, string> = {
   admin_supervisor: "Admin - Supervisor",
+  admin_developer: "Admin - Developer",
   admin_liaison: "Admin - Liaison",
   requestor: "Requestor",
 };
 
 export const LEVEL_COLOR: Record<Role, string> = {
   admin_supervisor: "text-purple-600",
+  admin_developer: "text-emerald-600",
   admin_liaison: "text-sky-500",
   requestor: "text-black",
 };

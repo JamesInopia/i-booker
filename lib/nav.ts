@@ -1,25 +1,29 @@
-import { ADMIN_ROLES, type Role } from "./session";
+import { ACCOUNT_MANAGER_ROLES, ADMIN_ROLES, DASHBOARD_ROLES, REPORT_ROLES, type Role } from "./session";
 
-const EVERYONE: Role[] = ["requestor", ...ADMIN_ROLES];
+const EVERYONE: Role[] = ["requestor", ...DASHBOARD_ROLES];
 
 export const NAV_ITEMS: { href: string; label: string; roles: Role[] }[] = [
-  { href: "/admin-dashboard", label: "Admin Dashboard", roles: ADMIN_ROLES },
+  { href: "/admin-dashboard", label: "Admin Dashboard", roles: DASHBOARD_ROLES },
   { href: "/booking", label: "Booking", roles: EVERYONE },
   { href: "/booking-status", label: "Booking Status", roles: EVERYONE },
   { href: "/booking-archives", label: "Booking Archives", roles: ADMIN_ROLES },
 ];
 
-export type PageTab = { id: string; label: string; roles: Role[] };
-export type PageTabGroup = { path: string; tabs: PageTab[] };
 
-export const PAGE_TABS: PageTabGroup[] = [
+export type PageTab = { id: string; label: string; roles: Role[]; visibleTo?: Role[] };
+export type PageTabGroup = { path: string; tabs: PageTab[]; hidden: string[] };
+type TabGroupConfig = { path: string; tabs: PageTab[] };
+
+export const PAGE_TABS: TabGroupConfig[] = [
   {
     path: "/admin-dashboard",
     tabs: [
-      { id: "timeline", label: "Timeline", roles: ADMIN_ROLES },
+      { id: "timeline", label: "Timeline", roles: DASHBOARD_ROLES },
       { id: "schedule", label: "Schedule", roles: ADMIN_ROLES },
       { id: "review", label: "Review", roles: ADMIN_ROLES },
-      { id: "accounts", label: "Accounts", roles: ["admin_supervisor"] },
+      { id: "accounts", label: "Accounts", roles: ACCOUNT_MANAGER_ROLES },
+      // Supervisors can open Reports but it isn't their job, so it stays out of their tab bar.
+      { id: "reports", label: "Reports", roles: REPORT_ROLES, visibleTo: ["admin_developer"] },
     ],
   },
   {
@@ -34,7 +38,8 @@ export const PAGE_TABS: PageTabGroup[] = [
 export function tabGroupsFor(role: Role): PageTabGroup[] {
   return PAGE_TABS.map((g) => ({
     path: g.path,
-    tabs: g.tabs.filter((t) => t.roles.includes(role)),
+    tabs: g.tabs.filter((t) => (t.visibleTo ?? t.roles).includes(role)),
+    hidden: g.tabs.filter((t) => t.roles.includes(role) && !(t.visibleTo ?? t.roles).includes(role)).map((t) => t.id),
   })).filter((g) => g.tabs.length > 1);
 }
 

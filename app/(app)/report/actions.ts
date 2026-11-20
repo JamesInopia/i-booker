@@ -1,10 +1,11 @@
 "use server";
 
 import { randomUUID } from "node:crypto";
-import { createClient } from "@supabase/supabase-js";
 import { db } from "@/db";
 import { reports } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import { notifyReportSubmitted } from "@/lib/notifications";
+import { storageClient as storage } from "@/lib/report-storage";
 import {
   REPORT_MAX_LENGTH,
   REPORT_NATURES,
@@ -15,15 +16,6 @@ import {
 } from "@/lib/report";
 
 export type ReportResult = { ok: true } | { ok: false; error: string };
-
-function storage() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const secret = process.env.SUPABASE_SECRET_KEY;
-  if (!url || !secret) throw new Error("Supabase storage is not configured.");
-  return createClient(url, secret, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
 
 function looksLikeImage(mime: string, b: Buffer): boolean {
   if (mime === "image/png")
@@ -100,9 +92,12 @@ export async function submitReport(formData: FormData): Promise<ReportResult> {
         uploaded.push(p.path);
       }
     }
-    await db
+    const [created] = await db
       .insert(reports)
-      .values({ userId: user.id, nature, description, attachments: uploaded });
+      .values({ userId: user.id, nature, description, attachments: uploaded })
+      .returning({ id: reports.reportId });
+    // Best effort: failing to notify must never make the report look like it failed to send.
+    await notifyReportSubmitted({ id: created.id, nature, description }, user);
   } catch (err) {
     console.error("submitReport failed:", err);
     if (uploaded.length)

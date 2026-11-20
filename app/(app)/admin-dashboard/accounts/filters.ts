@@ -3,6 +3,7 @@ import type { AccountRow } from "./types";
 export const SHOW_OPTIONS = [
   { value: "all", label: "All" },
   { value: "admin_supervisor", label: "Admin - Supervisor" },
+  { value: "admin_developer", label: "Admin - Developer" },
   { value: "admin_liaison", label: "Admin - Liaison" },
   { value: "requestor", label: "Requestor" },
   { value: "suspended", label: "Suspended" },

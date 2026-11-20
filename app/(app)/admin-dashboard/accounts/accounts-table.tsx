@@ -3,15 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { FiChevronDown, FiUser } from "react-icons/fi";
 import { ConfirmDialog, SuspendDialog } from "./account-dialogs";
-import { setLiaisonRole, unsuspendUser } from "./actions";
+import { canGrantRole, canModifyAccount, type Role } from "@/lib/session";
+import { setDeveloperRole, setLiaisonRole, unsuspendUser } from "./actions";
 import { LEVEL_COLOR, LEVEL_LABEL, type AccountRow } from "./types";
 
-type DialogKind = "suspend" | "unsuspend" | "grant" | "revoke";
+type DialogKind = "suspend" | "unsuspend" | "grant" | "revoke" | "grantDev" | "revokeDev";
 
 const th = "px-4 py-3 text-left text-base font-bold";
 const td = "px-4 py-2";
 
-export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
+export function AccountsTable({ accounts, viewerRole }: { accounts: AccountRow[]; viewerRole: Role }) {
   const [dialog, setDialog] = useState<{ kind: DialogKind; account: AccountRow } | null>(null);
   const close = () => setDialog(null);
 
@@ -55,7 +56,7 @@ export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
                 </td>
                 <td className={`${td} text-sm`}>{a.email}</td>
                 <td className={`${td} text-center`}>
-                  <ActionsMenu account={a} onSelect={(kind) => setDialog({ kind, account: a })} />
+                  <ActionsMenu account={a} viewerRole={viewerRole} onSelect={(kind) => setDialog({ kind, account: a })} />
                 </td>
               </tr>
             ))}
@@ -86,6 +87,28 @@ export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
           onConfirm={() => setLiaisonRole(dialog.account.email, true)}
         />
       )}
+      {dialog?.kind === "grantDev" && (
+        <ConfirmDialog
+          title={`Give Admin-Developer role to ${dialog.account.name}?`}
+          description="They'll be able to manage accounts and handle reports. They will no longer have Admin-Liaison access (review, schedule, archives, rooms)."
+          confirmLabel="Give role"
+          pendingLabel="Saving..."
+          tone="primary"
+          onClose={close}
+          onConfirm={() => setDeveloperRole(dialog.account.email, true)}
+        />
+      )}
+      {dialog?.kind === "revokeDev" && (
+        <ConfirmDialog
+          title={`Revoke Admin-Developer role from ${dialog.account.name}?`}
+          description="They'll go back to being a requestor and lose access to Accounts and Reports."
+          confirmLabel="Revoke role"
+          pendingLabel="Saving..."
+          tone="danger"
+          onClose={close}
+          onConfirm={() => setDeveloperRole(dialog.account.email, false)}
+        />
+      )}
       {dialog?.kind === "revoke" && (
         <ConfirmDialog
           title={`Revoke Admin-Liaison role from ${dialog.account.name}?`}
@@ -101,13 +124,24 @@ export function AccountsTable({ accounts }: { accounts: AccountRow[] }) {
   );
 }
 
-function ActionsMenu({ account, onSelect }: { account: AccountRow; onSelect: (kind: DialogKind) => void }) {
+function ActionsMenu({
+  account,
+  viewerRole,
+  onSelect,
+}: {
+  account: AccountRow;
+  viewerRole: Role;
+  onSelect: (kind: DialogKind) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const locked = account.role === "admin_supervisor";
+  // Supervisors and developers are never changed here; developers also can't touch other developers.
+  const locked = !canModifyAccount(viewerRole, account.role);
+  const isDeveloper = account.role === "admin_developer";
+  const canGiveDeveloper = canGrantRole(viewerRole, "admin_developer");
 
   useEffect(() => {
     if (!open) return;
@@ -153,7 +187,7 @@ function ActionsMenu({ account, onSelect }: { account: AccountRow; onSelect: (ki
         type="button"
         onClick={toggle}
         disabled={locked}
-        title={locked ? "Admin supervisors can't be modified" : undefined}
+        title={locked ? "You can't modify this account" : undefined}
         aria-label={`Actions for ${account.name}`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -169,14 +203,26 @@ function ActionsMenu({ account, onSelect }: { account: AccountRow; onSelect: (ki
           style={{ top: pos.top, right: pos.right }}
           className="fixed z-50 w-52 overflow-hidden rounded-lg border border-gray-200 bg-white text-left text-sm shadow-lg"
         >
-          {account.role === "admin_liaison" ? (
-            <button type="button" role="menuitem" className={item} onClick={() => pick("revoke")}>
-              Revoke Admin-Liaison
+          {!isDeveloper &&
+            (account.role === "admin_liaison" ? (
+              <button type="button" role="menuitem" className={item} onClick={() => pick("revoke")}>
+                Revoke Admin-Liaison
+              </button>
+            ) : (
+              <button type="button" role="menuitem" className={item} onClick={() => pick("grant")}>
+                Give Admin-Liaison
+              </button>
+            ))}
+          {isDeveloper ? (
+            <button type="button" role="menuitem" className={item} onClick={() => pick("revokeDev")}>
+              Revoke Admin-Developer
             </button>
           ) : (
-            <button type="button" role="menuitem" className={item} onClick={() => pick("grant")}>
-              Give Admin-Liaison
-            </button>
+            canGiveDeveloper && (
+              <button type="button" role="menuitem" className={item} onClick={() => pick("grantDev")}>
+                Give Admin-Developer
+              </button>
+            )
           )}
           {account.suspended ? (
             <button type="button" role="menuitem" className={item} onClick={() => pick("unsuspend")}>

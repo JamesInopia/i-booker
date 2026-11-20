@@ -8,6 +8,7 @@ import {
   DAY_NAMES,
   addDays,
   addMonths,
+  longDateLabel,
   monthKey,
   shortMonthDay,
   startOfWeek,
@@ -43,11 +44,14 @@ export function CalendarView({
   marks,
   symbols,
   availability,
+  canMark = true,
 }: {
   month: string;
   marks: DayMarks;
   symbols: DaySymbols;
   availability: DayAvailabilities;
+  /** False for people who may look but not change the calendar (developers). */
+  canMark?: boolean;
 }) {
   const today = todayISO();
 
@@ -81,18 +85,24 @@ export function CalendarView({
         month={month}
         today={today}
         getMark={(day) => markFor(day, marks)}
-        renderDay={(day, className, { isToday, mark }) => (
-          <DayMenu
-            date={day}
-            mark={mark}
-            weekHref={`/admin-dashboard?tab=timeline&view=b&week=${startOfWeek(day)}`}
-            className={className}
-          >
+        renderDay={(day, className, { isToday, mark }) => {
+          const weekHref = `/admin-dashboard?tab=timeline&view=b&week=${startOfWeek(day)}`;
+          const content = (
             <span aria-current={isToday ? "date" : undefined}>
               <DayContent day={day} mark={mark} symbols={symbols[day]} availability={availability[day] ?? null} />
             </span>
-          </DayMenu>
-        )}
+          );
+          // View only: a day just opens its week, there is no menu to mark it.
+          return canMark ? (
+            <DayMenu date={day} mark={mark} weekHref={weekHref} className={className}>
+              {content}
+            </DayMenu>
+          ) : (
+            <Link href={weekHref} className={className} aria-label={`${longDateLabel(day)}: view week`}>
+              {content}
+            </Link>
+          );
+        }}
       />
     </div>
   );
@@ -104,12 +114,14 @@ export function TimetableView({
   marks,
   classes,
   bookings,
+  canMark = true,
 }: {
   sunday: string;
   rooms: RoomListing[];
   marks: DayMarks;
   classes: WeekClass[];
   bookings: WeekBooking[];
+  canMark?: boolean;
 }) {
   const today = todayISO();
   const days = weekDays(sunday);
@@ -191,21 +203,32 @@ export function TimetableView({
                     aria-current={day === today ? "date" : undefined}
                   >
                     {/* Clicking a day header opens the same menu as the calendar (minus "View week"). */}
-                    <DayMenu
-                      date={day}
-                      mark={mark}
-                      className="block w-full cursor-pointer select-none p-1 hover:brightness-95"
-                    >
-                      <div>{shortMonthDay(day)}</div>
-                      <div className="font-normal">
-                        {DAY_NAMES[i].toUpperCase()}
-                      </div>
-                      {mark && (
-                        <div className="mt-0.5 truncate text-[10px] font-medium">
-                          {mark.label}
-                        </div>
-                      )}
-                    </DayMenu>
+                    {(() => {
+                      const header = (
+                        <>
+                          <div>{shortMonthDay(day)}</div>
+                          <div className="font-normal">
+                            {DAY_NAMES[i].toUpperCase()}
+                          </div>
+                          {mark && (
+                            <div className="mt-0.5 truncate text-[10px] font-medium">
+                              {mark.label}
+                            </div>
+                          )}
+                        </>
+                      );
+                      return canMark ? (
+                        <DayMenu
+                          date={day}
+                          mark={mark}
+                          className="block w-full cursor-pointer select-none p-1 hover:brightness-95"
+                        >
+                          {header}
+                        </DayMenu>
+                      ) : (
+                        <div className="block w-full select-none p-1">{header}</div>
+                      );
+                    })()}
                   </th>
                 );
               })}

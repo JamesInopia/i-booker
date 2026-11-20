@@ -4,7 +4,7 @@ import { roleAssignments, user } from "@/db/schema";
 import type { Role } from "@/lib/session";
 import type { AccountRow } from "./types";
 
-const RANK: Record<Role, number> = { admin_supervisor: 0, admin_liaison: 1, requestor: 2 };
+const RANK: Record<Role, number> = { admin_supervisor: 0, admin_developer: 1, admin_liaison: 2, requestor: 3 };
 
 export function resolveRole(assigned: Role | undefined): Role {
   return assigned ?? "requestor";

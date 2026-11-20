@@ -18,8 +18,10 @@ function Tabs({ groups }: { groups: PageTabGroup[] }) {
   if (!group) return null;
 
   const requested = searchParams.get("tab");
+  // On a tab they can open but isn't in their tab bar, none of the visible tabs is highlighted.
   const activeId =
-    group.tabs.find((t) => t.id === requested)?.id ?? group.tabs[0].id;
+    group.tabs.find((t) => t.id === requested)?.id ??
+    (requested && group.hidden.includes(requested) ? null : group.tabs[0].id);
 
   return (
     <nav aria-label="Page tabs" className="flex gap-12">

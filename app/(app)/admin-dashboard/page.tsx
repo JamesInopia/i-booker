@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/auth";
 import { resolveTab } from "@/lib/nav";
-import { ADMIN_ROLES } from "@/lib/session";
+import { ADMIN_ROLES, DASHBOARD_ROLES } from "@/lib/session";
 import { listAllRooms } from "../booking/queries";
 import { Legend } from "../calendar/calendar-parts";
 import { addDays, monthGrid, parseDate, parseMonth, startOfWeek, todayISO, weekdayOf } from "../calendar/dates";
@@ -9,6 +9,7 @@ import { getDayMarks } from "../calendar/day-marks-queries";
 import { getDayAvailability } from "../calendar/day-availability-queries";
 import { getDaySymbols } from "../calendar/day-symbols-queries";
 import { AccountsContent } from "./accounts/accounts-content";
+import { ReportsContent } from "./reports/reports-content";
 import { ReviewContent } from "./review/review-content";
 import { listWeekBookings, listWeekClasses } from "./schedule/queries";
 import { ScheduleContent } from "./schedule/schedule-content";
@@ -26,6 +27,9 @@ type Params = {
   show?: string | string[];
   q?: string | string[];
   request?: string | string[];
+  report?: string | string[];
+  nature?: string | string[];
+  priority?: string | string[];
   term?: string | string[];
 };
 
@@ -33,17 +37,20 @@ const first = (v?: string | string[]) => (Array.isArray(v) ? v[0] : v);
 
 export default async function AdminDashboardPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams;
-  const user = await requireRole(...ADMIN_ROLES);
+  const user = await requireRole(...DASHBOARD_ROLES);
   const tab = resolveTab("/admin-dashboard", user.role, first(params.tab));
 
+  // Developers can look at the timeline but don't run bookings: no marking days, no request totals.
+  const runsBookings = ADMIN_ROLES.includes(user.role);
+
   const inReviewDetail = tab.id === "review" && Boolean(first(params.request));
-  const showSummary = TABS_WITH_SUMMARY.includes(tab.id) && !inReviewDetail;
+  const showSummary = TABS_WITH_SUMMARY.includes(tab.id) && !inReviewDetail && runsBookings;
 
   return (
     <main className="space-y-4 px-16 pb-8 pt-2">
       {showSummary && <SummaryCounts />}
       {tab.id === "timeline" ? (
-        <TimelineContent params={params} />
+        <TimelineContent params={params} canMark={runsBookings} />
       ) : tab.id === "review" ? (
         <ReviewContent
           role={user.role}
@@ -53,6 +60,16 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
         <ScheduleContent params={{ term: first(params.term) }} />
       ) : tab.id === "accounts" ? (
         <AccountsContent params={{ show: first(params.show), q: first(params.q) }} />
+      ) : tab.id === "reports" ? (
+        <ReportsContent
+          params={{
+            sort: first(params.sort),
+            priority: first(params.priority),
+            nature: first(params.nature),
+            q: first(params.q),
+            report: first(params.report),
+          }}
+        />
       ) : (
         <TabHeading label={tab.label} />
       )}
@@ -60,7 +77,7 @@ export default async function AdminDashboardPage({ searchParams }: { searchParam
   );
 }
 
-async function TimelineContent({ params }: { params: Params }) {
+async function TimelineContent({ params, canMark }: { params: Params; canMark: boolean }) {
   const isTimetable = first(params.view) === "b";
   const today = todayISO();
 
@@ -86,7 +103,7 @@ async function TimelineContent({ params }: { params: Params }) {
     return (
       <div className="flex flex-col gap-3">
         <Legend compact showAvailability />
-        <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} bookings={bookings} />
+        <TimetableView sunday={sunday} rooms={rooms} marks={marks} classes={classes} bookings={bookings} canMark={canMark} />
       </div>
     );
   }
@@ -94,7 +111,7 @@ async function TimelineContent({ params }: { params: Params }) {
   return (
     <div className="flex flex-col gap-4 lg:flex-row">
       <div className="min-w-0 flex-1">
-        <CalendarView month={month} marks={marks} symbols={symbols} availability={availability} />
+        <CalendarView month={month} marks={marks} symbols={symbols} availability={availability} canMark={canMark} />
       </div>
       <Legend showAvailability />
     </div>
