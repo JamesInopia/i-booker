@@ -8,8 +8,10 @@ import {
   reservationSlots,
   rooms,
 } from "@/db/schema";
+import AccommodationInvites from "./accommodation-invites";
 import BookingTable from "./booking-table";
 import type { Booking } from "@/lib/definitions";
+import { getAccommodationInvites } from "@/lib/accommodation";
 import { requireUser } from "@/lib/auth";
 
 const formatDate = (value: string | Date) =>
@@ -30,6 +32,7 @@ const formatTime = (t: string) => {
 
 export default async function BookingStatusPage() {
   const user = await requireUser();
+  const invites = await getAccommodationInvites(user.id);
 
   const rows = await db
     .select({
@@ -88,6 +91,8 @@ export default async function BookingStatusPage() {
   return (
     <main className="box-border flex flex-col h-screen px-8 py-5">
       <h1 className="text-4xl font-bold pb-5">Reservation Status</h1>
+
+      <AccommodationInvites invites={invites} />
 
       <BookingTable bookings={bookings} />
     </main>

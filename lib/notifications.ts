@@ -19,29 +19,29 @@ import type {
 import { REPORT_NATURES } from "./report";
 import type { Role } from "./session";
 
-type Actor = { id: string; name: string; email: string };
+export type Actor = { id: string; name: string; email: string };
 
 const LIST_LIMIT = 30;
 const PING_COOLDOWN_MS = 10 * 60 * 1000;
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-const formatDay = (iso: string) => {
+export const formatDay = (iso: string) => {
   const [y, m, d] = iso.split("-").map(Number);
   return `${MONTHS[m - 1]} ${d}, ${y}`;
 };
-const formatClock = (t: string) => {
+export const formatClock = (t: string) => {
   const [h, m] = t.split(":").map(Number);
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 };
-const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
-const actorName = (a: Actor) => a.name || a.email;
+export const clip = (s: string, n = 120) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+export const actorName = (a: Actor) => a.name || a.email;
 
 // ---------------------------------------------------------------------------
 // Links: where each notification takes the person
 // ---------------------------------------------------------------------------
-const adminReviewHref = (requestId: number) => `/admin-dashboard?tab=review&request=${requestId}`;
+export const adminReviewHref = (requestId: number) => `/admin-dashboard?tab=review&request=${requestId}`;
 const myBookingHref = (requestId: number) => `/booking-status/${requestId}`; // detail page: approved + rejected only
-const myBookingsListHref = "/booking-status"; // cancelled bookings have no detail page, so link to the list
+export const myBookingsListHref = "/booking-status"; // cancelled bookings have no detail page, so link to the list
 const adminReportHref = (reportId: number) => `/admin-dashboard?tab=reports&report=${reportId}`;
 const reportLabel = (nature: string) => REPORT_NATURES.find((n) => n.value === nature)?.label ?? "problem";
 
@@ -111,7 +111,7 @@ function describe(i: RequestInfo): string {
   return `${i.room} on ${formatDay(i.dateISO)}, ${formatClock(i.start)} - ${formatClock(i.end)}${more}`;
 }
 
-async function userIdsWithRole(role: Role): Promise<string[]> {
+export async function userIdsWithRole(role: Role): Promise<string[]> {
   const rows = await db
     .select({ id: authUsers.id })
     .from(roleAssignments)
@@ -123,7 +123,7 @@ async function userIdsWithRole(role: Role): Promise<string[]> {
 // ---------------------------------------------------------------------------
 // Creating notifications. Best-effort: a failure here must never fail the booking action.
 // ---------------------------------------------------------------------------
-type NewNotification = {
+export type NewNotification = {
   userId: string;
   type: NotificationType;
   message: string;
@@ -142,6 +142,11 @@ async function safely(label: string, fn: () => Promise<void>): Promise<void> {
   } catch (err) {
     console.error(`${label} failed:`, err);
   }
+}
+
+/** Best-effort insert for notification types owned by other modules (see lib/accommodation.ts). */
+export function createNotifications(items: NewNotification[]) {
+  return safely("createNotifications", () => insertAll(items));
 }
 
 /** Someone reported a problem -> every developer (except the reporter) is told. Supervisors are not. */

@@ -12,6 +12,7 @@ import {
   FiPlusCircle,
   FiSend,
   FiSlash,
+  FiUsers,
   FiTrash2,
   FiXCircle,
 } from "react-icons/fi";
@@ -38,6 +39,11 @@ const TYPE_STYLE: Record<NotificationType, { icon: ReactNode; tone: string }> = 
   review_ping: { icon: <FiAlertCircle />, tone: "bg-yellow-100 text-yellow-700" },
   report_submitted: { icon: <FiFlag />, tone: "bg-purple-100 text-purple-700" },
   report_resolved: { icon: <FiCheckCircle />, tone: "bg-green-100 text-green-700" },
+  accommodation_available: { icon: <FiUsers />, tone: "bg-teal-100 text-teal-700" },
+  accommodation_proposed: { icon: <FiUsers />, tone: "bg-blue-100 text-blue-700" },
+  accommodation_accepted: { icon: <FiCheckCircle />, tone: "bg-green-100 text-green-700" },
+  accommodation_declined: { icon: <FiXCircle />, tone: "bg-red-100 text-red-600" },
+  accommodation_withdrawn: { icon: <FiSlash />, tone: "bg-gray-200 text-gray-600" },
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];

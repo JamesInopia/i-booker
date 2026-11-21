@@ -137,6 +137,42 @@ export const reservationSlotRooms = pgTable(
   (t) => [primaryKey({ columns: [t.slotId, t.roomId] })],
 );
 
+/**
+ * Two unapproved requests sharing one room. The host is the earlier request, the guest the later one.
+ * Both requestors must accept before status becomes "accepted" (see lib/accommodation.ts).
+ */
+export const accommodations = pgTable(
+  "accommodation",
+  {
+    accommodateId: integer("accommodate_id")
+      .primaryKey()
+      .generatedByDefaultAsIdentity(),
+    guestSlotId: integer("guest_slot_id")
+      .notNull()
+      .references(() => reservationSlots.slotId, { onDelete: "cascade" }),
+    hostSlotId: integer("host_slot_id")
+      .notNull()
+      .references(() => reservationSlots.slotId, { onDelete: "cascade" }),
+    remarks: text("remarks"),
+    status: text("status").notNull().default("proposed"),
+    proposedBy: text("proposed_by").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    hostResponse: text("host_response"),
+    guestResponse: text("guest_response"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("accommodation_guest_slot_id_idx").on(t.guestSlotId),
+    index("accommodation_host_slot_id_idx").on(t.hostSlotId),
+    index("accommodation_status_idx").on(t.status),
+    check("accommodation_distinct_chk", sql`${t.guestSlotId} <> ${t.hostSlotId}`),
+  ],
+);
+
 export const notifications = pgTable(
   "notification",
   {

@@ -1,5 +1,6 @@
 "use server";
 import { redirect } from "next/navigation";
+import { notifyAccommodationPossible, prepareEditWithdrawal } from "@/lib/accommodation";
 import { requireUser } from "@/lib/auth";
 import { notifyBookingSubmitted } from "@/lib/notifications";
 import { readDraft, clearDraft, writeDraft } from "./draft";
@@ -248,9 +249,12 @@ export async function submitBooking(_prev: FormState): Promise<FormState> {
   const requestor = user.name || email;
 
   let createdId: number | null = null;
+  let tellPartners: () => Promise<void> = async () => {};
 
   try {
     if (draft.requestId) {
+      // Editing replaces the schedule, which ends any shared-room arrangement. Capture who to tell first.
+      tellPartners = await prepareEditWithdrawal(Number(draft.requestId));
       await updateRequest({
         requestId: Number(draft.requestId),
         email,
@@ -276,6 +280,10 @@ export async function submitBooking(_prev: FormState): Promise<FormState> {
   // Liaisons are told about new bookings so they can review them. The requestor
   // is deliberately not notified of their own submission.
   if (createdId !== null) await notifyBookingSubmitted(createdId, user);
+
+  // If the (new or edited) booking overlaps others that could share the room, tell the liaisons.
+  await tellPartners();
+  await notifyAccommodationPossible(createdId ?? Number(draft.requestId), user);
 
   return { error: null, submitted: true };
 }

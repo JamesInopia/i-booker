@@ -1,3 +1,4 @@
+import { getAccommodationPanel } from "@/lib/accommodation";
 import type { Role } from "@/lib/session";
 import { applyQuery, parseQuery, reviewHref } from "./filters";
 import { getReviewBookings } from "./queries";
@@ -43,10 +44,13 @@ export async function ReviewContent({
       label: `${b.purpose} · ${scheduleSummary(b)} · ${roomSummary(b)}`,
     }));
 
+    const accommodation = await getAccommodationPanel(current.id);
+
     return (
       <ReviewDetail
         key={current.id}
         booking={current}
+        accommodation={accommodation}
         role={role}
         backHref={reviewHref(query)}
         options={options}

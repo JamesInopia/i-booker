@@ -12,7 +12,9 @@ import {
   sendForApproval,
 } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
+import { AccommodationPanel } from "./accommodation-panel";
 import { ReasonDialog } from "./reason-dialog";
+import type { AccommodationPanelData } from "@/lib/accommodation-rules";
 import { isOpen, STATUS_LABEL, STATUS_TEXT, type ReviewBooking } from "./types";
 import type { Role } from "@/lib/session";
 import { canPrint } from "@/lib/booking-status";
@@ -30,11 +32,13 @@ const btnDangerOutline = `${btn} border border-red-600 bg-container text-red-600
 
 export function ReviewDetail({
   booking: b,
+  accommodation,
   role,
   backHref,
   options,
 }: {
   booking: ReviewBooking;
+  accommodation: AccommodationPanelData;
   role: Role;
   backHref: string;
   options: ScrollerOption[];
@@ -140,6 +144,11 @@ export function ReviewDetail({
             )}
           </div>
         )}
+
+        <AccommodationPanel
+          panel={accommodation}
+          canManage={role === "admin_liaison" && b.status === "pending"}
+        />
 
         <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
           {(waitingNote || pingNote) && (
@@ -247,7 +256,7 @@ export function ReviewDetail({
           title={
             unreviewed ? "Approve without review?" : "Approve this request?"
           }
-          description="The room will be reserved for the requester."
+          description="The room will be reserved for the requester. Other unapproved bookings for the same room and time will be rejected, unless they agreed to share it."
           warning={
             unreviewed
               ? "This request hasn't been reviewed by the Admin Liaison yet. Approving it now skips that review."

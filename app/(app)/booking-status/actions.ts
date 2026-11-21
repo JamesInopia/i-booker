@@ -4,6 +4,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { reservationRequests, user as authUsers } from "@/db/schema";
+import { answerAccommodation, withdrawAccommodationsFor } from "@/lib/accommodation";
 import { requireUser } from "@/lib/auth";
 
 export async function cancelRequest(requestId: number, reason: string) {
@@ -50,6 +51,22 @@ export async function cancelRequest(requestId: number, reason: string) {
       ),
     );
 
+  await withdrawAccommodationsFor([requestId], "the other booking was cancelled");
+
   revalidatePath("/booking-status");
   return { success: true };
+}
+
+/** A requestor accepts or declines sharing their room with another booking. Both must accept. */
+export async function respondToAccommodation(
+  accommodateId: number,
+  accept: boolean,
+): Promise<{ error?: string; success?: true }> {
+  const user = await requireUser();
+  if (!Number.isInteger(accommodateId) || accommodateId <= 0) return { error: "Invalid request." };
+
+  const result = await answerAccommodation(user, accommodateId, accept);
+  revalidatePath("/booking-status");
+  revalidatePath("/admin-dashboard");
+  return result.ok ? { success: true } : { error: result.error };
 }
