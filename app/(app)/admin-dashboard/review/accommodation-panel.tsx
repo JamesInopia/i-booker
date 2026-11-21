@@ -61,6 +61,11 @@ export function AccommodationPanel({
                 {l.partner.requestor}:{" "}
                 <span className={answerTone(l.partnerResponse)}>{answerText(l.partnerResponse)}</span>
               </p>
+              {l.status === "accepted" && (
+                <p className="mt-1 text-gray-600">
+                  Both bookings move together: sending for approval or approving one applies to the other.
+                </p>
+              )}
               {l.remarks && <p className="mt-1 text-gray-600">Note: {l.remarks}</p>}
               {canManage && l.withdrawable && (
                 <div className="mt-2">

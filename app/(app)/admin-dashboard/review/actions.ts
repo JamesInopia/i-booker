@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { reservationRequests, user as authUsers } from "@/db/schema";
 import {
   findApprovalConflicts,
+  getAccommodatedGroup,
   hasUnansweredProposal,
   proposeAccommodation,
   withdrawAccommodation,
@@ -69,37 +70,42 @@ export async function sendForApproval(
   const clean = cleanText(remarks, { required: false });
   if ("error" in clean) return fail(clean.error);
 
+  // Requests that agreed to share a room go to the supervisor together.
+  const group = await getAccommodatedGroup(requestId);
+
   // Accommodation is settled before a request goes to the supervisor.
-  if (await hasUnansweredProposal(requestId))
+  if (await hasUnansweredProposal(group))
     return fail(
       "A shared-room proposal for this request is still waiting for an answer. Wait for both requestors or withdraw it first.",
     );
 
+  const reviewedBy = await appUserId(user.email);
   const updated = await db
     .update(reservationRequests)
     .set({
       status: "reviewed",
-      reviewedBy: await appUserId(user.email),
+      reviewedBy,
       reviewedAt: new Date(),
       liaisonRemarks: clean.text || null,
     })
     .where(
       and(
-        eq(reservationRequests.requestId, requestId),
+        inArray(reservationRequests.requestId, group),
         eq(reservationRequests.status, "pending"),
       ),
     )
     .returning({ id: reservationRequests.requestId });
 
-  if (updated.length === 0)
+  const sentIds = updated.map((r) => r.id);
+  if (!sentIds.includes(requestId))
     return fail("This request is no longer in review. Refresh the page.");
-  await notifyBookingReviewed(requestId, user);
+  for (const id of sentIds) await notifyBookingReviewed(id, user);
   return done();
 }
 
 /**
- * Approving a booking REJECTS every other unapproved booking for the same room and time, except the
- * ones it has an accepted accommodation with (those stay and are approved on their own).
+ * Approving a booking approves every booking it shares a room with (accepted accommodation) at the same
+ * time, and REJECTS every other unapproved booking for the same room and time.
  */
 export async function approveRequest(
   requestId: number,
@@ -110,9 +116,13 @@ export async function approveRequest(
   const clean = cleanText(remarks, { required: false });
   if ("error" in clean) return fail(clean.error);
 
-  const conflictIds = await findApprovalConflicts(requestId);
+  const group = await getAccommodatedGroup(requestId);
+  const conflictIds = [
+    ...new Set((await Promise.all(group.map((id) => findApprovalConflicts(id)))).flat()),
+  ].filter((id) => !group.includes(id));
 
   let rejectedIds: number[] = [];
+  let approvedIds: number[] = [];
   try {
     await db.transaction(async (tx) => {
       const decidedBy = await appUserId(user.email);
@@ -127,12 +137,13 @@ export async function approveRequest(
         })
         .where(
           and(
-            eq(reservationRequests.requestId, requestId),
+            inArray(reservationRequests.requestId, group),
             inArray(reservationRequests.status, ["pending", "reviewed"]),
           ),
         )
         .returning({ id: reservationRequests.requestId });
-      if (updated.length === 0) throw new StatusMismatch();
+      approvedIds = updated.map((r) => r.id);
+      if (!approvedIds.includes(requestId)) throw new StatusMismatch();
 
       if (conflictIds.length > 0) {
         const rejected = await tx
@@ -159,7 +170,7 @@ export async function approveRequest(
     throw err;
   }
 
-  await notifyBookingApproved(requestId, user, clean.text);
+  for (const id of approvedIds) await notifyBookingApproved(id, user, clean.text);
   if (rejectedIds.length > 0) {
     await withdrawAccommodationsFor(rejectedIds, "the other booking was rejected", false);
     const infos = [...(await getRequestInfo(rejectedIds)).values()];

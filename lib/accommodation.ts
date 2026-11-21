@@ -642,8 +642,29 @@ export async function findApprovalConflicts(requestId: number): Promise<number[]
   return [...ids];
 }
 
-/** True while a proposal for this request is still waiting for a requestor's answer. */
-export async function hasUnansweredProposal(requestId: number): Promise<boolean> {
-  const rows = await liveRowsOfRequests([requestId]);
+/** True while a proposal for any of these requests is still waiting for a requestor's answer. */
+export async function hasUnansweredProposal(requestIds: number[]): Promise<boolean> {
+  const rows = await liveRowsOfRequests(requestIds);
   return rows.some((r) => r.status === "proposed");
+}
+
+/**
+ * The request plus every request it shares a room with through an ACCEPTED accommodation.
+ * They move through review together: sent for approval together, approved together.
+ */
+export async function getAccommodatedGroup(requestId: number): Promise<number[]> {
+  const group = new Set([requestId]);
+  let frontier = [requestId];
+  while (frontier.length > 0) {
+    const rows = (await liveRowsOfRequests(frontier)).filter((r) => r.status === "accepted");
+    const slotIds = rows.flatMap((r) => [r.hostSlotId, r.guestSlotId]);
+    if (slotIds.length === 0) break;
+    const found = await db
+      .select({ id: reservationSlots.requestId })
+      .from(reservationSlots)
+      .where(inArray(reservationSlots.slotId, slotIds));
+    frontier = [...new Set(found.map((r) => r.id))].filter((id) => !group.has(id));
+    for (const id of frontier) group.add(id);
+  }
+  return [...group];
 }
