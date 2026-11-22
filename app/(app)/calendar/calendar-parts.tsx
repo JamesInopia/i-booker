@@ -109,24 +109,24 @@ export function SymbolDots({
     .filter(Boolean)
     .join(", ");
   return (
-    <span className="absolute right-1 top-1 flex gap-0.5" title={title}>
+    <span className="absolute right-1 top-1 flex max-w-full flex-wrap justify-end gap-1" title={title}>
       {availability && (
         <span
           role="img"
           aria-label={AVAILABILITY_LABEL[availability]}
-          className={`h-3.5 w-3.5 rounded-full ring-1 ring-white ${AVAILABILITY_DOT[availability]}`}
+          className={`h-5 w-5 rounded-full ring-1 ring-white @[9rem]:h-6 @[9rem]:w-6 ${AVAILABILITY_DOT[availability]}`}
         />
       )}
       {shown.map((s) =>
         s.icon ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={`${s.id}-${s.icon}`} src={s.icon} alt="" aria-hidden className="h-4 w-4 rounded-full" />
+          <img key={`${s.id}-${s.icon}`} src={s.icon} alt="" aria-hidden className="h-5 w-5 rounded-full @[9rem]:h-6 @[9rem]:w-6" />
         ) : (
-          <span key={s.id} aria-hidden className="h-3.5 w-3.5 rounded-full ring-1 ring-white" style={{ backgroundColor: s.color }} />
+          <span key={s.id} aria-hidden className="h-5 w-5 rounded-full ring-1 ring-white @[9rem]:h-6 @[9rem]:w-6" style={{ backgroundColor: s.color }} />
         ),
       )}
       {extra > 0 && (
-        <span aria-hidden className="grid h-3.5 min-w-3.5 place-items-center rounded-full bg-neutral-500 px-0.5 text-[9px] font-bold leading-none text-white">
+        <span aria-hidden className="grid h-5 min-w-5 place-items-center rounded-full bg-neutral-500 px-0.5 text-[10px] font-bold leading-none text-white @[9rem]:h-6 @[9rem]:min-w-6">
           +{extra}
         </span>
       )}
