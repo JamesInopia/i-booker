@@ -17,6 +17,9 @@ export async function GET() {
     return Response.json({ displaced: true }, { status: 409 });
   }
 
+  // Transient DB/network error: not a logout. The watcher ignores this and polls again.
+  if (state.kind === "unavailable") return Response.json({}, { status: 503 });
+
   if (state.kind === "anonymous") return Response.json({}, { status: 401 });
 
   const rotated = await auth.api

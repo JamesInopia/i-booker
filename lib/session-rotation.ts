@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gt, lt, ne } from "drizzle-orm";
+import { and, desc, eq, gt, isNull, lt, ne } from "drizzle-orm";
 import type { BetterAuthPlugin } from "better-auth";
 import { createAuthEndpoint, sessionMiddleware } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
@@ -50,7 +50,31 @@ export const sessionRotation = () =>
               ),
             )
             .returning({ id: sessionTable.id });
-          if (claimed.length === 0) return ctx.json({ status: "fresh" as RotateResult });
+          if (claimed.length === 0) {
+            // Already rotated away (or another request is rotating right now). If this request
+            // still carries the old token, the browser never received the new cookie (lost
+            // response, aborted navigation, sleep). Re-issue the successor so the login doesn't
+            // die when the grace period ends.
+            const [successor] = await db
+              .select()
+              .from(sessionTable)
+              .where(
+                and(
+                  eq(sessionTable.familyId, session.familyId),
+                  ne(sessionTable.id, session.id),
+                  isNull(sessionTable.revokedAt),
+                  gt(sessionTable.expiresAt, new Date(now)),
+                ),
+              )
+              .orderBy(desc(sessionTable.createdAt))
+              .limit(1);
+
+            if (successor && successor.createdAt.getTime() > new Date(session.createdAt).getTime()) {
+              await setSessionCookie(ctx, { session: successor as typeof session, user });
+              return ctx.json({ status: "rotated" as RotateResult });
+            }
+            return ctx.json({ status: "fresh" as RotateResult });
+          }
 
           let next;
           try {

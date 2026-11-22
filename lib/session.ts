@@ -50,6 +50,6 @@ export const SESSION_ROTATE_AFTER_MS = 3 * 60 * 1000;
 /** The previous token keeps working this long after a rotation, so in-flight requests don't fail. */
 export const SESSION_ROTATE_GRACE_MS = 60 * 1000;
 /** A login can never last longer than this, however much it is rotated. */
-export const SESSION_MAX_MS = 30 * 24 * 60 * 60 * 1000;
+export const SESSION_MAX_MS = 7 * 24 * 60 * 60 * 1000;
 /** How often an open page asks the server whether it is still the active device. */
 export const SESSION_POLL_MS = 15 * 1000;

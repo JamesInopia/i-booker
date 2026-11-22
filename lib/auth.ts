@@ -21,14 +21,18 @@ export type CurrentUser = {
 
 export type AuthState =
   | { kind: "anonymous" }
+  | { kind: "unavailable" }
   | { kind: "suspended" }
   | { kind: "displaced" }
   | { kind: "ok"; user: CurrentUser };
 
 export const getAuthState = cache(async (): Promise<AuthState> => {
-  const session = await auth.api
-    .getSession({ headers: await headers() })
-    .catch(() => null);
+  let session: Awaited<ReturnType<typeof auth.api.getSession>>;
+  try {
+    session = await auth.api.getSession({ headers: await headers() });
+  } catch {
+    return { kind: "unavailable" }; // a DB/network error is not a logout
+  }
   if (!session) return { kind: "anonymous" };
 
   // Another device logged in after this one: this login is no longer valid.
@@ -96,6 +100,8 @@ export async function requireUser(): Promise<CurrentUser> {
   const state = await getAuthState();
   if (state.kind === "suspended") redirect("/login?suspended=1");
   if (state.kind === "displaced") redirect("/login?displaced=1");
+  if (state.kind === "unavailable")
+    throw new Error("Could not verify your session. Please refresh.");
   if (state.kind !== "ok") redirect("/login");
   return state.user;
 }
