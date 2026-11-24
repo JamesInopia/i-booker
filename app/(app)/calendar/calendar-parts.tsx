@@ -52,7 +52,10 @@ export function MonthGrid({
   isDisabled,
   getMark,
   renderDay,
+  dense = false,
 }: {
+  /** Tighter gaps and smaller weekday headers below sm, for calendars that must fit a phone. */
+  dense?: boolean;
   month: string;
   today: string;
   selected?: string;
@@ -65,11 +68,11 @@ export function MonthGrid({
   ) => React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-7 gap-2 p-3">
+    <div className={`grid grid-cols-7 ${dense ? "gap-1 p-2 sm:gap-2 sm:p-3" : "gap-2 p-3"}`}>
       {DAY_SHORT.map((d) => (
         <div
           key={d}
-          className="rounded bg-blue-100 py-1 text-center text-sm font-semibold"
+          className={`rounded bg-blue-100 py-1 text-center font-semibold ${dense ? "text-xs sm:text-sm" : "text-sm"}`}
         >
           {d}
         </div>
@@ -109,20 +112,20 @@ export function SymbolDots({
     .filter(Boolean)
     .join(", ");
   return (
-    <span className="absolute right-1 top-1 flex max-w-full flex-wrap justify-end gap-1" title={title}>
+    <span className="absolute inset-x-0 bottom-0.5 flex max-w-full flex-wrap justify-center gap-0.5 @[3.5rem]:inset-x-auto @[3.5rem]:bottom-auto @[3.5rem]:right-1 @[3.5rem]:top-1 @[3.5rem]:justify-end @[3.5rem]:gap-1" title={title}>
       {availability && (
         <span
           role="img"
           aria-label={AVAILABILITY_LABEL[availability]}
-          className={`h-5 w-5 rounded-full ring-1 ring-white @[9rem]:h-6 @[9rem]:w-6 ${AVAILABILITY_DOT[availability]}`}
+          className={`h-3 w-3 rounded-full ring-1 ring-white @[3.5rem]:h-5 @[3.5rem]:w-5 @[9rem]:h-6 @[9rem]:w-6 ${AVAILABILITY_DOT[availability]}`}
         />
       )}
       {shown.map((s) =>
         s.icon ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={`${s.id}-${s.icon}`} src={s.icon} alt="" aria-hidden className="h-5 w-5 rounded-full @[9rem]:h-6 @[9rem]:w-6" />
+          <img key={`${s.id}-${s.icon}`} src={s.icon} alt="" aria-hidden className="h-3 w-3 rounded-full @[3.5rem]:h-5 @[3.5rem]:w-5 @[9rem]:h-6 @[9rem]:w-6" />
         ) : (
-          <span key={s.id} aria-hidden className="h-5 w-5 rounded-full ring-1 ring-white @[9rem]:h-6 @[9rem]:w-6" style={{ backgroundColor: s.color }} />
+          <span key={s.id} aria-hidden className="h-3 w-3 rounded-full ring-1 ring-white @[3.5rem]:h-5 @[3.5rem]:w-5 @[9rem]:h-6 @[9rem]:w-6" style={{ backgroundColor: s.color }} />
         ),
       )}
       {extra > 0 && (
@@ -154,7 +157,7 @@ export function DayContent({
       {showLabel && (
         <span
           title={mark.label}
-          className="absolute inset-0 flex items-center justify-center px-6 text-center text-[11px] font-semibold leading-tight @[9rem]:text-xs @[12rem]:text-sm"
+          className="absolute inset-0 flex items-end justify-center px-0.5 pb-0.5 text-center text-[8px] font-semibold leading-tight @[4.5rem]:items-center @[4.5rem]:px-6 @[4.5rem]:pb-0 @[4.5rem]:text-[11px] @[9rem]:text-xs @[12rem]:text-sm"
         >
           <span className="line-clamp-3 [overflow-wrap:anywhere]">
             {mark.label}
@@ -171,13 +174,22 @@ function BookingSymbolIcon({ src }: { src: string }) {
 }
 
 /** Availability entries, rendered as extra items in the first legend list (after "No Booking"). */
-function AvailabilityItems({ dotBox = false, wrap = false }: { dotBox?: boolean; wrap?: boolean }) {
+function AvailabilityItems({
+  dotBox = false,
+  wrap = false,
+  phoneWrap = false,
+}: {
+  dotBox?: boolean;
+  wrap?: boolean;
+  /** Lets the text wrap below sm (for the two-column legend on phones) but keeps it on one line from sm up. */
+  phoneWrap?: boolean;
+}) {
   return (
     <>
       {(Object.keys(AVAILABILITY_LABEL) as DayAvailability[]).map((k) => {
         const dot = <span aria-hidden className={`h-3 w-3 shrink-0 rounded-full ${AVAILABILITY_DOT[k]}`} />;
         return (
-          <li key={k} className={`flex items-center gap-2 ${wrap ? "" : "whitespace-nowrap"}`}>
+          <li key={k} className={`flex items-center gap-2 ${wrap ? "" : phoneWrap ? "sm:whitespace-nowrap" : "whitespace-nowrap"}`}>
             {dotBox ? <span className="grid h-4 w-4 shrink-0 place-items-center">{dot}</span> : dot}
             {AVAILABILITY_LABEL[k]}
           </li>
@@ -247,14 +259,19 @@ export function Legend({
           : "w-full rounded-lg bg-container p-4 shadow-sm lg:w-64 lg:shrink-0"
       }
     >
+      {/* Horizontal: one wrapping strip from sm up. On phones it becomes a tidy two-column grid. */}
       <div
         className={
-          horizontal ? "flex flex-wrap items-center gap-x-6 gap-y-3" : ""
+          horizontal
+            ? "sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-3"
+            : ""
         }
       >
         <h3
           className={
-            horizontal ? "shrink-0 text-lg font-bold" : "text-lg font-bold"
+            horizontal
+              ? "shrink-0 text-base font-bold sm:text-lg"
+              : "text-lg font-bold"
           }
         >
           Legend
@@ -263,14 +280,14 @@ export function Legend({
         <ul
           className={
             horizontal
-              ? "flex flex-wrap items-center justify-between gap-x-6 gap-y-2 text-sm"
+              ? "mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-sm sm:mt-0 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-6"
               : "mt-3 space-y-2 text-sm"
           }
         >
           {MARK_OPTIONS.map((o) => (
             <li
               key={o.kind}
-              className={`flex items-center gap-2 ${horizontal ? "whitespace-nowrap" : ""}`}
+              className={`flex items-center gap-2 ${horizontal ? "sm:whitespace-nowrap" : ""}`}
             >
               <span
                 aria-hidden
@@ -281,14 +298,14 @@ export function Legend({
               {o.label}
             </li>
           ))}
-          {showAvailability && <AvailabilityItems wrap={!horizontal} />}
+          {showAvailability && <AvailabilityItems wrap={!horizontal} phoneWrap={horizontal} />}
         </ul>
 
         <ul
           aria-label="Approved bookings"
           className={
             horizontal
-              ? "flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"
+              ? "mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t border-neutral-200 pt-3 text-sm sm:mt-0 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 sm:border-0 sm:pt-0"
               : "mt-4 space-y-2 border-t border-neutral-200 pt-4 text-sm"
           }
         >

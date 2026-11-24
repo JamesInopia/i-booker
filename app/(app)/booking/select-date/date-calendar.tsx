@@ -71,6 +71,7 @@ export function DateCalendar({
       </div>
 
       <MonthGrid
+        dense
         month={month}
         today={today}
         selected={selected}
@@ -101,7 +102,7 @@ export function DateCalendar({
                   ? AVAILABILITY_LABEL[availability[day]]
                   : undefined
             }
-            className={`${className} !h-[64px] !min-h-0 !p-2 ${busy && !disabled ? "cursor-progress" : ""}`}
+            className={`${className} !h-12 !min-h-0 !p-1 sm:!h-14 sm:!p-1.5 md:!h-[64px] md:!p-2 ${busy && !disabled ? "cursor-progress" : ""}`}
           >
             <DayContent
               day={day}

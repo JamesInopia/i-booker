@@ -31,6 +31,11 @@ function writeSeen(id: string) {
 
 function findTarget(selector: string): HTMLElement | null {
   for (const el of document.querySelectorAll<HTMLElement>(selector)) {
+    // Below lg the sidebar is a slide-in drawer (position: fixed) that is closed while the tour runs,
+    // so anything inside it is off-screen. When it is docked (sticky) its items are fair game.
+    const drawer = el.closest<HTMLElement>("[data-nav-drawer]");
+    if (drawer && getComputedStyle(drawer).position === "fixed") continue;
+
     const r = el.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) return el;
   }
@@ -242,7 +247,7 @@ function TourOverlay({ tour, onClose }: { tour: Tour; onClose: () => void }) {
 }
 
 /** The sidebar's Help button. On demand, it walks the person through the page they're on. */
-export function HelpButton() {
+export function HelpButton({ onStart }: { onStart?: () => void }) {
   const pathname = usePathname();
   const search = useSearchParams();
   const tour = useMemo(() => tourFor(pathname, search), [pathname, search]);
@@ -267,6 +272,7 @@ export function HelpButton() {
     writeSeen(tour.id);
     setSeen(true);
     setOpenFor(key);
+    onStart?.();
   };
 
   return (

@@ -3,6 +3,7 @@ import { NAV_ITEMS, tabGroupsFor } from "@/lib/nav";
 import { getNotifications } from "@/lib/notifications";
 import { LoadingProvider } from "../components/loading-provider";
 import { Header } from "./header";
+import { NavDrawerProvider } from "./nav-drawer";
 import { Sidebar } from "./sidebar";
 import { SessionWatcher } from "./session-watcher";
 
@@ -19,6 +20,7 @@ export default async function AppLayout({
 
   return (
     <LoadingProvider>
+    <NavDrawerProvider>
     <div className="flex min-h-screen">
       <SessionWatcher />
       <Sidebar items={items} />
@@ -31,6 +33,7 @@ export default async function AppLayout({
         <div className="flex-1">{children}</div>
       </div>
     </div>
+    </NavDrawerProvider>
     </LoadingProvider>
   );
 }

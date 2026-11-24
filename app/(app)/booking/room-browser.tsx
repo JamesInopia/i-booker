@@ -7,10 +7,13 @@ import { startBooking } from "./actions";
 import type { RoomListing } from "./rules";
 
 const PILL =
-  "w-full whitespace-nowrap rounded-full bg-accent-1 px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-6 disabled:text-accent-3/50 disabled:hover:brightness-100";
+  "w-full whitespace-nowrap rounded-full bg-accent-1 font-semibold text-white hover:brightness-110 disabled:cursor-not-allowed disabled:bg-accent-6 disabled:text-accent-3/50 disabled:hover:brightness-100";
 
 const MORE_INFO =
-  "w-full whitespace-nowrap rounded-full bg-accent-8 px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110";
+  "w-full whitespace-nowrap rounded-full bg-accent-8 font-semibold text-white hover:brightness-110";
+
+// Card buttons are a little smaller on phones, where each card is only half the screen wide.
+const CARD_BTN = "px-1 py-1.5 text-[11px] sm:px-3 sm:text-sm";
 
 const STATUS_LABEL: Record<string, string> = {
   maintenance: "Maintenance",
@@ -55,7 +58,7 @@ function PendingReport({ onChange }: { onChange: (pending: boolean) => void }) {
 
 function BookRoom({
   room,
-  className = PILL,
+  className = `${PILL} ${CARD_BTN}`,
   formClassName,
   onPendingChange,
 }: {
@@ -226,28 +229,37 @@ function RoomDetailsModal({
         booking ? "invisible" : ""
       }`}
     >
-      <div className="relative my-auto w-full max-w-3xl rounded-xl bg-container p-6 shadow-lg sm:p-8">
+      {/* Narrow on phones and tablets (one column); wide two-column card from lg. */}
+      <div className="relative my-auto w-full max-w-md rounded-xl bg-container p-5 shadow-lg sm:p-8 lg:max-w-3xl">
+        {/* Top-left on small screens (like the menu drawer's close button), top-right on lg+. */}
         <button
           ref={closeRef}
           type="button"
           onClick={onClose}
           aria-label="Close room details"
-          className="absolute right-4 top-4 grid h-9 w-9 place-items-center rounded-full text-2xl leading-none text-accent-3 hover:bg-accent-5"
+          className="absolute left-3 top-3 grid h-9 w-9 place-items-center rounded-full text-2xl leading-none text-accent-3 hover:bg-accent-5 sm:left-4 sm:top-4 lg:left-auto lg:right-4"
         >
           &times;
         </button>
 
         <h2
           id="room-details-title"
-          className="text-center text-3xl font-bold sm:text-4xl"
+          className="text-center text-2xl font-bold sm:text-3xl lg:text-4xl"
         >
           Room Details
         </h2>
 
-        <div className="mt-4 grid gap-6 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <div>
-            <RoomPhotoCarousel key={room.roomId} room={room} />
-            <dl className="mt-4 text-sm">
+        {/*
+          One column below lg, in this order: photos, name + description, capacity + prohibitions, Book Room.
+          The two wrappers use `contents` there so their children join the one column and can be reordered;
+          from lg up they are the real left and right columns again.
+        */}
+        <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:gap-6">
+          <div className="contents lg:block">
+            <div className="order-1">
+              <RoomPhotoCarousel key={room.roomId} room={room} />
+            </div>
+            <dl className="order-3 text-sm lg:mt-4">
               <dt className="text-xs font-bold">Max Capacity:</dt>
               <dd className="text-sm">{capacity(room)}</dd>
               <dt className="mt-3 text-xs font-bold">Prohibitions:</dt>
@@ -255,18 +267,18 @@ function RoomDetailsModal({
             </dl>
           </div>
 
-          <div className="flex flex-col">
-            <h3 className="text-lg font-bold">{room.name}</h3>
-            <dl className="mt-3">
+          <div className="contents lg:flex lg:flex-col">
+            <h3 className="order-2 text-lg font-bold">{room.name}</h3>
+            <dl className="order-2 lg:mt-3">
               <dt className="text-xs font-bold">Description</dt>
               <dd className="mt-1 text-sm">
                 {room.description || "No description yet."}
               </dd>
             </dl>
-            <div className="mt-auto pt-6">
+            <div className="order-4 pt-2 lg:mt-auto lg:pt-6">
               <BookRoom
                 room={room}
-                className={`${PILL} py-2.5 text-base`}
+                className={`${PILL} px-3 py-2.5 text-base`}
                 onPendingChange={setBooking}
               />
             </div>
@@ -291,7 +303,7 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
 
   return (
     <div>
-      <label data-tour="search" className="relative block max-w-xl">
+      <label data-tour="search" className="relative mx-auto block max-w-xl lg:mx-0">
         <span className="sr-only">Search for a room</span>
         <input
           type="search"
@@ -320,22 +332,22 @@ export function RoomBrowser({ rooms }: { rooms: RoomWithGallery[] }) {
           No rooms match &ldquo;{query.trim()}&rdquo;.
         </p>
       ) : (
-        <ul data-tour="room-grid" className="mt-5 grid grid-cols-2 gap-5 lg:grid-cols-3 2xl:grid-cols-4">
+        <ul data-tour="room-grid" className="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:gap-5 md:grid-cols-3 xl:grid-cols-4">
           {visible.map((room) => (
             <li
               key={room.roomId}
-              className="flex flex-col rounded-xl bg-container p-3 shadow-sm"
+              className="@container flex flex-col rounded-xl bg-container p-2 shadow-sm sm:p-3"
             >
               <Photo room={room} className="aspect-[4/3] w-full rounded-md" />
-              <h2 className="mt-2 text-base font-bold leading-tight">
+              <h2 className="mt-2 text-sm font-bold leading-tight sm:text-base">
                 {room.name}
               </h2>
-              <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+              <div className="mt-auto grid grid-cols-1 gap-1.5 pt-3 @[8.5rem]:grid-cols-2 sm:gap-2">
                 <button
                   type="button"
                   aria-haspopup="dialog"
                   onClick={() => setSelectedId(room.roomId)}
-                  className={MORE_INFO}
+                  className={`${MORE_INFO} ${CARD_BTN}`}
                 >
                   More Info
                 </button>

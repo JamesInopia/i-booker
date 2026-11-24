@@ -22,8 +22,9 @@ export const ARCHIVE_SORTS: SortOption[] = [
   { value: "requestor_asc", label: "Requestor Name: A -Z" },
 ];
 
+// 16px text on phones: smaller than that and iOS zooms the page in when a field is focused.
 const control =
-  "h-8 rounded-full border border-accent-6 bg-container px-3 text-xs outline-none focus:border-accent-1";
+  "h-10 min-w-0 rounded-full border border-accent-6 bg-container px-3 text-base outline-none focus:border-accent-1 sm:h-8 sm:text-xs";
 
 export function ListFilters({
   q,
@@ -47,13 +48,13 @@ export function ListFilters({
   sortOptions: SortOption[];
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-6">
-      <label className="flex flex-col gap-1 text-xs font-semibold">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:flex-wrap sm:items-end sm:gap-6">
+      <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold">
         Sort By
         <select
           value={sort}
           onChange={(e) => onSort(e.target.value as SortKey)}
-          className={`${control} w-56`}
+          className={`${control} sm:w-56`}
         >
           {sortOptions.map((o) => (
             <option key={o.value} value={o.value}>
@@ -63,12 +64,12 @@ export function ListFilters({
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-xs font-semiobold">
+      <label className="flex min-w-0 flex-col gap-1 text-xs font-semiobold">
         Show
         <select
           value={show}
           onChange={(e) => onShow(e.target.value)}
-          className={`${control} w-40`}
+          className={`${control} sm:w-40`}
         >
           <option value="all">All</option>
           {showOptions.map((o) => (
@@ -79,7 +80,7 @@ export function ListFilters({
         </select>
       </label>
 
-      <label className="ml-auto flex flex-col gap-1 text-xs font-0semibold">
+      <label className="order-first col-span-2 flex flex-col gap-1 text-xs font-0semibold sm:order-none sm:col-span-1 sm:ml-auto">
         Search
         <input
           type="search"
@@ -87,7 +88,7 @@ export function ListFilters({
           onChange={(e) => onQ(e.target.value)}
           maxLength={100}
           placeholder={placeholder}
-          className={`${control} w-60`}
+          className={`${control} sm:w-60`}
         />
       </label>
     </div>

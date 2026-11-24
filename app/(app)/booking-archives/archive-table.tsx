@@ -17,9 +17,13 @@ import {
 } from "@/app/components/list-filters";
 
 const BTN =
-  "rounded-lg px-6 py-2 font-semibold text-white hover:brightness-110";
-const TH = "border-l border-black px-3 py-3 text-lg font-bold";
+  "rounded-lg px-4 py-2 text-sm font-semibold text-white hover:brightness-110 sm:px-6 sm:text-base";
+const TH = "max-lg:whitespace-nowrap border-l border-black px-3 py-3 text-sm font-bold md:text-base xl:text-lg";
 const TD = "border-l border-black px-3 py-2";
+// Below lg the table keeps all its columns and scrolls sideways. The checkbox column stays pinned on the left and the
+// action menu on the right, so the row can always be selected and acted on.
+const PIN_L = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-white";
+const PIN_R = "max-lg:sticky max-lg:right-0 max-lg:z-10 max-lg:bg-white max-lg:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)]";
 
 export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -95,11 +99,11 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
         />
       </div>
 
-      <div data-tour="table" className="min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
-        <table className="min-w-full border-collapse text-center">
+      <div data-tour="table" className="@container min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
+        <table className="min-w-5xl border-collapse text-center lg:min-w-full">
           <thead>
             <tr className="border-b border-black">
-              <th className="w-12 px-3 py-3">
+              <th className={`w-12 px-3 py-3 ${PIN_L}`}>
                 <input
                   type="checkbox"
                   aria-label="Select All"
@@ -114,13 +118,13 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
               <th className={TH}>Date of Request</th>
               <th className={TH}>Scheduled Date</th>
               <th className={TH}>Status</th>
-              <th className={TH}>Action</th>
+              <th className={`${TH} ${PIN_R}`}>Action</th>
             </tr>
           </thead>
           <tbody>
             {shown.map((r) => (
               <tr key={r.id}>
-                <td className="px-3 py-2">
+                <td className={`px-3 py-2 ${PIN_L}`}>
                   <input
                     type="checkbox"
                     aria-label={`Select request ${r.id}`}
@@ -137,7 +141,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                 <td className={`${TD} font-semibold ${STATUS_TEXT[r.status]}`}>
                   {STATUS_LABEL[r.status]}
                 </td>
-                <td className={TD}>
+                <td className={`${TD} ${PIN_R}`}>
                   <RowMenu
                     id={r.id}
                     status={r.status}
@@ -153,9 +157,11 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
             {shown.length === 0 && (
               <tr>
                 <td colSpan={9} className="py-10 text-gray-500">
-                  {rows.length === 0
-                    ? "No archived requests at the moment..."
-                    : "No requests match your search"}
+                  <div className="sticky left-0 w-[100cqw]">
+                    {rows.length === 0
+                      ? "No archived requests at the moment..."
+                      : "No requests match your search"}
+                  </div>
                 </td>
               </tr>
             )}
@@ -163,10 +169,10 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
         </table>
       </div>
 
-      <div className="flex min-h-11 items-center justify-between">
+      <div className="flex min-h-11 flex-wrap items-center justify-between gap-3 pt-3 lg:pt-0">
         {chosen.length > 1 && (
           <>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap gap-3 sm:gap-4">
               <Link
                 href={`/booking-archives/view?ids=${chosen.join(",")}`}
                 className={`${BTN} bg-accent-1`}

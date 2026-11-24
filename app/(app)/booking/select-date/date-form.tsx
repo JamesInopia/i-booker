@@ -83,6 +83,16 @@ export function DateForm({
 
   const [loading, setLoading] = useState(false);
 
+  // Phones show step 1 as two screens (calendar, then times); md and up show both side by side and ignore this.
+  // Coming back with a date and times already chosen lands on the times, so Confirm is one tap away.
+  const [stage, setStage] = useState<"date" | "time">(
+    validInitialDate && initialBlocks.length > 0 ? "time" : "date",
+  );
+  const goTo = (next: "date" | "time") => {
+    setStage(next);
+    window.scrollTo({ top: 0 });
+  };
+
   useEffect(() => {
     if (!date || availability?.date === date) return;
 
@@ -192,6 +202,12 @@ export function DateForm({
       canConfirm={canConfirm}
       confirmWarning={date === min ? SAME_DAY_WARNING : undefined}
       buttonsLayout="under-calendar"
+      phone={{
+        stage,
+        canAdvance: Boolean(date),
+        onAdvance: () => goTo("time"),
+        onRetreat: () => goTo("date"),
+      }}
     >
       <input type="hidden" name="date" value={date} />
       <input type="hidden" name="blocks" value={blocks.join(",")} />
@@ -201,15 +217,16 @@ export function DateForm({
         message="You haven't confirmed your date and time yet. If you leave now, your selection will be lost."
       />
 
-      {/* LEGEND: Above calendar and time panel */}
-      <div className="mt-2 w-full">
+      <div className="flex flex-col">
+      {/* LEGEND: above the calendar and time panel; on phones it sits below the calendar instead, and only on the calendar screen */}
+      <div className={`mt-2 w-full max-md:order-2 ${stage === "time" ? "max-md:hidden" : ""}`}>
         <Legend horizontal showAvailability />
       </div>
 
-      {/* MAIN: Wide calendar + narrow time panel */}
-      <div className="mt-2 grid items-start gap-3 lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)]">
+      {/* MAIN: Wide calendar + narrow time panel (one at a time on phones) */}
+      <div className="order-1 mt-2 grid items-start gap-3 md:grid-cols-[minmax(0,7fr)_minmax(0,3fr)] lg:grid-cols-[minmax(0,7fr)_minmax(260px,3fr)]">
         {/* LEFT: Existing calendar */}
-        <section data-tour="date-calendar" className="min-w-0">
+        <section data-tour="date-calendar" className={`min-w-0 ${stage === "time" ? "max-md:hidden" : ""}`}>
           <DateCalendar
             selected={date}
             onSelect={chooseDate}
@@ -236,9 +253,18 @@ export function DateForm({
         {/* RIGHT: Interactive timetable */}
         <section
           aria-label="Time selection"
-          className="min-w-0 rounded-lg border border-accent-6 bg-container p-3 shadow-sm"
+          className={`min-w-0 rounded-lg border border-accent-6 bg-container p-3 shadow-sm ${
+            stage === "date" ? "max-md:hidden" : ""
+          }`}
         >
           <h2 className="text-center text-lg font-bold">Select a Time</h2>
+
+          {/* The calendar is a screen away on phones, so say which day these times are for. */}
+          {date && (
+            <p className="mt-1 text-center text-sm md:hidden">
+              {longDateLabel(date)}
+            </p>
+          )}
 
           <p className="mt-1 text-center text-xs text-accent-3">
             Select one or more slots. Click a selected slot again to remove it.
@@ -257,7 +283,7 @@ export function DateForm({
           ) : (
             <>
               <div className="mt-3 overflow-hidden rounded-md border border-accent-6">
-                <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-accent-6 bg-accent-5 px-2 py-2 text-xs font-bold">
+                <div className="grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] border-b border-accent-6 bg-accent-5 px-2 py-2 text-xs font-bold">
                   <span>Time</span>
                   <span className="text-center">Status</span>
                 </div>
@@ -275,7 +301,7 @@ export function DateForm({
                       disabled={unavailable}
                       aria-pressed={selected}
                       onClick={() => selectSlot(slot)}
-                      className={`grid min-h-14 w-full grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-2 border-t border-accent-6 px-2 py-2 text-left text-xs transition-colors first:border-t-0 ${
+                      className={`grid min-h-14 w-full grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] items-center gap-2 border-t border-accent-6 px-2 py-2 text-left text-sm transition-colors first:border-t-0 md:text-xs ${
                         unavailable
                           ? "cursor-not-allowed bg-accent-5 text-accent-3/60"
                           : selected
@@ -352,6 +378,7 @@ export function DateForm({
             </p>
           )}
         </section>
+      </div>
       </div>
     </StepForm>
   );

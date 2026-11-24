@@ -46,9 +46,11 @@ function Field({
       {srOnlyLabel ? (
         <span className="sr-only">{label}</span>
       ) : (
-        <>
-          {label} {required && <span aria-hidden="true">*</span>}
-        </>
+        <span className="flex items-end max-sm:min-h-8">
+          <span>
+            {label} {required && <span aria-hidden="true">*</span>}
+          </span>
+        </span>
       )}
       {children}
       {error && (
@@ -114,7 +116,7 @@ export function DetailsForm({
         dirty={dirty}
         message="You haven't confirmed your request details yet. if you leave now, these details will be lost."
       />
-      <div data-tour="details-fields" className="mt-6 grid gap-x-6 gap-y-4 md:grid-cols-3">
+      <div data-tour="details-fields" className="mt-4 grid grid-cols-2 gap-x-3 gap-y-3 sm:mt-6 sm:gap-x-6 sm:gap-y-4 lg:grid-cols-3">
         <Field label="Requestor Name">
           <input
             readOnly
@@ -224,7 +226,7 @@ export function DetailsForm({
           srOnlyLabel
           required
           error={shown("description")}
-          className="md:col-span-3"
+          className="col-span-2 lg:col-span-3"
         >
           <textarea
             name="description"

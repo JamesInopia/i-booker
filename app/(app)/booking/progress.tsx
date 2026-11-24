@@ -57,7 +57,7 @@ function Stepper({
 
   return (
     <div className="relative">
-      <div className="absolute left-[16.6667%] right-[16.6667%] top-5 h-1 -translate-y-1/2 rounded-full bg-accent-6">
+      <div className="absolute left-[16.6667%] right-[16.6667%] top-4 h-1 -translate-y-1/2 rounded-full bg-accent-6 sm:top-5">
         <div
           className="h-full rounded-full bg-accent-1 transition-[width] duration-700 ease-in-out motion-reduce:transition-none"
           style={{ width: `${fill}%` }}
@@ -78,7 +78,7 @@ function Stepper({
                 style={{
                   transitionDelay: reached && !clickable ? "450ms" : "0ms",
                 }}
-                className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 bg-container text-lg font-semibold transition-colors duration-300 motion-reduce:transition-none ${
+                className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 bg-container text-base font-semibold transition-colors sm:h-10 sm:w-10 sm:text-lg duration-300 motion-reduce:transition-none ${
                   reached
                     ? "border-accent-1 text-accent-1"
                     : "border-accent-3/40 text-accent-3/60"
@@ -90,7 +90,7 @@ function Stepper({
                 {completed ? <Check draw={finalDone} /> : s.n}
               </span>
               <span
-                className={`text-xs transition-colors duration-300 sm:text-sm ${
+                className={`px-1 text-xs leading-tight transition-colors duration-300 sm:text-sm ${
                   reached ? "font-semibold text-accent-1" : "text-accent-3/60"
                 }`}
               >
@@ -157,7 +157,7 @@ export function BookingShell({
   return (
     <ProgressContext.Provider value={{ complete }}>
       {(current > 0 || done) && (
-        <div className="sticky top-16 z-20 bg-[#f0f3f8] px-16 pb-2 pt-2">
+        <div className="sticky top-16 z-20 bg-[#f0f3f8] px-4 pb-2 pt-2 sm:px-8 lg:px-16">
           <Stepper
             current={current || STEPS.length}
             done={done}

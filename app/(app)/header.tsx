@@ -9,9 +9,18 @@ import type { NotificationsPayload } from "@/lib/notification-types";
 import { FormPendingSignal } from "../components/loading-provider";
 import { NotificationBell } from "./notification-bell";
 import { createPortal } from "react-dom";
+import { FiMenu } from "react-icons/fi";
+import { useNavDrawer } from "./nav-drawer";
 import { ReportDialog } from "./report/report-dialog";
 
-function Tabs({ groups }: { groups: PageTabGroup[] }) {
+function Tabs({
+  groups,
+  variant,
+}: {
+  groups: PageTabGroup[];
+  /** `inline`: inside the header bar (lg and up). `strip`: a row under the bar that scrolls sideways (below lg). */
+  variant: "inline" | "strip";
+}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const group = groups.find((g) => g.path === pathname);
@@ -23,8 +32,17 @@ function Tabs({ groups }: { groups: PageTabGroup[] }) {
     group.tabs.find((t) => t.id === requested)?.id ??
     (requested && group.hidden.includes(requested) ? null : group.tabs[0].id);
 
+  const strip = variant === "strip";
+
   return (
-    <nav aria-label="Page tabs" className="flex gap-12">
+    <nav
+      aria-label="Page tabs"
+      className={
+        strip
+          ? "flex gap-6 overflow-x-auto border-t border-accent-4 px-4 pt-2 sm:gap-10 sm:px-6 lg:hidden"
+          : "hidden gap-12 lg:flex"
+      }
+    >
       {group.tabs.map((t) => {
         const active = t.id === activeId;
         return (
@@ -32,7 +50,7 @@ function Tabs({ groups }: { groups: PageTabGroup[] }) {
             key={t.id}
             href={{ pathname: group.path, query: { tab: t.id } }}
             aria-current={active ? "page" : undefined}
-            className={`border-b-2 pb-1 text-2xl ${
+            className={`shrink-0 whitespace-nowrap border-b-2 pb-1 ${strip ? "text-lg" : "text-2xl"} ${
               active
                 ? "border-accent-1 font-bold text-accent-1"
                 : "border-transparent text-black hover:text-accent-1"
@@ -68,17 +86,19 @@ function ProfileMenu({ name }: { name: string }) {
   }, [open]);
 
   return (
-    <div ref={ref} className="relative flex items-center gap-4">
-      <span className="text-lg font-bold uppercase">{name}</span>
+    <div ref={ref} className="relative flex min-w-0 items-center gap-2 sm:gap-4">
+      <span className="min-w-0 max-w-44 truncate text-xs font-bold uppercase sm:max-w-64 sm:text-sm lg:max-w-none lg:text-lg">
+        {name}
+      </span>
       <button
         type="button"
         aria-label="Profile menu"
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="rounded-full focus:outline-2 focus:outline-offset-2 focus:outline-accent-1"
+        className="shrink-0 rounded-full focus:outline-2 focus:outline-offset-2 focus:outline-accent-1"
       >
-        <svg viewBox="0 0 24 24" className="h-9 w-9" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-8 w-8 sm:h-9 sm:w-9" aria-hidden="true">
           <circle cx="12" cy="12" r="12" fill="currentColor" />
           <circle cx="12" cy="9.5" r="3.6" fill="white" />
           <path
@@ -134,15 +154,38 @@ export function Header({
   name: string;
   notifications: NotificationsPayload;
 }) {
+  const { open, toggle, triggerRef } = useNavDrawer();
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-8 bg-container px-10">
-      <Suspense fallback={<div />}>
-        <Tabs groups={tabGroups} />
-      </Suspense>
-      <div className="relative ml-auto flex items-center gap-5">
-        <NotificationBell initial={notifications} />
-        <ProfileMenu name={name} />
+    <header className="sticky top-0 z-30 shrink-0 bg-container">
+      <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:gap-8 lg:px-10">
+        {/* Opens the sidebar drawer. Only exists below lg; from lg up the sidebar is always on screen. */}
+        <button
+          ref={triggerRef}
+          type="button"
+          data-tour="menu-button"
+          aria-label="Open menu"
+          aria-controls="app-nav"
+          aria-expanded={open}
+          onClick={toggle}
+          className="-ml-2 grid h-10 w-10 shrink-0 place-items-center rounded-full text-2xl hover:bg-accent-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-1 lg:hidden"
+        >
+          <FiMenu aria-hidden="true" />
+        </button>
+
+        <Suspense fallback={<div />}>
+          <Tabs groups={tabGroups} variant="inline" />
+        </Suspense>
+        <div className="relative ml-auto flex min-w-0 items-center gap-2 sm:gap-5">
+          <NotificationBell initial={notifications} />
+          <ProfileMenu name={name} />
+        </div>
       </div>
+
+      {/* Below lg the page tabs get their own row so they have room (nothing renders on pages without tabs). */}
+      <Suspense fallback={null}>
+        <Tabs groups={tabGroups} variant="strip" />
+      </Suspense>
     </header>
   );
 }

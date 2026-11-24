@@ -83,7 +83,7 @@ export function LoginForm({
     <form
       onSubmit={onSubmit}
       noValidate
-      className="mt-12 flex w-86 flex-col items-center gap-6"
+      className="login-form flex flex-col items-center"
     >
       {askEmail && (
         <label className="w-full text-sm font-semibold">
@@ -104,9 +104,9 @@ export function LoginForm({
       <button
         type="submit"
         disabled={pending}
-        className="flex w-4/5 items-center justify-center gap-2 rounded-full border border-gray-300 bg-white py-3 text-sm font-semibold text-black hover:bg-gray-50 disabled:opacity-50"
+        className="login-button flex w-full items-center justify-center gap-[0.5em] rounded-full border border-gray-300 bg-white font-semibold text-black hover:bg-gray-50 disabled:opacity-50"
       >
-        <FcGoogle size={18} />
+        <FcGoogle size="1.25em" />
         {pending ? "Please wait" : "Sign in with Google"}
       </button>
 
@@ -114,7 +114,7 @@ export function LoginForm({
       {pending && createPortal(<LoadingScreen fullScreen />, document.body)}
 
       <p
-        className={`w-full border-b border-gray-300 pb-1 text-center text-xs ${message ? "text-accent-2" : "text-gray-400"}`}
+        className={`login-hint w-full border-b border-gray-300 pb-1 text-center ${message ? "text-accent-2" : "text-gray-400"}`}
         role={message ? "alert" : undefined}
       >
         {message || HINT}

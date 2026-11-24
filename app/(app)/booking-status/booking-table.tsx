@@ -19,6 +19,10 @@ const statusColor: Record<BookingStatus, string> = {
   cancelled: "text-gray-500",
 };
 
+// Column headings shrink with the screen; the pinned actions column sticks to the right edge while the rest scrolls.
+const TH = "max-lg:whitespace-nowrap px-3 py-3 text-base font-bold md:text-lg xl:px-4 xl:text-2xl";
+const PIN = "max-lg:sticky max-lg:right-0 max-lg:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)]";
+
 export default function BookingTable({ bookings }: { bookings: Booking[] }) {
   const [q, setQ] = useState("");
   const [show, setShow] = useState("all");
@@ -56,26 +60,27 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
         />
       </div>
 
-      <div data-tour="table" className="flex-1 overflow-x-auto px-3 py-3 bg-white rounded-[15px]">
-        <table className="min-w-full border-separate border-spacing-y-2 text-center text-sm">
+      {/* Below lg the table keeps its columns and scrolls sideways; the actions column stays pinned on the right. */}
+      <div data-tour="table" className="@container flex-1 overflow-x-auto px-3 py-3 bg-white rounded-[15px]">
+        <table className="min-w-176 border-separate border-spacing-y-2 text-center text-sm lg:min-w-full">
           <thead>
             <tr>
-              <th scope="col" className="px-4 py-3 text-2xl font-bold">
+              <th scope="col" className={TH}>
                 Room
               </th>
-              <th scope="col" className="px-4 py-3 text-2xl font-bold">
+              <th scope="col" className={TH}>
                 Purpose
               </th>
-              <th scope="col" className="px-4 py-3 text-2xl font-bold">
+              <th scope="col" className={TH}>
                 Date Booked
               </th>
-              <th scope="col" className="py-4 text-2xl font-bold">
+              <th scope="col" className={`${TH} !px-0`}>
                 Booking Schedule
               </th>
-              <th scope="col" className="px-4 py-3 text-2xl font-bold">
+              <th scope="col" className={TH}>
                 Status
               </th>
-              <th scope="col" className="px-4 py-3">
+              <th scope="col" className={`${TH} ${PIN} bg-white`}>
                 <span className="sr-only">Actions</span>
               </th>
             </tr>
@@ -84,13 +89,16 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
             {bookings.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-gray-500">
-                  <p className="mb-4 text-lg">No requests made yet.</p>
-                  <Link
-                    href="/booking"
-                    className="inline-block rounded-full bg-blue-900 px-6 py-2 font-semibold text-white hover:bg-blue-800"
-                  >
-                    Book a room
-                  </Link>
+                  {/* As wide as the visible area (not the scrolling table), so it stays on screen on a phone. */}
+                  <div className="sticky left-0 w-[calc(100cqw-1.5rem)]">
+                    <p className="mb-4 text-lg">No requests made yet.</p>
+                    <Link
+                      href="/booking"
+                      className="inline-block rounded-full bg-blue-900 px-6 py-2 font-semibold text-white hover:bg-blue-800"
+                    >
+                      Book a room
+                    </Link>
+                  </div>
                 </td>
               </tr>
             )}
@@ -98,7 +106,9 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
             {bookings.length > 0 && shown.length === 0 && (
               <tr>
                 <td colSpan={6} className="py-8 text-gray-500">
-                  No requests match your search.
+                  <div className="sticky left-0 w-[calc(100cqw-1.5rem)]">
+                    No requests match your search.
+                  </div>
                 </td>
               </tr>
             )}
@@ -119,7 +129,7 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
                 >
                   {b.status}
                 </td>
-                <td className="rounded-r-[15px] bg-gray-200 px-4 py-3">
+                <td className={`rounded-r-[15px] bg-gray-200 px-4 py-3 ${PIN}`}>
                   <RowActions id={b.id} status={b.status} booking={b} />
                 </td>
               </tr>

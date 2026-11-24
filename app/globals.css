@@ -13,7 +13,7 @@
   --color-accent-5: #f2efef;
   --color-accent-6: #d9d9d9;
   --color-accent-7: #ffac4e;
-  --color-accent-8: #8aa3bc;
+  --color-accent-8: #809DFF;
 
   /* Heading gradient */
   --color-heading-from: #1c50b1;
@@ -30,12 +30,74 @@ body {
   background: var(--color-background);
 }
 
+/*
+ * Login page hexagon.
+ * Everything is derived from the viewport with min()/clamp(), so the hexagon resizes continuously (no
+ * breakpoint jumps) and its content scales with it via --hex-w.
+ *   Large desktop 1920x1080: ~90% of the height, parked toward the left, clear of every edge
+ *   Desktop       1280x720 : same, slightly less far left
+ *   Tablet         768x1024: centred, clear of the sides (and top/bottom)
+ *   Phone          360x800 : full width (touches the left/right edges only here), a little above centre
+ */
+.login-page {
+  /* Gap to the viewport sides: 0 up to 440px wide (phones), then grows smoothly to 5rem. */
+  --gutter: clamp(0px, calc((100vw - 440px) * 0.2), 5rem);
+  /* Phones sit slightly above the vertical centre. Fades out by 600px wide. */
+  --lift: clamp(0px, calc((600px - 100vw) * 0.5), 15dvh);
+  --edge: calc(100vw - 2 * var(--gutter));
+  /* Height: 90% of the viewport (5% clear above/below), or whatever the width allows. */
+  --hex-h: min(calc(90dvh - var(--lift)), calc(var(--edge) / 0.82));
+  /* Width follows the height (up to 0.95 of it), never wider than the space available. */
+  --hex-w: min(var(--edge), calc(var(--hex-h) * 0.95));
+  /* How far left of centre the hexagon sits: 0 at tablet width and below, growing on desktop. */
+  --hex-shift: clamp(0px, calc((100vw - 768px) * 0.4), 360px);
+
+  padding-top: 5dvh;
+  padding-bottom: calc(5dvh + var(--lift));
+}
+.login-hex {
+  width: var(--hex-w);
+  /* min-height, not height: if the content ever needs more room (email field, long error) the hexagon
+     grows instead of the content being clipped. The 22% padding keeps content inside the straight sides. */
+  min-height: var(--hex-h);
+  padding-block: calc(var(--hex-h) * 0.22);
+  margin-left: max(var(--gutter), calc((100vw - var(--hex-w)) / 2 - var(--hex-shift)));
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.login-title {
+  font-size: calc(var(--hex-w) * 0.082 + 11.5px);
+  line-height: 1.1;
+}
+.login-greeting {
+  margin-top: calc(var(--hex-w) * 0.012 + 0.3rem);
+  font-size: calc(var(--hex-w) * 0.015 + 9px);
+}
+.login-form {
+  width: calc(var(--hex-w) * 0.62 + clamp(0px, calc((560px - var(--hex-w)) * 0.45), 100px));
+  margin-top: calc(var(--hex-w) * 0.04 + 0.5rem);
+  gap: calc(var(--hex-w) * 0.025 + 0.6rem);
+}
+.login-button {
+  padding-block: 0.8em;
+  font-size: calc(var(--hex-w) * 0.014 + 9px);
+}
+.login-hint {
+  font-size: calc(var(--hex-w) * 0.01 + 7.6px);
+  text-wrap: balance;
+}
+
 /* Hexagon loader*/
 :root {
   --hex-loop: 1.2s; /* time for one full turn */
   --hex-off: 0.15; /* opacity of the edges that are not lit */
-  --sidebar-w: 14rem;
+  /* Below lg the sidebar is a slide-in drawer and takes no room, so the loading overlay starts at the left edge. */
+  --sidebar-w: 0rem;
   --header-h: 4rem;
+}
+@media (min-width: 64rem) {
+  :root {
+    --sidebar-w: 14rem;
+  }
 }
 @keyframes hex-edge {
   0% {

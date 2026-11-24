@@ -64,7 +64,7 @@ export default async function ReviewAndSubmitPage() {
       <h2 className="mt-6 text-lg font-bold">Nature of Activity</h2>
       <ul
         aria-label="Nature of activity"
-        className="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-4"
+        className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 sm:gap-x-6 lg:grid-cols-4"
       >
         {natures.map((n) => {
           const checked = n.id === draft.nature;
@@ -72,12 +72,12 @@ export default async function ReviewAndSubmitPage() {
             <li
               key={n.id}
               className={`flex min-w-0 items-center gap-2 text-sm font-semibold ${
-                n.other ? "sm:col-span-2 lg:col-span-2" : ""
+                n.other ? "col-span-2" : ""
               }`}
             >
               <Box checked={checked} />
 
-              <span className="shrink-0">
+              <span className={n.other ? "shrink-0" : "min-w-0"}>
                 {n.name}
                 {n.other && "; please specify:"}
                 {checked && <span className="sr-only"> (selected)</span>}
@@ -94,21 +94,21 @@ export default async function ReviewAndSubmitPage() {
       </ul>
 
       <h2 className="mt-8 text-lg font-bold">Details of Request</h2>
-      <dl className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <Value label="Requestor">{user.name || user.email}</Value>
         <Value label="Contact Details">{draft.contactNo}</Value>
         <Value label="Program / Course">{draft.program}</Value>
         <Value label="Date Filed">{formatDate(manilaNow().date)}</Value>
       </dl>
 
-      <dl className="mt-4 grid min-w-0 gap-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
+      <dl className="mt-3 grid min-w-0 grid-cols-2 gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1fr)]">
         <Value label="Date of Activity">{formatDate(draft.date)}</Value>
         <Value label="Time">{formatBlocks(draft.blocks)}</Value>
         <Value label="Venue">{room.name}</Value>
         <Value label="# of Participants">{draft.occupants}</Value>
         <Value
           label="Details of the Activity"
-          className="min-w-0 sm:col-span-2 lg:col-span-4"
+          className="col-span-2 min-w-0 lg:col-span-4"
         >
           {draft.description}
         </Value>

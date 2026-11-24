@@ -1,8 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { resolveTab } from "@/lib/nav";
-import { listAllRooms, listManagedRooms } from "./queries";
-import { RoomBrowser } from "./room-browser";
+import { listManagedRooms } from "./queries";
 import { ManageRooms } from "./manage-rooms";
+import { RoomBrowser } from "./room-browser";
 
 type Params = { tab?: string | string[] };
 
@@ -17,19 +17,18 @@ export default async function BookingPage({
   const params = await searchParams;
   const tab = resolveTab("/booking", user.role, first(params.tab));
 
+  const rooms = await listManagedRooms();
+
   if (tab.id === "manage-rooms") {
-    const rooms = await listManagedRooms();
     return (
-      <main className="px-4 pb-8 pt-5 sm:px-8 xl:px-14">
+      <main className="px-4 pb-6 pt-2 sm:px-8 lg:px-16 lg:pb-8">
         <ManageRooms initialRooms={rooms} />
       </main>
     );
   }
 
-  const rooms = await listManagedRooms();
-
   return (
-    <main className="px-8 pb-8 pt-2">
+    <main className="px-4 pb-6 pt-2 sm:px-8 lg:px-16 lg:pb-8">
       <RoomBrowser rooms={rooms} />
     </main>
   );

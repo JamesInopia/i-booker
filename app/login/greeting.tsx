@@ -83,5 +83,5 @@ export function Greeting() {
   }, []);
 
   if (!text) return null;
-  return <p className="mt-5 text-center text-lg text-accent-3">{text}</p>;
+  return <p className="login-greeting max-w-[80%] text-center text-accent-3">{text}</p>;
 }

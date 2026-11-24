@@ -45,6 +45,15 @@ const PROFILE: TourStep = {
   body: "Open this to log out when you're done.",
 };
 
+// The menu button only exists below lg, where the sidebar is a drawer. Where it's hidden the step drops out by itself,
+// and on those screens the nav/Help steps (inside the drawer) drop out instead.
+const MENU: TourStep = {
+  target: '[data-tour="menu-button"]',
+  placement: "bottom",
+  title: "Menu",
+  body: "Open this to switch between sections. Help is at the bottom of the menu: use it any time to replay the tour for the page you're on.",
+};
+
 const HELP: TourStep = {
   target: '[data-tour="help-button"]',
   placement: "right",
@@ -60,7 +69,7 @@ const WELCOME: TourStep = {
 /** Menus, notifications and account: the same on every page. Also the fallback for pages without their own tour. */
 export const BASICS_TOUR: Tour = {
   id: "basics",
-  steps: [WELCOME, NAV, TABS, BELL, PROFILE, HELP],
+  steps: [WELCOME, MENU, NAV, TABS, BELL, PROFILE, HELP],
 };
 
 const LEGEND: TourStep = {
@@ -72,7 +81,7 @@ const LEGEND: TourStep = {
 
 const page = (id: string, intro: TourStep, ...steps: TourStep[]): Tour => ({
   id,
-  steps: [intro, ...steps, TABS, HELP],
+  steps: [intro, ...steps, TABS, MENU, HELP],
 });
 
 const TOURS = {
