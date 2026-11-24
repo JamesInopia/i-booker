@@ -125,7 +125,7 @@ export function ReportsTable({ reports, query }: { reports: ReportRow[]; query: 
       </div>
 
       {chosen.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-accent-6 pt-4">
+        <div className="sticky bottom-0 z-20 -mx-4 -mb-4 mt-4 flex flex-wrap items-center justify-end gap-3 rounded-b-lg border-t border-accent-6 bg-container px-4 py-3 shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
           <span className="mr-auto text-sm text-gray-600">{chosen.length} selected</span>
           {error && (
             <span role="alert" className="text-sm text-red-600">

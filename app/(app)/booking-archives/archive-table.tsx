@@ -8,6 +8,7 @@ import type { ArchiveAction } from "./options";
 import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
+import { barDanger, barPrimary, SelectionBar } from "@/app/components/selection-bar";
 import { STATUS_LABEL, STATUS_TEXT, canPrint } from "@/lib/booking-status";
 import {
   ARCHIVE_SORTS,
@@ -16,8 +17,8 @@ import {
   type SortKey,
 } from "@/app/components/list-filters";
 
-const BTN =
-  "rounded-lg px-4 py-2 text-sm font-semibold text-white hover:brightness-110 sm:px-6 sm:text-base";
+const PRINT_HINT =
+  "Only approved, rejected or cancelled requests can be downloaded or printed.";
 const TH = "max-lg:whitespace-nowrap border-l border-black px-3 py-3 text-sm font-bold md:text-base xl:text-lg";
 const TD = "border-l border-black px-3 py-2";
 // Below lg the table keeps all its columns and scrolls sideways. The checkbox column stays pinned on the left and the
@@ -169,53 +170,41 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
         </table>
       </div>
 
-      <div className="flex min-h-11 flex-wrap items-center justify-between gap-3 pt-3 lg:pt-0">
-        {chosen.length > 1 && (
-          <>
-            <div className="flex flex-wrap gap-3 sm:gap-4">
-              <Link
-                href={`/booking-archives/view?ids=${chosen.join(",")}`}
-                className={`${BTN} bg-accent-1`}
-              >
-                View Details
-              </Link>
-              <button
-                type="button"
-                onClick={() => printRequests(chosen)}
-                disabled={!allPrintable}
-                title={
-                  allPrintable
-                    ? undefined
-                    : "Only approved, rejected or cancelled requests can be downloaded or printed."
-                }
-                className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                Print Details
-              </button>
-              <button
-                type="button"
-                onClick={() => setDialog({ type: "download", ids: chosen })}
-                disabled={!allPrintable}
-                title={
-                  allPrintable
-                    ? undefined
-                    : "Only approved, rejected or cancelled requests can be downloaded or printed."
-                }
-                className={`${BTN} bg-accent-1 disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                Download Details
-              </button>
-            </div>
+      {chosen.length > 0 && (
+          <SelectionBar className="mt-3" count={chosen.length} onClear={() => setSelected(new Set())}>
+            <Link
+              href={`/booking-archives/view?ids=${chosen.join(",")}`}
+              className={barPrimary}
+            >
+              View Details
+            </Link>
+            <button
+              type="button"
+              onClick={() => printRequests(chosen)}
+              disabled={!allPrintable}
+              title={allPrintable ? undefined : PRINT_HINT}
+              className={barPrimary}
+            >
+              Print Details
+            </button>
+            <button
+              type="button"
+              onClick={() => setDialog({ type: "download", ids: chosen })}
+              disabled={!allPrintable}
+              title={allPrintable ? undefined : PRINT_HINT}
+              className={barPrimary}
+            >
+              Download Details
+            </button>
             <button
               type="button"
               onClick={() => setDialog({ type: "delete", ids: chosen })}
-              className={`${BTN} bg-accent-2`}
+              className={barDanger}
             >
               Delete
             </button>
-          </>
-        )}
-      </div>
+          </SelectionBar>
+      )}
 
       {dialog?.type === "delete" && (
         <DeleteDialog

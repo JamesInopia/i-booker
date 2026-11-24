@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTrackedRouter as useRouter } from "../../../components/loading-provider";
 import { cancelApprovedRequests } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
+import { barDanger, barPrimary, SelectionBar } from "@/app/components/selection-bar";
 import { reviewHref, type ReviewQuery } from "./filters";
 import { ReasonDialog } from "./reason-dialog";
 import {
@@ -17,13 +18,6 @@ import { canPrint } from "@/lib/booking-status";
 
 const th = "px-3 py-3 text-left text-sm font-bold";
 const td = "px-3 py-3 text-sm";
-
-const buttonPrimary =
-  "rounded-md bg-accent-1 px-5 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40";
-const buttonDanger =
-  "rounded-md bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-40";
-const buttonOutline =
-  "rounded-md border border-accent-1 bg-container px-4 py-1.5 text-sm font-semibold text-accent-1 hover:bg-accent-4";
 
 export function ReviewTable({
   bookings,
@@ -65,6 +59,7 @@ export function ReviewTable({
     setSelected(allSelected ? new Set() : new Set(bookings.map((b) => b.id)));
 
   return (
+    <>
     <section data-tour="table" className="rounded-lg bg-container p-4 shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full border-collapse">
@@ -151,21 +146,13 @@ export function ReviewTable({
         </table>
       </div>
 
+    </section>
+
       {chosen.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-center justify-end gap-3 border-t border-accent-6 pt-4">
-          <p className="mr-auto text-sm" aria-live="polite">
-            <strong>{chosen.length}</strong> selected
-            <button
-              type="button"
-              onClick={() => setSelected(new Set())}
-              className={`ml-3 ${buttonOutline}`}
-            >
-              Clear
-            </button>
-          </p>
+        <SelectionBar count={chosen.length} onClear={() => setSelected(new Set())}>
           <button
             type="button"
-            className={buttonPrimary}
+            className={barPrimary}
             disabled={printableChosen.length === 0}
             title={
               printableChosen.length === 0
@@ -182,7 +169,7 @@ export function ReviewTable({
           </button>
           <button
             type="button"
-            className={buttonPrimary}
+            className={barPrimary}
             disabled={printableChosen.length === 0}
             title={
               printableChosen.length === 0
@@ -199,7 +186,7 @@ export function ReviewTable({
           </button>
           <button
             type="button"
-            className={buttonDanger}
+            className={barDanger}
             disabled={!allApproved}
             title={
               !allApproved
@@ -210,7 +197,7 @@ export function ReviewTable({
           >
             Cancel Requests
           </button>
-        </div>
+        </SelectionBar>
       )}
 
       {downloadIds && (
@@ -242,6 +229,6 @@ export function ReviewTable({
           }}
         />
       )}
-    </section>
+    </>
   );
 }

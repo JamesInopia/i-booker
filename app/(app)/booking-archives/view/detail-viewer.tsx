@@ -85,7 +85,7 @@ export default function DetailViewer({
 
         <RequestDetails d={current} />
 
-        <div className="mt-auto flex flex-wrap items-center justify-end gap-3 pt-6">
+        <div className="sticky bottom-0 z-20 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 rounded-b-lg border-t border-accent-6 bg-container px-4 sm:px-6 py-4 shadow-[0_-4px_12px_rgba(0,0,0,0.08)] mt-auto flex flex-wrap items-center justify-end gap-3">
           {canPrint(current.status) && (
             <>
               <button
