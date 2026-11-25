@@ -27,9 +27,10 @@ export type AuthState =
   | { kind: "ok"; user: CurrentUser };
 
 export const getAuthState = cache(async (): Promise<AuthState> => {
+  const requestHeaders = await headers();
   let session: Awaited<ReturnType<typeof auth.api.getSession>>;
   try {
-    session = await auth.api.getSession({ headers: await headers() });
+    session = await auth.api.getSession({ headers: requestHeaders });
   } catch {
     return { kind: "unavailable" }; // a DB/network error is not a logout
   }
