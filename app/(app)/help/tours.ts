@@ -382,7 +382,7 @@ const TOURS = {
       target: '[data-tour="table"]',
       placement: "top",
       title: "Your requests",
-      body: "Each row is one request. Open one to see all of its details. A request that hasn't been reviewed yet can still be edited, and one that isn't finished can be cancelled.",
+      body: "Each row is one request. Click a row to see all of its details. On a request that hasn't been reviewed yet you can edit it there, and one that isn't finished can be cancelled there.",
     },
   ),
 
@@ -402,7 +402,7 @@ const TOURS = {
       target: '[data-tour="table"]',
       placement: "top",
       title: "Archived requests",
-      body: "Open a request from its row. Tick several rows to view, print or download their details together.",
+      body: "Click a row to open that request. Tick one or more rows to view, print, download or delete them from the bar that appears at the bottom.",
     },
   ),
 };

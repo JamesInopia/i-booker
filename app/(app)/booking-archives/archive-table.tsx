@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useTrackedRouter as useRouter } from "@/app/components/loading-provider";
 import { useMemo, useState } from "react";
 import type { ArchiveRow } from "@/lib/definitions";
 import DeleteDialog from "./delete-dialog";
 import type { ArchiveAction } from "./options";
-import RowMenu from "./row-menu";
 import { deleteArchived } from "./actions";
 import { DownloadDialog, printRequests } from "@/app/components/export-dialogs";
 import { barDanger, barPrimary, SelectionBar } from "@/app/components/selection-bar";
@@ -19,14 +19,14 @@ import {
 
 const PRINT_HINT =
   "Only approved, rejected or cancelled requests can be downloaded or printed.";
-const TH = "max-lg:whitespace-nowrap border-l border-black px-3 py-3 text-sm font-bold md:text-base xl:text-lg";
-const TD = "border-l border-black px-3 py-2";
-// Below lg the table keeps all its columns and scrolls sideways. The checkbox column stays pinned on the left and the
-// action menu on the right, so the row can always be selected and acted on.
-const PIN_L = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-white";
-const PIN_R = "max-lg:sticky max-lg:right-0 max-lg:z-10 max-lg:bg-white max-lg:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)]";
+// Same look as the Review tab's table: left-aligned columns, a line under each row, the row lights up on hover.
+const TH = "px-3 py-3 text-left text-sm font-bold";
+const TD = "px-3 py-3 text-sm";
+// Below lg the table keeps all its columns and scrolls sideways; the checkbox column stays pinned on the left.
+const PIN_L = "max-lg:sticky max-lg:left-0 max-lg:z-10 max-lg:bg-container max-lg:group-hover:bg-accent-4 max-lg:group-focus-visible:bg-accent-4";
 
 export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
+  const router = useRouter();
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [dialog, setDialog] = useState<{
     type: ArchiveAction;
@@ -100,11 +100,11 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
         />
       </div>
 
-      <div data-tour="table" className="@container min-h-0 flex-1 overflow-auto rounded-2xl bg-white">
-        <table className="min-w-5xl border-collapse text-center lg:min-w-full">
+      <section data-tour="table" className="@container min-h-0 flex-1 overflow-auto rounded-lg bg-container p-4 shadow-sm">
+        <table className="min-w-5xl border-collapse lg:min-w-full">
           <thead>
             <tr className="border-b border-black">
-              <th className={`w-12 px-3 py-3 ${PIN_L}`}>
+              <th scope="col" className={`w-10 px-3 py-3 ${PIN_L}`}>
                 <input
                   type="checkbox"
                   aria-label="Select All"
@@ -112,52 +112,52 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
                   onChange={toggleAll}
                 />
               </th>
-              <th className={TH}>Booking ID</th>
-              <th className={TH}>Requestor Name</th>
-              <th className={TH}>Purpose of Booking</th>
-              <th className={TH}>Room Name</th>
-              <th className={TH}>Date of Request</th>
-              <th className={TH}>Scheduled Date</th>
-              <th className={TH}>Status</th>
-              <th className={`${TH} ${PIN_R}`}>Action</th>
+              <th scope="col" className={TH}>Booking ID</th>
+              <th scope="col" className={TH}>Requestor Name</th>
+              <th scope="col" className={TH}>Purpose of Booking</th>
+              <th scope="col" className={TH}>Room Name</th>
+              <th scope="col" className={TH}>Date of Request</th>
+              <th scope="col" className={TH}>Scheduled Date</th>
+              <th scope="col" className={TH}>Status</th>
             </tr>
           </thead>
           <tbody>
-            {shown.map((r) => (
-              <tr key={r.id}>
-                <td className={`px-3 py-2 ${PIN_L}`}>
-                  <input
-                    type="checkbox"
-                    aria-label={`Select request ${r.id}`}
-                    checked={selected.has(r.id)}
-                    onChange={() => toggle(r.id)}
-                  />
-                </td>
-                <td className={TD}>#{String(r.id).padStart(5, "0")}</td>
-                <td className={TD}>{r.requestor}</td>
-                <td className={TD}>{r.purpose}</td>
-                <td className={TD}>{r.room}</td>
-                <td className={TD}>{r.requestDate}</td>
-                <td className={TD}>{r.scheduledDate}</td>
-                <td className={`${TD} font-semibold ${STATUS_TEXT[r.status]}`}>
-                  {STATUS_LABEL[r.status]}
-                </td>
-                <td className={`${TD} ${PIN_R}`}>
-                  <RowMenu
-                    id={r.id}
-                    status={r.status}
-                    onAction={(a) =>
-                      a === "print"
-                        ? printRequests([r.id])
-                        : setDialog({ type: a, ids: [r.id] })
-                    }
-                  />
-                </td>
-              </tr>
-            ))}
+            {shown.map((r) => {
+              const open = () => router.push(`/booking-archives/view?ids=${r.id}`);
+              return (
+                <tr
+                  key={r.id}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.target === e.currentTarget) open();
+                  }}
+                  aria-label={`Open request ${r.id} from ${r.requestor}`}
+                  className={`group cursor-pointer border-b border-accent-6 hover:bg-accent-4 focus-visible:bg-accent-4 focus-visible:outline-none ${selected.has(r.id) ? "bg-accent-5" : ""}`}
+                >
+                  <td className={`px-3 py-3 ${PIN_L}`} onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Select request ${r.id}`}
+                      checked={selected.has(r.id)}
+                      onChange={() => toggle(r.id)}
+                    />
+                  </td>
+                  <td className={TD}>#{String(r.id).padStart(5, "0")}</td>
+                  <td className={TD}>{r.requestor}</td>
+                  <td className={TD}>{r.purpose}</td>
+                  <td className={TD}>{r.room}</td>
+                  <td className={TD}>{r.requestDate}</td>
+                  <td className={TD}>{r.scheduledDate}</td>
+                  <td className={`${TD} font-semibold ${STATUS_TEXT[r.status]}`}>
+                    {STATUS_LABEL[r.status]}
+                  </td>
+                </tr>
+              );
+            })}
             {shown.length === 0 && (
               <tr>
-                <td colSpan={9} className="py-10 text-gray-500">
+                <td colSpan={8} className="py-10 text-center text-gray-500">
                   <div className="sticky left-0 w-[100cqw]">
                     {rows.length === 0
                       ? "No archived requests at the moment..."
@@ -168,7 +168,7 @@ export default function ArchiveTable({ rows }: { rows: ArchiveRow[] }) {
             )}
           </tbody>
         </table>
-      </div>
+      </section>
 
       {chosen.length > 0 && (
           <SelectionBar className="mt-3" count={chosen.length} onClear={() => setSelected(new Set())}>

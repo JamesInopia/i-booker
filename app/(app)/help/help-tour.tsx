@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { FiHelpCircle, FiX } from "react-icons/fi";
+import { usePageLoading } from "../../components/loading-provider";
 import { tourFor, type Placement, type Tour, type TourStep } from "./tours";
 
 const SEEN_PREFIX = "ibooker:tour-seen:";
@@ -263,12 +264,20 @@ export function HelpButton({ onStart }: { onStart?: () => void }) {
 
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // The tour points at things on the page, so it can't start until the page is ready: still loading, or
+  // not yet interactive (before the page has hydrated).
+  const loading = usePageLoading();
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const disabled = loading || !ready;
+
   const close = useCallback(() => {
     setOpenFor(null);
     buttonRef.current?.focus();
   }, []);
 
   const start = () => {
+    if (disabled) return;
     writeSeen(tour.id);
     setSeen(true);
     setOpenFor(key);
@@ -283,9 +292,10 @@ export function HelpButton({ onStart }: { onStart?: () => void }) {
         data-tour="help-button"
         aria-haspopup="dialog"
         aria-expanded={open}
-        title="Take a quick tour of this page"
+        title={disabled ? "Available once the page has finished loading" : "Take a quick tour of this page"}
         onClick={start}
-        className="relative ml-3 flex w-[calc(100%-0.75rem)] items-center gap-3 rounded-l-full py-3 pl-6 pr-3 text-left text-xl font-bold leading-tight text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white"
+        disabled={disabled}
+        className="relative ml-3 flex w-[calc(100%-0.75rem)] items-center gap-3 rounded-l-full py-3 pl-6 pr-3 text-left text-xl font-bold leading-tight text-white hover:bg-white/10 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-white disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-transparent"
       >
         <span className="relative">
           <FiHelpCircle aria-hidden="true" className="h-6 w-6" />

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 
 import { db } from "@/db";
 import {
@@ -12,6 +12,7 @@ import {
   user as authUsers,
 } from "@/db/schema";
 import { requireUser } from "@/lib/auth";
+import RequestActions from "./request-actions";
 
 function formatDate(value: string | Date) {
   const date =
@@ -118,11 +119,6 @@ export default async function ReservationReviewPage({
       and(
         eq(reservationRequests.requestId, requestId),
         eq(sql`lower(${authUsers.email})`, user.email.toLowerCase()),
-        inArray(reservationRequests.status, [
-          "approved",
-          "rejected",
-          "cancelled",
-        ]),
       ),
     )
     .orderBy(asc(reservationSlots.startTime));
@@ -141,10 +137,12 @@ export default async function ReservationReviewPage({
   }
 
   const heading = {
+    pending: { label: "Pending", color: "text-yellow-500" },
+    reviewed: { label: "Reviewed", color: "text-blue-500" },
     approved: { label: "Approved", color: "text-green-600" },
     rejected: { label: "Rejected", color: "text-red-600" },
     cancelled: { label: "Cancelled", color: "text-gray-600" },
-  }[booking.status as "approved" | "rejected" | "cancelled"];
+  }[booking.status];
 
   const isCancelled = booking.status === "cancelled";
   const closedAt = isCancelled ? booking.cancelledAt : booking.decidedAt;
@@ -235,6 +233,10 @@ export default async function ReservationReviewPage({
               />
             </div>
           </div>
+        )}
+
+        {(booking.status === "pending" || booking.status === "reviewed") && (
+          <RequestActions id={booking.id} status={booking.status} />
         )}
       </section>
     </main>

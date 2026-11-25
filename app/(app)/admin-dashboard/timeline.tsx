@@ -221,7 +221,7 @@ export function TimetableView({
                         <DayMenu
                           date={day}
                           mark={mark}
-                          className="block w-full cursor-pointer select-none p-1 hover:brightness-95"
+                          className="block w-full cursor-pointer select-none p-1 transition-colors hover:bg-black/15 focus-visible:bg-black/15"
                         >
                           {header}
                         </DayMenu>

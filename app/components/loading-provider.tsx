@@ -37,7 +37,7 @@ const NAV_TIMEOUT = 15_000;
 const STALL_MS = 30_000;
 
 type Holder = () => () => void;
-type LoadingContextValue = { hold: Holder; holdRoute: Holder };
+type LoadingContextValue = { hold: Holder; holdRoute: Holder; loading: boolean };
 const LoadingContext = createContext<LoadingContextValue | null>(null);
 
 function useCounter(): [number, Holder] {
@@ -99,7 +99,8 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     }
   }, [locked]);
 
-  const value = useMemo(() => ({ hold, holdRoute }), [hold, holdRoute]);
+  const loading = busy > 0 || route > 0;
+  const value = useMemo(() => ({ hold, holdRoute, loading }), [hold, holdRoute, loading]);
 
   return (
     <LoadingContext.Provider value={value}>
@@ -113,6 +114,11 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
       {visible && route === 0 && <LoadingScreen />}
     </LoadingContext.Provider>
   );
+}
+
+/** True while a page, a navigation or any other process is still loading (the loading screen is up or about to be). */
+export function usePageLoading() {
+  return useContext(LoadingContext)?.loading ?? false;
 }
 
 /** Keep the loading overlay up while `pending` is true. */

@@ -267,3 +267,12 @@ body {
     break-after: auto;
   }
 }
+
+/* Logos, room photos and icons can't be selected, dragged or copied (see components/protect-media.tsx). */
+img,
+svg {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}

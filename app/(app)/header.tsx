@@ -10,6 +10,7 @@ import { FormPendingSignal } from "../components/loading-provider";
 import { NotificationBell } from "./notification-bell";
 import { createPortal } from "react-dom";
 import { FiMenu } from "react-icons/fi";
+import { MdLogout, MdWarning } from "react-icons/md";
 import { useNavDrawer } from "./nav-drawer";
 import { ReportDialog } from "./report/report-dialog";
 
@@ -111,7 +112,7 @@ function ProfileMenu({ name }: { name: string }) {
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full z-20 mt-2 w-44 rounded-lg bg-container py-1 shadow-lg ring-1 ring-black/10"
+          className="absolute right-0 top-full z-20 mt-2 w-52 rounded-lg bg-container py-1 shadow-lg ring-1 ring-black/10"
         >
           <button
             type="button"
@@ -120,16 +121,18 @@ function ProfileMenu({ name }: { name: string }) {
               setOpen(false);
               setReporting(true);
             }}
-            className="block w-full px-4 py-2 text-left text-sm text-accent-2 hover:bg-accent-4"
+            className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-accent-2 hover:bg-accent-4"
           >
+            <MdWarning aria-hidden="true" className="h-5 w-5 shrink-0" />
             Report a Problem
           </button>
           <form action={signOut}>
             <FormPendingSignal />
             <button
               role="menuitem"
-              className="block w-full px-4 py-2 text-left text-sm hover:bg-accent-4"
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm hover:bg-accent-4"
             >
+              <MdLogout aria-hidden="true" className="h-5 w-5 shrink-0" />
               Log out
             </button>
           </form>

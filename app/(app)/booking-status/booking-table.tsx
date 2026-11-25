@@ -2,7 +2,7 @@
 
 import type { Booking, BookingStatus } from "@/lib/definitions";
 import Link from "next/link";
-import RowActions from "./row-actions";
+import { useTrackedRouter as useRouter } from "../../components/loading-provider";
 import { useMemo, useState } from "react";
 import {
   ListFilters,
@@ -19,11 +19,12 @@ const statusColor: Record<BookingStatus, string> = {
   cancelled: "text-gray-500",
 };
 
-// Column headings shrink with the screen; the pinned actions column sticks to the right edge while the rest scrolls.
-const TH = "max-lg:whitespace-nowrap px-3 py-3 text-base font-bold md:text-lg xl:px-4 xl:text-2xl";
-const PIN = "max-lg:sticky max-lg:right-0 max-lg:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.25)]";
+// Same look as the Review tab's table: left-aligned columns, a line under each row, the row lights up on hover.
+const TH = "px-3 py-3 text-left text-sm font-bold whitespace-nowrap";
+const TD = "px-3 py-3 text-sm";
 
 export default function BookingTable({ bookings }: { bookings: Booking[] }) {
+  const router = useRouter();
   const [q, setQ] = useState("");
   const [show, setShow] = useState("all");
   const [sort, setSort] = useState<SortKey>("requested_desc");
@@ -60,37 +61,24 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
         />
       </div>
 
-      {/* Below lg the table keeps its columns and scrolls sideways; the actions column stays pinned on the right. */}
-      <div data-tour="table" className="@container flex-1 overflow-x-auto px-3 py-3 bg-white rounded-[15px]">
-        <table className="min-w-176 border-separate border-spacing-y-2 text-center text-sm lg:min-w-full">
+      {/* Below lg the table keeps its columns and scrolls sideways. Clicking a row opens that request's details. */}
+      <section data-tour="table" className="@container flex-1 overflow-x-auto rounded-lg bg-container p-4 shadow-sm">
+        <table className="min-w-176 border-collapse lg:min-w-full">
           <thead>
-            <tr>
-              <th scope="col" className={TH}>
-                Room
-              </th>
-              <th scope="col" className={TH}>
-                Purpose
-              </th>
-              <th scope="col" className={TH}>
-                Date Booked
-              </th>
-              <th scope="col" className={`${TH} !px-0`}>
-                Booking Schedule
-              </th>
-              <th scope="col" className={TH}>
-                Status
-              </th>
-              <th scope="col" className={`${TH} ${PIN} bg-white`}>
-                <span className="sr-only">Actions</span>
-              </th>
+            <tr className="border-b border-black">
+              <th scope="col" className={TH}>Room</th>
+              <th scope="col" className={TH}>Purpose</th>
+              <th scope="col" className={TH}>Date Booked</th>
+              <th scope="col" className={TH}>Booking Schedule</th>
+              <th scope="col" className={TH}>Status</th>
             </tr>
           </thead>
           <tbody>
             {bookings.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-gray-500">
+                <td colSpan={5} className="py-8 text-center text-gray-500">
                   {/* As wide as the visible area (not the scrolling table), so it stays on screen on a phone. */}
-                  <div className="sticky left-0 w-[calc(100cqw-1.5rem)]">
+                  <div className="sticky left-0 w-[calc(100cqw-2rem)]">
                     <p className="mb-4 text-lg">No requests made yet.</p>
                     <Link
                       href="/booking"
@@ -105,38 +93,43 @@ export default function BookingTable({ bookings }: { bookings: Booking[] }) {
 
             {bookings.length > 0 && shown.length === 0 && (
               <tr>
-                <td colSpan={6} className="py-8 text-gray-500">
-                  <div className="sticky left-0 w-[calc(100cqw-1.5rem)]">
+                <td colSpan={5} className="py-8 text-center text-gray-500">
+                  <div className="sticky left-0 w-[calc(100cqw-2rem)]">
                     No requests match your search.
                   </div>
                 </td>
               </tr>
             )}
 
-            {shown.map((b) => (
-              <tr key={b.id}>
-                <td className="rounded-l-[15px] bg-gray-200 px-4 py-3 font-bold text-left">
-                  {b.room}
-                </td>
-                <td className="bg-gray-200 px-4 py-3">{b.purpose}</td>
-                <td className="bg-gray-200 px-4 py-3">{b.dateBooked}</td>
-                <td className="bg-gray-200 px-4 py-3">
-                  <div>{b.schedule.date}</div>
-                  <div>{b.schedule.time}</div>
-                </td>
-                <td
-                  className={`bg-gray-200 px-4 py-3 font-semibold capitalize ${statusColor[b.status]}`}
+            {shown.map((b) => {
+              const open = () => router.push(`/booking-status/${b.id}`);
+              return (
+                <tr
+                  key={b.id}
+                  tabIndex={0}
+                  onClick={open}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && e.target === e.currentTarget) open();
+                  }}
+                  aria-label={`Open request for ${b.room}, ${b.schedule.date}`}
+                  className="cursor-pointer border-b border-accent-6 hover:bg-accent-4 focus-visible:bg-accent-4 focus-visible:outline-none"
                 >
-                  {b.status}
-                </td>
-                <td className={`rounded-r-[15px] bg-gray-200 px-4 py-3 ${PIN}`}>
-                  <RowActions id={b.id} status={b.status} booking={b} />
-                </td>
-              </tr>
-            ))}
+                  <td className={`${TD} font-bold`}>{b.room}</td>
+                  <td className={TD}>{b.purpose}</td>
+                  <td className={TD}>{b.dateBooked}</td>
+                  <td className={TD}>
+                    <div>{b.schedule.date}</div>
+                    <div>{b.schedule.time}</div>
+                  </td>
+                  <td className={`${TD} font-semibold capitalize ${statusColor[b.status]}`}>
+                    {b.status}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
+      </section>
     </>
   );
 }
